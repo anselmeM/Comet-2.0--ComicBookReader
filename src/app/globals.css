@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* ── Comet Design Tokens ──────────────────────────────────────────────────── */
+:root {
+  /* Brand palette — deep space dark */
+  --color-bg:          #0a0a0f;   /* Near-black, page background */
+  --color-surface:     #12121a;   /* Card backgrounds */
+  --color-surface-2:   #1c1c2a;   /* Elevated surfaces (modals, dropdowns) */
+  --color-border:      #2a2a3d;   /* Subtle dividers */
+  --color-text:        #e8e8f0;   /* Primary body text */
+  --color-text-muted:  #6b6b8a;   /* Secondary / placeholder text */
+  --color-accent:      #7c6af7;   /* Comet purple — CTAs, active states */
+  --color-accent-hover:#9580ff;   /* Accent on hover */
+  --color-success:     #4caf82;   /* Success / completed */
+  --color-warning:     #f5a623;   /* Warning */
+  --color-error:       #e05c5c;   /* Destructive / error */
+
+  /* Spacing scale */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+
+  /* Reader-specific */
+  --reader-bg: #000;
+  --reader-controls-height: 60px;
+}
+
+/* ── Base Reset ───────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100dvh;
+  /* Prevent layout shift from scrollbar appearance */
+  overflow-y: scroll;
+}
+
+/* ── Tailwind Utilities ───────────────────────────────────────────────────── */
+@theme inline {
+  --color-comet-bg:       var(--color-bg);
+  --color-comet-surface:  var(--color-surface);
+  --color-comet-border:   var(--color-border);
+  --color-comet-text:     var(--color-text);
+  --color-comet-muted:    var(--color-text-muted);
+  --color-comet-accent:   var(--color-accent);
+}
+
+/* ── Reader overlay ───────────────────────────────────────────────────────── */
+.reader-viewport {
+  width: 100vw;
+  height: 100dvh;
+  background: var(--reader-bg);
+  overflow: hidden;
+  user-select: none;
+  cursor: pointer;
+}
+
+/* Prevent CLS: reserve space for comic pages before they load */
+.page-placeholder {
+  aspect-ratio: 2 / 3;
+  width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Skeleton loading ─────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface)    25%,
+    var(--color-surface-2)  50%,
+    var(--color-surface)    75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar              { width: 6px; height: 6px; }
+::-webkit-scrollbar-track        { background: var(--color-bg); }
+::-webkit-scrollbar-thumb        { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover  { background: var(--color-text-muted); }
+
+/* ── Focus visible ────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

@@ -1,0 +1,119 @@
+// Comet — Prisma Schema
+// Run: npx prisma db push (dev) | npx prisma migrate deploy (prod)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "sqlite"
+  url       = "file:./dev.db"
+}
+
+// ────────────────────────────────────────────────────
+// AUTH (Auth.js v5 required models)
+// ────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  plan          String    @default("FREE")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  library   Comic[]
+  progress  ReadingProgress[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+
+
+// ────────────────────────────────────────────────────
+// LIBRARY
+// ────────────────────────────────────────────────────
+
+model Comic {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  filehash    String    // SHA-256 of the file (dedup key)
+  pageCount   Int
+  coverUrl    String?   // Blob ObjectURL or remote CDN URL
+  comicVineId String?   // External metadata reference
+  series      String?
+  issue       Int?
+  year        Int?
+  metadata    String?   // Raw ComicVine enrichment payload
+
+  addedAt     DateTime  @default(now())
+  lastReadAt  DateTime?
+
+  progress    ReadingProgress?
+
+  @@unique([userId, filehash]) // Prevent duplicate uploads per user
+  @@index([userId])
+  @@index([filehash])
+  @@index([userId, lastReadAt]) // Efficient "Continue Reading" queries
+}
+
+model ReadingProgress {
+  id          String     @id @default(cuid())
+  userId      String
+  comicId     String     @unique
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comic       Comic      @relation(fields: [comicId], references: [id], onDelete: Cascade)
+
+  lastPage    Int        @default(0)
+  totalPages  Int
+  zoomLevel   Float      @default(1.0)
+  readStatus  String     @default("UNREAD")
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([userId, readStatus])
+}
+
+
