@@ -33,15 +33,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = credentials.email as string;
         const password = credentials.password as string;
 
-        // Hardcoded test account escape hatch
-        if (email === 'test@example.com' && password === 'password') {
-          return await db.user.upsert({
-            where: { email: 'test@example.com' },
-            update: {},
-            create: { email: 'test@example.com', name: 'Test User' }
-          });
-        }
-
         const user = await db.user.findUnique({ where: { email } });
         
         if (!user || !user.password) return null;

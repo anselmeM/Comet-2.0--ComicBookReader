@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { UserPlus, Sparkles, KeyRound, Mail, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const searchParams = useSearchParams();
   const errorUrl = searchParams.get('error');
   const [email, setEmail] = useState('');
@@ -199,5 +199,13 @@ export default function RegisterPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-black text-white">Loading...</div>}>
+      <RegisterContent />
+    </Suspense>
   );
 }
