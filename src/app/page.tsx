@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { Zap, CloudOff, Shield, Rocket, ArrowRight } from "lucide-react";
 
@@ -20,6 +21,8 @@ const staggerContainer = {
 };
 
 export default function Home() {
+  const { data: session, status } = useSession();
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-comet-bg text-comet-text">
       {/* ── Background Elements ─────────────────────────────────────────── */}
@@ -42,13 +45,32 @@ export default function Home() {
           </div>
           <span className="text-xl font-bold tracking-tight">Comet</span>
         </div>
-        <Link
-          href="/library"
-          className="group flex items-center gap-2 rounded-full border border-comet-border bg-comet-surface/50 px-6 py-2.5 text-sm font-medium backdrop-blur-md transition-all hover:bg-comet-accent hover:text-white"
-        >
-          Open Library
-          <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-        </Link>
+        <div className="flex items-center gap-5">
+          {status === "loading" ? null : !session ? (
+            <div className="hidden sm:flex items-center gap-4">
+              <Link
+                href="/login"
+                className="text-sm font-semibold text-comet-muted hover:text-white transition-colors"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/register"
+                className="text-sm font-semibold text-comet-muted hover:text-white transition-colors"
+              >
+                Sign up
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href="/library"
+              className="group flex items-center gap-2 rounded-full border border-comet-border bg-comet-surface/50 px-6 py-2.5 text-sm font-medium backdrop-blur-md transition-all hover:bg-comet-accent hover:text-white"
+            >
+              Open Library
+              <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+            </Link>
+          )}
+        </div>
       </nav>
 
       {/* ── Hero Section ───────────────────────────────────────────────── */}
@@ -83,12 +105,23 @@ export default function Home() {
           </motion.p>
 
           <motion.div variants={fadeIn} className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Link
-              href="/library"
-              className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-comet-accent px-10 text-lg font-bold text-white shadow-[0_10px_40px_rgba(124,106,247,0.3)] transition-all hover:scale-105 hover:bg-comet-accent-hover sm:w-auto"
-            >
-              Start Reading
-            </Link>
+            {status === "loading" ? (
+              <div className="h-14 w-full sm:w-48 rounded-2xl bg-comet-surface/50 animate-pulse backdrop-blur-md" />
+            ) : !session ? (
+              <Link
+                href="/register"
+                className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-comet-accent px-10 text-lg font-bold text-white shadow-[0_10px_40px_rgba(124,106,247,0.3)] transition-all hover:scale-105 hover:bg-comet-accent-hover sm:w-auto"
+              >
+                Get Started
+              </Link>
+            ) : (
+              <Link
+                href="/library"
+                className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-comet-accent px-10 text-lg font-bold text-white shadow-[0_10px_40px_rgba(124,106,247,0.3)] transition-all hover:scale-105 hover:bg-comet-accent-hover sm:w-auto"
+              >
+                Go to Library
+              </Link>
+            )}
             <a
               href="#features"
               className="flex h-14 w-full items-center justify-center rounded-2xl border border-comet-border bg-comet-surface/50 px-10 text-lg font-semibold backdrop-blur-md transition-all hover:bg-comet-surface sm:w-auto"

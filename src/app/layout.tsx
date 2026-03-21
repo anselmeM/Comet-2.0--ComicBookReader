@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Providers } from '@/app/providers';
+import { NetworkStatusIndicator } from '@/components/atoms/NetworkStatusIndicator';
+import { PWAUpdater } from '@/components/atoms/PWAUpdater';
 import './globals.css';
 
 // ── Fonts ─────────────────────────────────────────────────────────────────────
+// ... existing font setup ...
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
@@ -56,6 +59,8 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className="bg-comet-bg text-comet-text antialiased">
+        <NetworkStatusIndicator />
+        <PWAUpdater />
         <Providers>{children}</Providers>
       </body>
     </html>

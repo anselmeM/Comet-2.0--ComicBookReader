@@ -20,7 +20,7 @@ async function getFileHash(file: File): Promise<string> {
   return `${file.name}-${file.size}-${hex}`;
 }
 
-async function compressCoverImage(blob: Blob, maxWidth = 400): Promise<string> {
+async function compressCoverImage(blob: Blob, maxDim = 300): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(blob);
@@ -32,9 +32,14 @@ async function compressCoverImage(blob: Blob, maxWidth = 400): Promise<string> {
       let width = img.width;
       let height = img.height;
       
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
       }
       
       canvas.width = width;
@@ -42,15 +47,22 @@ async function compressCoverImage(blob: Blob, maxWidth = 400): Promise<string> {
       
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        resolve(''); // fallback if no canvas context
+        resolve('');
         return;
       }
       
       ctx.drawImage(img, 0, 0, width, height);
       
-      // Compress to JPEG at 60% quality. This dramatically reduces size.
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-      resolve(dataUrl);
+      // Compress to JPEG at 0.5 quality for a good balance of size vs quality
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+      
+      // If the result is somehow still massive (> 70KB in base64), it's probably too detailed
+      if (dataUrl.length > 70000) {
+        console.warn('[compressCoverImage] Compressed image still large:', dataUrl.length);
+        resolve(canvas.toDataURL('image/jpeg', 0.3));
+      } else {
+        resolve(dataUrl);
+      }
     };
     
     img.onerror = () => {
@@ -161,8 +173,19 @@ export function useComicParser() {
             }
 
             const data = await response.json();
-            console.log('[useComicParser] Successfully saved to library:', data.id);
-            resolve(localComicId); // return the generated ID
+            const serverComicId: string = data.id;
+            console.log('[useComicParser] Successfully saved to library:', serverComicId);
+
+            // Re-key the IDB entry from the local filehash key to the server-assigned comic ID.
+            // The reader navigates to /reader/[serverComicId], so we need IDB to be keyed by it.
+            const { getCachedComic: getIdb, setCachedComic: setIdb, evictCachedComic } = await import('@/lib/idb');
+            const localEntry = await getIdb(localComicId);
+            if (localEntry) {
+              await setIdb({ ...localEntry, comicId: serverComicId });
+              await evictCachedComic(localComicId);
+            }
+
+            resolve(serverComicId); // return the server-assigned ID so library navigation works
           } else if (type === 'ERROR') {
             setIsParsing(false);
             setError(workerErr);

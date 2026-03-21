@@ -57,13 +57,10 @@ const nextConfig: NextConfig = {
 
 const withPWA = withPWAInit({
   dest: 'public',
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === 'development',
-  workboxOptions: {
-    disableDevLogs: true,
-  },
+  // @ts-expect-error - swSrc is required for custom Service Worker but missing from types
+  swSrc: 'src/workers/sw.ts',
 });
 
 export default withPWA(nextConfig);

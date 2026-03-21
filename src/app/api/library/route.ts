@@ -60,29 +60,39 @@ export async function POST(req: Request) {
 
   try {
     const contentType = req.headers.get('content-type');
-    const contentLength = req.headers.get('content-length');
-    console.log(`[API POST /library] Request: ${contentType}, Length: ${contentLength} bytes`);
+    if (!contentType || !contentType.includes('application/json')) {
+      return NextResponse.json({ error: 'Invalid content type. Expected application/json' }, { status: 415 });
+    }
 
     const body = (await req.json()) as AddComicPayload;
-    console.log('[API POST /library] payload received:', body.title, body.filehash);
-
-    // Basic validation
-    if (!body.title || !body.filehash || !body.pageCount) {
-      console.warn('[API POST /library] missing fields:', { 
-        title: !!body.title, 
-        filehash: !!body.filehash, 
-        pageCount: !!body.pageCount 
-      });
+    
+    // Validation
+    if (!body.title || !body.filehash || typeof body.pageCount !== 'number') {
       return NextResponse.json(
-        { error: 'Missing required fields: title, filehash, pageCount' },
+        { 
+          error: 'Validation failed', 
+          details: 'Missing or invalid required fields: title, filehash, pageCount' 
+        },
         { status: 400 },
+      );
+    }
+
+    // Protection against massive base64 payloads even if client sends them
+    if (body.coverUrl && body.coverUrl.length > 200000) { // 200KB hard limit for cover
+       return NextResponse.json(
+        { error: 'Cover image too large', details: 'The cover image exceeds the maximum allowed size.' },
+        { status: 413 },
       );
     }
 
     // Upsert: if same user uploads same file again, update instead of duplicating
     const comic = await db.comic.upsert({
       where: { userId_filehash: { userId: session.user.id, filehash: body.filehash } },
-      update: { title: body.title, coverUrl: body.coverUrl, lastReadAt: new Date() },
+      update: { 
+        title: body.title, 
+        coverUrl: body.coverUrl || undefined, 
+        lastReadAt: new Date() 
+      },
       create: {
         userId: session.user.id,
         title: body.title,
@@ -95,9 +105,14 @@ export async function POST(req: Request) {
     return NextResponse.json(comic, { status: 201 });
   } catch (err: unknown) {
     console.error('[API POST /library] ERROR:', err);
-    const details = err instanceof Error ? err.stack || err.message : String(err);
+    
+    if (err instanceof SyntaxError) {
+      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+    }
+
+    const message = err instanceof Error ? err.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Internal server error', details },
+      { error: 'Internal server error', details: message },
       { status: 500 },
     );
   }

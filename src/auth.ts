@@ -69,17 +69,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // Include userId in the JWT so API routes can access it without a DB lookup
     async jwt({ token, user }) {
       if (user) {
-        token.userId = user.id;
-        token.plan = (user as { plan?: string }).plan ?? 'FREE';
+        token.userId = user.id!;
+        token.plan = user.plan ?? 'FREE';
+        token.hasCompletedOnboarding = user.hasCompletedOnboarding ?? false;
       }
       return token;
     },
 
-    // Expose userId and plan to client-side session
+    // Expose userId, plan and onboarding status to client-side session
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.userId as string;
-        (session.user as { plan?: string }).plan = token.plan as string;
+        session.user.id = token.userId || '';
+        session.user.plan = token.plan || 'FREE';
+        session.user.hasCompletedOnboarding = !!token.hasCompletedOnboarding;
       }
       return session;
     },

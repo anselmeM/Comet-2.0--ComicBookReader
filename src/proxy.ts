@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/'];
+const PUBLIC_ROUTES = ['/', '/login', '/register'];
 const PUBLIC_API_PREFIXES = ['/api/auth'];
 
 export default auth((req: NextRequest & { auth: unknown }) => {
@@ -35,6 +35,15 @@ export default auth((req: NextRequest & { auth: unknown }) => {
     const loginUrl = new URL('/api/auth/signin', req.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Redirect users who haven't completed onboarding
+  // Note: We check the flag from the JWT token (populated in auth.ts callbacks)
+  const authSession = req.auth as { user: { id: string }; hasCompletedOnboarding: boolean } | null;
+  const hasCompletedOnboarding = authSession?.hasCompletedOnboarding ?? true; // Default to true if not found to avoid lockouts
+
+  if (!hasCompletedOnboarding && pathname !== '/onboarding' && !pathname.startsWith('/api/')) {
+    return NextResponse.redirect(new URL('/onboarding', req.url));
   }
 
   return NextResponse.next();

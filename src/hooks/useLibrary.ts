@@ -1,11 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Comic } from '@prisma/client';
+import { Comic, ReadingProgress } from '@prisma/client';
 import { evictCachedComic } from '@/lib/idb';
 
 // The API might return comics with some joined relation if needed
 export type LibraryComic = Comic & {
-  // We can add fields like user progress if we fetched it, 
-  // but for now, it returns the Comic
+  progress?: ReadingProgress | null;
 };
 
 export function useLibrary() {

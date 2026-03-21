@@ -22,6 +22,7 @@ model User {
   password      String?
   image         String?
   plan          String    @default("FREE")
+  hasCompletedOnboarding Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

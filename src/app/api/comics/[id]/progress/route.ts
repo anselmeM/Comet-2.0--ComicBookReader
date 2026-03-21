@@ -30,46 +30,60 @@ export async function PUT(
     );
   }
 
-  // Verify ownership before updating
-  const comic = await db.comic.findFirst({
-    where: { id: comicId, userId: session.user.id },
-  });
-  if (!comic) {
-    return NextResponse.json({ error: 'Comic not found' }, { status: 404 });
+  try {
+    // Verify ownership before updating
+    const comic = await db.comic.findUnique({
+      where: { id: comicId },
+    });
+    
+    if (!comic) {
+      return NextResponse.json({ error: 'Comic not found' }, { status: 404 });
+    }
+
+    if (comic.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Determine read status automatically if not provided
+    const readStatus =
+      body.readStatus ??
+      (body.lastPage === 0
+        ? 'UNREAD'
+        : body.lastPage >= body.totalPages - 1
+          ? 'COMPLETED'
+          : 'READING');
+
+    // Run both operations in a transaction
+    const [progress] = await db.$transaction([
+      db.readingProgress.upsert({
+        where: { comicId },
+        update: {
+          lastPage: body.lastPage,
+          totalPages: body.totalPages,
+          zoomLevel: body.zoomLevel ?? 1.0,
+          readStatus,
+        },
+        create: {
+          userId: session.user.id,
+          comicId,
+          lastPage: body.lastPage,
+          totalPages: body.totalPages,
+          zoomLevel: body.zoomLevel ?? 1.0,
+          readStatus,
+        },
+      }),
+      db.comic.update({
+        where: { id: comicId },
+        data: { lastReadAt: new Date() },
+      })
+    ]);
+
+    return NextResponse.json(progress, { status: 200 });
+  } catch (err: unknown) {
+    console.error(`[API PUT /comics/${comicId}/progress] ERROR:`, err);
+    return NextResponse.json(
+      { error: 'Internal server error', details: err instanceof Error ? err.message : 'Unknown error' },
+      { status: 500 },
+    );
   }
-
-  // Determine read status automatically if not provided
-  const readStatus =
-    body.readStatus ??
-    (body.lastPage === 0
-      ? 'UNREAD'
-      : body.lastPage >= body.totalPages - 1
-        ? 'COMPLETED'
-        : 'READING');
-
-  const progress = await db.readingProgress.upsert({
-    where: { comicId },
-    update: {
-      lastPage: body.lastPage,
-      totalPages: body.totalPages,
-      zoomLevel: body.zoomLevel ?? 1.0,
-      readStatus,
-    },
-    create: {
-      userId: session.user.id,
-      comicId,
-      lastPage: body.lastPage,
-      totalPages: body.totalPages,
-      zoomLevel: body.zoomLevel ?? 1.0,
-      readStatus,
-    },
-  });
-
-  // Update lastReadAt on the comic itself
-  await db.comic.update({
-    where: { id: comicId },
-    data: { lastReadAt: new Date() },
-  });
-
-  return NextResponse.json(progress, { status: 200 });
 }
