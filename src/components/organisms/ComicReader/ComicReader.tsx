@@ -14,7 +14,7 @@ interface ComicReaderProps {
 }
 
 export function ComicReader({ comicId }: ComicReaderProps) {
-  const { comic, metadata, loading, error } = useComicPages(comicId);
+  const { comic, metadata, loading, error, errorType, is404, isAuthError } = useComicPages(comicId);
   
   const mode = useReaderStore((state) => state.mode);
   const currentPage = useReaderStore((state) => state.currentPage);
@@ -141,12 +141,81 @@ export function ComicReader({ comicId }: ComicReaderProps) {
     );
   }
 
-  if (error || !comic) {
+  // Defensive check: if loading is complete but comic is null without an explicit error,
+  // this could indicate an edge case - treat as unknown error
+  if (!comic && !error) {
     return (
-      <div className="flex h-screen items-center justify-center bg-black text-red-500 p-8 text-center">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Extraction Error</h2>
-          <p className="opacity-80">{(error as Error)?.message || 'Failed to initialize comic stream.'}</p>
+      <div className="flex h-screen items-center justify-center bg-black p-8 text-center">
+        <div className="max-w-md">
+          <div className="text-yellow-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-white">
+            Unable to Load Comic
+          </h2>
+          <p className="opacity-80 text-gray-300 mb-6">
+            There was an unexpected issue loading this comic. Please try again or return to the library.
+          </p>
+          <a 
+            href="/library" 
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+            </svg>
+            Return to Library
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !comic) {
+    const errorMessage = (error as Error)?.message || '';
+    
+    // Determine appropriate error message based on error type
+    let title = 'Extraction Error';
+    let message = errorMessage || 'Failed to initialize comic stream.';
+    
+    if (errorType === 'cache') {
+      title = 'Comic Not Available';
+      message = 'The comic could not be loaded from the local storage. Please try importing the file again or check if the comic file has been moved, renamed, or deleted from its original location.';
+    } else if (errorType === 'auth') {
+      title = 'Authentication Required';
+      message = 'You need to be logged in to view this comic. Please sign in to continue.';
+    } else if (is404) {
+      title = 'Comic Not Found';
+      message = 'This comic may have been removed from your library. Please check the library or try re-importing the comic.';
+    } else if (errorType === 'metadata') {
+      title = 'Comic Not Available';
+      message = 'There was a problem loading the comic metadata. Please try again or re-import the comic.';
+    }
+    
+    return (
+      <div className="flex h-screen items-center justify-center bg-black p-8 text-center">
+        <div className="max-w-md">
+          <div className="text-red-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-white">
+            {title}
+          </h2>
+          <p className="opacity-80 text-gray-300 mb-6">
+            {message}
+          </p>
+          <a 
+            href="/library" 
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+            </svg>
+            Return to Library
+          </a>
         </div>
       </div>
     );
