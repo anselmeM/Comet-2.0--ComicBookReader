@@ -9,6 +9,7 @@ import { BookmarkPanel } from '@/components/organisms/BookmarkPanel';
 import { Settings, Sun, Columns, File, Maximize, AlignRight, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Maximize2, Minimize2, Bookmark, BookmarkCheck, Home } from 'lucide-react';
 
 // Extended types for vendor-prefixed fullscreen APIs
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface ExtendedDocument extends Document {
   webkitFullscreenEnabled?: boolean;
   mozFullScreenEnabled?: boolean;
@@ -21,6 +22,7 @@ interface ExtendedDocument extends Document {
   msExitFullscreen?: () => Promise<void>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface ExtendedElement extends HTMLElement {
   webkitRequestFullscreen?: () => Promise<void>;
   mozRequestFullScreen?: () => Promise<void>;
@@ -62,18 +64,16 @@ export function ReaderControls({ type }: ReaderControlsProps) {
   const resetZoom = useReaderStore((state) => state.resetZoom);
   const bookmarks = useReaderStore((state) => state.bookmarks);
 
-  const doc = document as ExtendedDocument;
-
-  // Check if fullscreen API is supported
-  const isFullscreenSupported = typeof document !== 'undefined' && 
-    (doc.fullscreenEnabled || 
-     doc.webkitFullscreenEnabled || 
-     doc.mozFullScreenEnabled || 
-     doc.msFullscreenEnabled);
+  // Check if fullscreen API is supported (only in browser)
+  const isFullscreenSupported = typeof window !== 'undefined' && 
+    (document.fullscreenEnabled || 
+     (document as ExtendedDocument).webkitFullscreenEnabled || 
+     (document as ExtendedDocument).mozFullScreenEnabled || 
+     (document as ExtendedDocument).msFullscreenEnabled);
 
   // Handle fullscreen with browser API
   const handleFullscreen = useCallback(async () => {
-    if (!isFullscreenSupported) {
+    if (!isFullscreenSupported || typeof window === 'undefined') {
       setFullscreenError('Fullscreen is not supported in this browser');
       return;
     }
@@ -95,14 +95,14 @@ export function ReaderControls({ type }: ReaderControlsProps) {
         toggleFullscreen();
       } else {
         // Exit fullscreen
-        if (doc.exitFullscreen) {
-          await doc.exitFullscreen();
-        } else if (doc.webkitExitFullscreen) {
-          await doc.webkitExitFullscreen();
-        } else if (doc.mozCancelFullScreen) {
-          await doc.mozCancelFullScreen();
-        } else if (doc.msExitFullscreen) {
-          await doc.msExitFullscreen();
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as ExtendedDocument).webkitExitFullscreen) {
+          await (document as ExtendedDocument).webkitExitFullscreen!();
+        } else if ((document as ExtendedDocument).mozCancelFullScreen) {
+          await (document as ExtendedDocument).mozCancelFullScreen!();
+        } else if ((document as ExtendedDocument).msExitFullscreen) {
+          await (document as ExtendedDocument).msExitFullscreen!();
         }
         toggleFullscreen();
       }
@@ -111,15 +111,17 @@ export function ReaderControls({ type }: ReaderControlsProps) {
       console.error('Fullscreen error:', err);
       setFullscreenError(err instanceof Error ? err.message : 'Failed to toggle fullscreen');
     }
-  }, [isFullscreenSupported, isFullscreen, toggleFullscreen, doc]);
+  }, [isFullscreenSupported, isFullscreen, toggleFullscreen]);
 
   // Listen for fullscreen changes (Escape key, etc.)
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleFullscreenChange = () => {
-      const fullscreenElement = doc.fullscreenElement ||
-        doc.webkitFullscreenElement ||
-        doc.mozFullScreenElement ||
-        doc.msFullscreenElement;
+      const fullscreenElement = document.fullscreenElement ||
+        (document as ExtendedDocument).webkitFullscreenElement ||
+        (document as ExtendedDocument).mozFullScreenElement ||
+        (document as ExtendedDocument).msFullscreenElement;
       
       // Sync store state with actual fullscreen state
       const isInFullscreen = !!fullscreenElement;
