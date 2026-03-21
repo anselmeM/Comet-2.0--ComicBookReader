@@ -29,7 +29,6 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   const resetZoom = useReaderStore((state) => state.resetZoom);
   const toggleFullscreen = useReaderStore((state) => state.toggleFullscreen);
   const toggleBookmark = useReaderStore((state) => state.toggleBookmark);
-  const isBookmarked = useReaderStore((state) => state.isBookmarked);
   const setPage = useReaderStore((state) => state.setPage);
   const setPagePanels = useReaderStore((state) => state.setPagePanels);
   const pagePanels = useReaderStore((state) => state.pagePanels);
@@ -74,6 +73,17 @@ export function ComicReader({ comicId }: ComicReaderProps) {
 
   // Track reading progress
   useReadingProgress(comicId);
+
+  // Sync dynamic UI variables into CSS custom properties (no inline style attribute)
+  useEffect(() => {
+    document.documentElement.style.setProperty('--comic-brightness', String(brightness));
+  }, [brightness]);
+
+  useEffect(() => {
+    const maxWidth = Math.min(95, 95 / zoomLevel);
+    document.documentElement.style.setProperty('--comic-zoom', String(zoomLevel));
+    document.documentElement.style.setProperty('--comic-max-width', `${maxWidth}vw`);
+  }, [zoomLevel]);
 
   // Initialize the store when the comic loads
   useEffect(() => {
@@ -261,33 +271,24 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   const pagesToRender = getPagesToRender();
 
   if (mode === 'single-vertical') {
-    // Calculate max-width based on zoom level (zoom 1 = 95vw, zoom 2 = 47.5vw, etc.)
-    const maxWidth = Math.min(95, 95 / zoomLevel);
     return (
-      <div className="relative w-full h-screen bg-black overflow-hidden select-none">
+      <div className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none">
         <div 
           ref={verticalContainerRef}
-          className="h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-20 flex flex-col items-center gap-4 scroll-smooth transition-all duration-300"
-          style={{ filter: `brightness(${brightness})` }}
+          className="comic-reader-vertical-container h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-20 flex flex-col items-center gap-4 scroll-smooth transition-all duration-300"
         >
           {comic.pages.map((page, idx) => (
             <div 
               key={`page-${idx}`} 
               data-page-index={idx}
-              className="w-full flex justify-center"
-              style={{ 
-                transform: zoomLevel !== 1 ? `scale(${zoomLevel})` : undefined,
-                transformOrigin: 'top center',
-                marginBottom: zoomLevel !== 1 ? `${(zoomLevel - 1) * 100}px` : undefined
-              }}
+              className="comic-reader-page-wrapper w-full flex justify-center"
             >
               <BlobImage
                 blob={page.blob}
                 width={page.width}
                 height={page.height}
                 alt={`Page ${idx + 1}`}
-                className="max-w-[95vw] md:max-w-[80vw] h-auto shadow-2xl rounded-sm transition-transform"
-                style={{ maxWidth: `${maxWidth}vw` }}
+                className="comic-reader-image max-h-full max-w-full object-contain shadow-2xl rounded-sm"
               />
             </div>
           ))}
@@ -297,7 +298,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   }
 
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden select-none" style={{ filter: `brightness(${brightness})`, transition: 'filter 300ms' }}>
+    <div className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none">
       <ReaderViewport>
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div

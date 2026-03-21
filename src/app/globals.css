@@ -101,6 +101,26 @@ body {
 ::-webkit-scrollbar-thumb        { background: var(--color-border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover  { background: var(--color-text-muted); }
 
+/* ── Reader style hooks ───────────────────────────────────────────────────── */
+.comic-reader-root {
+  filter: brightness(var(--comic-brightness, 1));
+  transition: filter 300ms;
+}
+
+.comic-reader-vertical-container {
+  filter: inherit; /* inherited from parent */
+}
+
+.comic-reader-page-wrapper {
+  transform: scale(var(--comic-zoom, 1));
+  transform-origin: top center;
+  margin-bottom: calc((var(--comic-zoom, 1) - 1) * 100px);
+}
+
+.comic-reader-image {
+  max-width: var(--comic-max-width, 95vw);
+}
+
 /* ── Focus visible ────────────────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--color-accent);
