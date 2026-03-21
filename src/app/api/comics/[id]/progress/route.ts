@@ -43,7 +43,7 @@ export async function GET(
   } catch (err: unknown) {
     console.error(`[API GET /comics/${comicId}/progress] ERROR:`, err);
     return NextResponse.json(
-      { error: 'Internal server error', details: err instanceof Error ? err.message : 'Unknown error' },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }
@@ -125,7 +125,7 @@ export async function PUT(
   } catch (err: unknown) {
     console.error(`[API PUT /comics/${comicId}/progress] ERROR:`, err);
     return NextResponse.json(
-      { error: 'Internal server error', details: err instanceof Error ? err.message : 'Unknown error' },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }
@@ -178,7 +178,7 @@ export async function DELETE(
     }
     console.error(`[API DELETE /comics/${comicId}/progress] ERROR:`, err);
     return NextResponse.json(
-      { error: 'Internal server error', details: err instanceof Error ? err.message : 'Unknown error' },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }

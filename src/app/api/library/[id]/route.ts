@@ -44,7 +44,7 @@ export async function DELETE(
   } catch (err: unknown) {
     console.error(`[API DELETE /library/${id}] ERROR:`, err);
     return NextResponse.json(
-      { error: 'Internal server error', details: err instanceof Error ? err.message : 'Unknown error' },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }

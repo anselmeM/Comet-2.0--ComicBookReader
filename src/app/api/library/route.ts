@@ -110,9 +110,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
-    const message = err instanceof Error ? err.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Internal server error', details: message },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }

@@ -1,4 +1,5 @@
-## 2024-05-18 - [Critical] Hardcoded credentials in authentication logic
-**Vulnerability:** Found a hardcoded "escape hatch" in `src/auth.ts` that allowed bypassing the normal authentication flow using `test@example.com` and a hardcoded password.
-**Learning:** Hardcoded credentials represent a critical vulnerability as they can be discovered through code review or decompilation, allowing unauthorized access to the application by any user. Test credentials should never be committed to production code.
-**Prevention:** Implement test accounts through database seeds and environment variables for local testing. Use proper authentication flow tests rather than escape hatches in the actual auth implementation.
+## 2024-05-24 - Do Not Leak Internal Server Errors
+
+**Vulnerability:** Several API routes (`/api/library/[id]`, `/api/library`, and `/api/comics/[id]/progress`) were returning the raw error message (`err.message`) to the client when a `500 Internal Server Error` occurred.
+**Learning:** Returning internal error messages to the client can expose sensitive details about the backend implementation, database queries, or underlying infrastructure. This information can be used by an attacker to further exploit the application. Error handling must always fail securely.
+**Prevention:** Catch blocks should log the detailed error internally (`console.error`) for debugging purposes but return a generic error message (e.g., `{ error: 'Internal server error' }`) to the client. This ensures defense in depth by not revealing internals.
