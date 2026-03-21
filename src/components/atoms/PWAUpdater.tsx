@@ -74,6 +74,7 @@ export function PWAUpdater() {
             <button 
               onClick={() => setShowUpdate(false)}
               className="text-white/40 hover:text-white transition-colors"
+              aria-label="Dismiss update notification"
             >
               <X className="w-5 h-5" />
             </button>

@@ -79,6 +79,7 @@ export function SettingsPanel() {
                 value={brightness}
                 onChange={(e) => setBrightness(parseFloat(e.target.value))}
                 className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                aria-label="Screen brightness"
               />
               <span className="text-neutral-400 min-w-12 text-right">
                 {Math.round(brightness * 100)}%

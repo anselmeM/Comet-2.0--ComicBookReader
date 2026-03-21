@@ -63,6 +63,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
           value={currentPage}
           onChange={(e) => setPage(parseInt(e.target.value, 10))}
           className="w-full h-2 bg-neutral-700 rounded-full appearance-none outline-none accent-blue-500"
+          aria-label="Page navigation"
         />
         <span className="text-xs text-neutral-400 font-mono">{totalPages}</span>
       </div>
@@ -130,6 +131,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             value={brightness}
             onChange={(e) => setBrightness(parseFloat(e.target.value))}
             className="w-full h-1 bg-neutral-700 rounded-full appearance-none accent-yellow-500 cursor-pointer"
+            aria-label="Brightness control"
           />
         </div>
       </div>

@@ -95,7 +95,23 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
 
   useGesture(
     {
-      onDrag: ({ offset: [dx, dy], intentional }) => {
+      onDrag: ({ offset: [dx, dy], intentional, swipe }) => {
+        // Handle swipe detection (swipe: Vector2 - x: -1 for left, 1 for right)
+        if (swipe && swipe[0] !== 0 && scale.get() <= 1.1 && !isGuidedViewEnabled) {
+          // Swipe detected with sufficient velocity
+          if (swipe[0] === -1) {
+            // Swipe right to left (index increases)
+            if (mode === 'manga-rtl') prevPage();
+            else nextPage();
+          } else if (swipe[0] === 1) {
+            // Swipe left to right (index decreases)
+            if (mode === 'manga-rtl') nextPage();
+            else prevPage();
+          }
+          return;
+        }
+        
+        // Regular pan when zoomed in or guided view enabled
         if (!intentional || (scale.get() <= 1 && !isGuidedViewEnabled)) return;
         x.set(dx);
         y.set(dy);
@@ -103,25 +119,11 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
       onPinch: ({ offset: [s], memo }) => {
         setZoomLevel(s);
         return memo;
-      },
-      onSwipe: ([swipeX]) => {
-        // Swipe only when not zoomed in
-        if (scale.get() > 1.1 || isGuidedViewEnabled) return;
-        
-        if (swipeX === -1) {
-          // Swipe right to left (index increases)
-          if (mode === 'manga-rtl') prevPage();
-          else nextPage();
-        } else if (swipeX === 1) {
-          // Swipe left to right (index decreases)
-          if (mode === 'manga-rtl') nextPage();
-          else prevPage();
-        }
       }
     },
     {
       target: containerRef,
-      drag: { filterTaps: true, from: () => [x.get(), y.get()] },
+      drag: { filterTaps: true, from: () => [x.get(), y.get()], swipe: { velocity: 0.2, distance: 30 } },
       pinch: { scaleBounds: { min: 0.5, max: 5 }, from: () => [zoomLevel, 0] }
     }
   );
