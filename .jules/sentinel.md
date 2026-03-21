@@ -1,0 +1,4 @@
+## 2024-05-18 - [Critical] Hardcoded credentials in authentication logic
+**Vulnerability:** Found a hardcoded "escape hatch" in `src/auth.ts` that allowed bypassing the normal authentication flow using `test@example.com` and a hardcoded password.
+**Learning:** Hardcoded credentials represent a critical vulnerability as they can be discovered through code review or decompilation, allowing unauthorized access to the application by any user. Test credentials should never be committed to production code.
+**Prevention:** Implement test accounts through database seeds and environment variables for local testing. Use proper authentication flow tests rather than escape hatches in the actual auth implementation.

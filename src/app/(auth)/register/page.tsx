@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { UserPlus, Sparkles, KeyRound, Mail, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useState, Suspense } from 'react';
+import { Suspense, useState } from 'react';
 
 function RegisterForm() {
   const searchParams = useSearchParams();
