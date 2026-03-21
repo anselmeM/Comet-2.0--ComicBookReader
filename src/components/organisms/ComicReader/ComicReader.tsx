@@ -14,15 +14,22 @@ interface ComicReaderProps {
 }
 
 export function ComicReader({ comicId }: ComicReaderProps) {
-  const { comic, metadata, loading, error, errorType, is404, isAuthError } = useComicPages(comicId);
+  const { comic, metadata, loading, error, errorType, is404 } = useComicPages(comicId);
   
   const mode = useReaderStore((state) => state.mode);
   const currentPage = useReaderStore((state) => state.currentPage);
   const brightness = useReaderStore((state) => state.brightness);
+  const zoomLevel = useReaderStore((state) => state.zoomLevel);
   
   const openComic = useReaderStore((state) => state.openComic);
   const nextPage = useReaderStore((state) => state.nextPage);
   const prevPage = useReaderStore((state) => state.prevPage);
+  const zoomIn = useReaderStore((state) => state.zoomIn);
+  const zoomOut = useReaderStore((state) => state.zoomOut);
+  const resetZoom = useReaderStore((state) => state.resetZoom);
+  const toggleFullscreen = useReaderStore((state) => state.toggleFullscreen);
+  const toggleBookmark = useReaderStore((state) => state.toggleBookmark);
+  const isBookmarked = useReaderStore((state) => state.isBookmarked);
   const setPage = useReaderStore((state) => state.setPage);
   const setPagePanels = useReaderStore((state) => state.setPagePanels);
   const pagePanels = useReaderStore((state) => state.pagePanels);
@@ -104,6 +111,16 @@ export function ComicReader({ comicId }: ComicReaderProps) {
     return () => observer.disconnect();
   }, [mode, comic, loading, setPage]);
 
+  // Scroll to current page when it changes in vertical mode
+  useEffect(() => {
+    if (mode !== 'single-vertical' || !verticalContainerRef.current) return;
+
+    const pageElement = verticalContainerRef.current.querySelector(`[data-page-index="${currentPage}"]`);
+    if (pageElement) {
+      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [mode, currentPage]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -123,12 +140,30 @@ export function ComicReader({ comicId }: ComicReaderProps) {
           if (mode === 'manga-rtl') nextPage();
           else prevPage();
           break;
+        case 'f':
+        case 'F':
+          toggleFullscreen();
+          break;
+        case '+':
+        case '=':
+          zoomIn();
+          break;
+        case '-':
+          zoomOut();
+          break;
+        case '0':
+          resetZoom();
+          break;
+        case 'b':
+        case 'B':
+          if (comic) toggleBookmark(currentPage);
+          break;
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [nextPage, prevPage, mode]);
+  }, [nextPage, prevPage, mode, toggleFullscreen, zoomIn, zoomOut, resetZoom, toggleBookmark, currentPage, comic]);
 
   if (loading) {
     return (
@@ -155,18 +190,9 @@ export function ComicReader({ comicId }: ComicReaderProps) {
           <h2 className="text-2xl font-bold mb-2 text-white">
             Unable to Load Comic
           </h2>
-          <p className="opacity-80 text-gray-300 mb-6">
-            There was an unexpected issue loading this comic. Please try again or return to the library.
+          <p className="opacity-80 text-gray-300">
+            There was an unexpected issue loading this comic. Please try again.
           </p>
-          <a 
-            href="/library" 
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-            </svg>
-            Return to Library
-          </a>
         </div>
       </div>
     );
@@ -204,18 +230,9 @@ export function ComicReader({ comicId }: ComicReaderProps) {
           <h2 className="text-2xl font-bold mb-2 text-white">
             {title}
           </h2>
-          <p className="opacity-80 text-gray-300 mb-6">
+          <p className="opacity-80 text-gray-300">
             {message}
           </p>
-          <a 
-            href="/library" 
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-            </svg>
-            Return to Library
-          </a>
         </div>
       </div>
     );
@@ -244,28 +261,33 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   const pagesToRender = getPagesToRender();
 
   if (mode === 'single-vertical') {
+    // Calculate max-width based on zoom level (zoom 1 = 95vw, zoom 2 = 47.5vw, etc.)
+    const maxWidth = Math.min(95, 95 / zoomLevel);
     return (
       <div className="relative w-full h-screen bg-black overflow-hidden select-none">
         <div 
-          className="absolute inset-0 pointer-events-none z-50 bg-black/0 transition-opacity duration-300" 
-          style={{ opacity: Math.max(0, 1 - brightness) }}
-        />
-        <div 
           ref={verticalContainerRef}
-          className="h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-20 flex flex-col items-center gap-4 scroll-smooth"
+          className="h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-20 flex flex-col items-center gap-4 scroll-smooth transition-all duration-300"
+          style={{ filter: `brightness(${brightness})` }}
         >
           {comic.pages.map((page, idx) => (
             <div 
               key={`page-${idx}`} 
               data-page-index={idx}
               className="w-full flex justify-center"
+              style={{ 
+                transform: zoomLevel !== 1 ? `scale(${zoomLevel})` : undefined,
+                transformOrigin: 'top center',
+                marginBottom: zoomLevel !== 1 ? `${(zoomLevel - 1) * 100}px` : undefined
+              }}
             >
               <BlobImage
                 blob={page.blob}
                 width={page.width}
                 height={page.height}
                 alt={`Page ${idx + 1}`}
-                className="max-w-[95vw] md:max-w-[80vw] h-auto shadow-2xl rounded-sm"
+                className="max-w-[95vw] md:max-w-[80vw] h-auto shadow-2xl rounded-sm transition-transform"
+                style={{ maxWidth: `${maxWidth}vw` }}
               />
             </div>
           ))}
@@ -275,12 +297,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   }
 
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden select-none">
-      <div 
-        className="absolute inset-0 pointer-events-none z-50 bg-black/0 transition-opacity duration-300" 
-        style={{ opacity: Math.max(0, 1 - brightness) }}
-      />
-
+    <div className="relative w-full h-screen bg-black overflow-hidden select-none" style={{ filter: `brightness(${brightness})`, transition: 'filter 300ms' }}>
       <ReaderViewport>
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div

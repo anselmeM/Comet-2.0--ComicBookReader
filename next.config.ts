@@ -12,14 +12,19 @@ const cspHeader = `
     form-action 'self';
     frame-ancestors 'none';
     worker-src 'self' blob:;
-    connect-src 'self' https://comicvine.gamespot.com https://*.aws.neon.tech;
+    connect-src 'self' http://localhost:* https://localhost:* https://comicvine.gamespot.com https://*.aws.neon.tech https://*.supabase.co;
 `;
 
 const nextConfig: NextConfig = {
+  // Production optimizations
   reactStrictMode: true,
-  turbopack: {
-    root: '.',
-  },
+  compress: true,
+  poweredByHeader: false,
+
+  // Enable standalone output for containerized deployments
+  output: 'standalone',
+
+  // Image optimization
   images: {
     remotePatterns: [
       {
@@ -27,7 +32,20 @@ const nextConfig: NextConfig = {
         hostname: 'comicvine.gamespot.com',
       },
     ],
+    // Increase cache duration for optimized images
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+    formats: ['image/avif', 'image/webp'],
   },
+
+  // Optimize package imports - reduces bundle size
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion', '@tanstack/react-query'],
+  },
+
+  // Turbopack is only for development
+  // Note: PWA plugin requires webpack, so we disable turbopack
+  turbopack: {},
+
   async headers() {
     return [
       {
@@ -48,6 +66,10 @@ const nextConfig: NextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
           },
         ],
       },

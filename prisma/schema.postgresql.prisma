@@ -1,30 +1,15 @@
-// Comet — Prisma Schema
-// Run: npx prisma db push (dev) | npx prisma migrate deploy (prod)
-//
-// DATABASE CONFIGURATION:
-// - Development: Uses SQLite (file:./dev.db)
-// - Production: Use PostgreSQL (set DATABASE_URL in .env)
-//
-// To switch to PostgreSQL:
-// 1. Update your .env with DATABASE_URL for PostgreSQL
-// 2. Change provider below to "postgresql"
-// 3. Run: npx prisma db push (for new DB) or npx prisma migrate
+// Comet — Prisma Schema for PostgreSQL (Production)
+// Copy this file to schema.prisma when deploying to production
+// Or use this as reference for setting up PostgreSQL
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// Use environment variable for database URL (supports both SQLite and PostgreSQL)
 datasource db {
-  provider  = "sqlite"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
 }
-
-// NOTE: For PostgreSQL in production, change the datasource to:
-// datasource db {
-//   provider  = "postgresql"
-//   url       = env("DATABASE_URL")
-// }
 
 // ────────────────────────────────────────────────────
 // AUTH (Auth.js v5 required models)
@@ -46,7 +31,6 @@ model User {
   sessions  Session[]
   library   Comic[]
   progress  ReadingProgress[]
-  bookmarks Bookmark[]
 }
 
 model Account {
@@ -54,12 +38,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?
-  access_token      String?
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?
+  id_token          String? @db.Text
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -130,27 +114,6 @@ model ReadingProgress {
   readStatus  String     @default("UNREAD")
   updatedAt   DateTime   @updatedAt
 
-  bookmarks   Bookmark[]
-
   @@index([userId])
   @@index([userId, readStatus])
 }
-
-model Bookmark {
-  id          String          @id @default(cuid())
-  userId      String
-  comicId     String
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comic       ReadingProgress @relation(fields: [comicId], references: [comicId], onDelete: Cascade)
-
-  pageNumber  Int
-  label       String?         // Optional user-defined label/notes
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-
-  @@unique([userId, comicId, pageNumber]) // One bookmark per page per comic per user
-  @@index([userId])
-  @@index([comicId])
-}
-
-

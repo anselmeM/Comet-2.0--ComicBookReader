@@ -11,6 +11,8 @@ interface ReaderState {
   brightness: number;
   isGuidedViewEnabled: boolean;
   guidedStep: number; // Index into pagePanels[currentPage]
+  isFullscreen: boolean;
+  bookmarks: number[]; // Array of bookmarked page numbers
 
   // Current Session
   currentComicId: string | null;
@@ -22,10 +24,16 @@ interface ReaderState {
   // Actions
   setMode: (mode: ReaderMode) => void;
   setZoomLevel: (level: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetZoom: () => void;
   setBrightness: (level: number) => void;
   toggleGuidedView: () => void;
   setGuidedStep: (step: number) => void;
   setPagePanels: (pageIndex: number, panels: Panel[]) => void;
+  toggleFullscreen: () => void;
+  toggleBookmark: (page: number) => void;
+  isBookmarked: (page: number) => boolean;
   
   openComic: (comicId: string, totalPages: number, initialPage?: number) => void;
   setPage: (pageIndex: number) => void;
@@ -44,6 +52,8 @@ export const useReaderStore = create<ReaderState>()(
       brightness: 1.0,
       isGuidedViewEnabled: false,
       guidedStep: 0,
+      isFullscreen: false,
+      bookmarks: [],
 
       // Initial Session State
       currentComicId: null,
@@ -54,8 +64,11 @@ export const useReaderStore = create<ReaderState>()(
 
       // Actions implementation
       setMode: (mode) => set({ mode }),
-      setZoomLevel: (zoomLevel) => set({ zoomLevel }),
-      setBrightness: (brightness) => set({ brightness }),
+      setZoomLevel: (zoomLevel) => set({ zoomLevel: Math.max(0.5, Math.min(5, zoomLevel)) }),
+      zoomIn: () => set((state) => ({ zoomLevel: Math.min(5, state.zoomLevel + 0.25) })),
+      zoomOut: () => set((state) => ({ zoomLevel: Math.max(0.5, state.zoomLevel - 0.25) })),
+      resetZoom: () => set({ zoomLevel: 1.0 }),
+      setBrightness: (brightness) => set({ brightness: Math.max(0.1, Math.min(1.5, brightness)) }),
       toggleGuidedView: () => set((state) => ({ 
         isGuidedViewEnabled: !state.isGuidedViewEnabled,
         guidedStep: 0 
@@ -64,6 +77,14 @@ export const useReaderStore = create<ReaderState>()(
       setPagePanels: (pageIndex, panels) => set((state) => ({
         pagePanels: { ...state.pagePanels, [pageIndex]: panels }
       })),
+      toggleFullscreen: () => set((state) => ({ isFullscreen: !state.isFullscreen })),
+      toggleBookmark: (page) => set((state) => {
+        const bookmarks = state.bookmarks.includes(page)
+          ? state.bookmarks.filter(p => p !== page)
+          : [...state.bookmarks, page].sort((a, b) => a - b);
+        return { bookmarks };
+      }),
+      isBookmarked: (page) => get().bookmarks.includes(page),
       
       openComic: (comicId, totalPages, initialPage = 0) => {
         set({
@@ -138,6 +159,7 @@ export const useReaderStore = create<ReaderState>()(
         zoomLevel: state.zoomLevel,
         brightness: state.brightness,
         isGuidedViewEnabled: state.isGuidedViewEnabled,
+        bookmarks: state.bookmarks,
       }),
     }
   )
