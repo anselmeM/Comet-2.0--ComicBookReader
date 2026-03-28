@@ -38,7 +38,6 @@ export async function DELETE(
       where: { id },
     });
 
-    console.log(`[API DELETE /library/${id}] Deleted by ${session.user.id}`);
     return NextResponse.json({ success: true }, { status: 200 });
 
   } catch (err: unknown) {
