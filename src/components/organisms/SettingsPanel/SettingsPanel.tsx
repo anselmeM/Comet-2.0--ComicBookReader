@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import { useStorage } from '@/hooks/useStorage';
 import { useReaderStore } from '@/stores/readerStore';
 import type { ReaderMode } from '@/stores/readerStore';
-import { Trash2, Smartphone, HardDrive, Monitor, BookOpen, RefreshCw } from 'lucide-react';
+import { Trash2, Smartphone, HardDrive, Monitor, BookOpen, RefreshCw, User, Camera, Loader2 } from 'lucide-react';
 
 function formatBytes(bytes: number, decimals = 2) {
   if (!+bytes) return '0 Bytes';
@@ -21,6 +22,58 @@ export function SettingsPanel() {
   const setMode = useReaderStore((state) => state.setMode);
   const brightness = useReaderStore((state) => state.brightness);
   const setBrightness = useReaderStore((state) => state.setBrightness);
+  
+  // User profile state
+  const { data: session, update: updateSession } = useSession();
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate image type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image must be less than 2MB');
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    try {
+      // Convert to base64 data URL
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64Image = event.target?.result as string;
+        
+        // Update user profile via API
+        const response = await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Image })
+        });
+        
+        if (response.ok) {
+          // Update session to reflect new image
+          await updateSession();
+        } else {
+          alert('Failed to update profile image');
+        }
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Upload error:', error);
+      setIsUploading(false);
+      alert('Failed to upload image');
+    }
+  };
 
   const handleClear = async () => {
     if (confirm('Are you sure you want to clear your local comic cache? You will need to re-download or re-parse comics to read them offline.')) {
@@ -35,6 +88,50 @@ export function SettingsPanel() {
         <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
         <p className="text-neutral-400">Manage your reading preferences and offline storage.</p>
       </header>
+
+      {/* User Profile Section */}
+      <section className="space-y-6">
+        <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
+          <User className="text-neutral-400" />
+          Profile
+        </h2>
+
+        <div className="flex items-center gap-6 p-6 bg-neutral-900 border border-neutral-800 rounded-2xl">
+          <div className="relative">
+            {session?.user?.image ? (
+              <img 
+                src={session.user.image} 
+                alt={session.user.name || 'User'}
+                className="w-24 h-24 rounded-full object-cover border-2 border-neutral-700"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold border-2 border-neutral-700">
+                {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+            )}
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="absolute bottom-0 right-0 p-2 bg-blue-500 rounded-full text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
+              title="Change profile picture"
+            >
+              {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+            </button>
+            <input 
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+          </div>
+          
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-white">{session?.user?.name || 'User'}</h3>
+            <p className="text-neutral-400 text-sm">{session?.user?.email}</p>
+          </div>
+        </div>
+      </section>
 
       {/* Reading Preferences */}
       <section className="space-y-6">

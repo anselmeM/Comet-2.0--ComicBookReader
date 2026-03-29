@@ -36,6 +36,8 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   password      String?
+  resetToken    String?   // Password reset token
+  resetTokenExpiry DateTime? // Password reset token expiry
   image         String?
   plan          String    @default("FREE")
   hasCompletedOnboarding Boolean @default(false)
@@ -105,6 +107,11 @@ model Comic {
   issue       Int?
   year        Int?
   metadata    String?   // Raw ComicVine enrichment payload
+  
+  // New fields for enhanced library features
+  isFavorite  Boolean   @default(false)  // Quick access favorites
+  rating      Int       @default(0)      // 0-5 stars
+  tags        String?   // JSON array: ["Marvel", "Spider-Man"]
 
   addedAt     DateTime  @default(now())
   lastReadAt  DateTime?
@@ -115,6 +122,7 @@ model Comic {
   @@index([userId])
   @@index([filehash])
   @@index([userId, lastReadAt]) // Efficient "Continue Reading" queries
+  @@index([userId, series])     // For series grouping queries
 }
 
 model ReadingProgress {

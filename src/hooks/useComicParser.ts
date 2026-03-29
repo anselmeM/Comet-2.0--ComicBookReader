@@ -6,6 +6,21 @@ interface ParseProgress {
   total: number;
 }
 
+// Load the WASM binary once at module initialization
+let wasmBinaryPromise: Promise<ArrayBuffer> | null = null;
+
+function getWasmBinary(): Promise<ArrayBuffer> {
+  if (!wasmBinaryPromise) {
+    wasmBinaryPromise = fetch('/unrar.wasm').then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to load unrar.wasm');
+      }
+      return response.arrayBuffer();
+    });
+  }
+  return wasmBinaryPromise;
+}
+
 async function getFileHash(file: File): Promise<string> {
   // Rather than hashing a massive 100MB file, we create a composite hash 
   // from name, size, lastModified, and maybe the first 1KB of data.
@@ -194,7 +209,10 @@ export function useComicParser() {
           }
         };
 
-        worker.postMessage({ type: 'PARSE', file, comicId: localComicId });
+        // Fetch the WASM binary and send to the worker
+        const wasmBinary = await getWasmBinary();
+        
+        worker.postMessage({ type: 'PARSE', file, comicId: localComicId, wasmBinary });
 
       } catch (err: unknown) {
         setIsParsing(false);

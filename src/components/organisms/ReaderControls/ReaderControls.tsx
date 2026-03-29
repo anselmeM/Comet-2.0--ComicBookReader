@@ -36,8 +36,9 @@ interface ReaderControlsProps {
 export function ReaderControls({ type }: ReaderControlsProps) {
   const params = useParams();
   const comicId = params.comicId as string;
-  const { data: library } = useLibrary();
-  const comic = library?.find(c => c.id === comicId);
+  const { data: libraryData } = useLibrary();
+  const library = libraryData?.data ?? [];
+  const comic = library.find(c => c.id === comicId);
   
   const [showBookmarkPanel, setShowBookmarkPanel] = useState(false);
   const [fullscreenError, setFullscreenError] = useState<string | null>(null);

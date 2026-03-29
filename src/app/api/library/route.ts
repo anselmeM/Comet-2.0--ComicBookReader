@@ -24,13 +24,35 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Parse pagination parameters from URL
+  const { searchParams } = new URL(req.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '20');
+  const skip = (page - 1) * limit;
+
+  // Get total count for pagination info
+  const total = await db.comic.count({
+    where: { userId: session.user.id },
+  });
+
   const comics = await db.comic.findMany({
     where: { userId: session.user.id },
     include: { progress: true },
     orderBy: { lastReadAt: 'desc' },
+    take: limit,
+    skip: skip,
   });
 
-  return NextResponse.json(comics, { status: 200 });
+  // Return paginated response
+  return NextResponse.json({
+    data: comics,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  }, { status: 200 });
 }
 
 /** POST /api/library */

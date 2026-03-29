@@ -126,6 +126,12 @@ function LoginForm() {
                 required
               />
             </div>
+
+            <div className="text-right">
+              <Link href="/forgot-password" className="text-sm text-zinc-400 hover:text-white transition-colors">
+                Forgot password?
+              </Link>
+            </div>
             
             <button
               type="submit"

@@ -7,11 +7,29 @@ export type LibraryComic = Comic & {
   progress?: ReadingProgress | null;
 };
 
-export function useLibrary() {
-  return useQuery<LibraryComic[]>({
-    queryKey: ['library'],
+// Pagination response type
+export interface PaginatedLibraryResponse {
+  data: LibraryComic[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+interface UseLibraryOptions {
+  page?: number;
+  limit?: number;
+}
+
+export function useLibrary(options: UseLibraryOptions = {}) {
+  const { page = 1, limit = 20 } = options;
+  
+  return useQuery<PaginatedLibraryResponse>({
+    queryKey: ['library', page, limit],
     queryFn: async () => {
-      const res = await fetch('/api/library');
+      const res = await fetch(`/api/library?page=${page}&limit=${limit}`);
       if (!res.ok) {
         throw new Error('Failed to fetch library');
       }

@@ -7,7 +7,8 @@ import { ComicCard } from '@/components/molecules/ComicCard';
 import { UploadCloud, Loader2, AlertCircle, BookOpen } from 'lucide-react';
 
 export function ComicLibrary() {
-  const { data: comics, isLoading, error: fetchError, refetch } = useLibrary();
+  const { data: libraryData, isLoading, error: fetchError, refetch } = useLibrary();
+  const comics = libraryData?.data ?? [];
   const { mutate: deleteComic, isPending: isDeleting } = useDeleteComic();
   const { parseComic, isParsing, progress, error: parseError } = useComicParser();
   const fileInputRef = useRef<HTMLInputElement>(null);

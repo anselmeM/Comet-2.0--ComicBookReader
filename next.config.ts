@@ -1,4 +1,3 @@
-import withPWAInit from '@ducanh2912/next-pwa';
 import type { NextConfig } from 'next';
 
 const cspHeader = `
@@ -10,7 +9,7 @@ const cspHeader = `
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'none';
+    frame-ancestors: 'none';
     worker-src 'self' blob:;
     connect-src 'self' http://localhost:* https://localhost:* https://comicvine.gamespot.com https://*.aws.neon.tech https://*.supabase.co;
 `;
@@ -42,8 +41,7 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', 'framer-motion', '@tanstack/react-query'],
   },
 
-  // Turbopack is only for development
-  // Note: PWA plugin requires webpack, so we disable turbopack
+  // Enable Turbopack for faster development
   turbopack: {},
 
   async headers() {
@@ -77,12 +75,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-const withPWA = withPWAInit({
-  dest: 'public',
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === 'development',
-  // @ts-expect-error - swSrc is required for custom Service Worker but missing from types
-  swSrc: 'src/workers/sw.ts',
-});
-
-export default withPWA(nextConfig);
+export default nextConfig;

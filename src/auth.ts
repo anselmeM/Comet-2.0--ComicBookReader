@@ -63,6 +63,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.userId = user.id!;
         token.plan = user.plan ?? 'FREE';
         token.hasCompletedOnboarding = user.hasCompletedOnboarding ?? false;
+        token.name = user.name ?? null;
+        token.image = user.image ?? null;
+      } else if (token.userId) {
+        // Fetch fresh user data from database to get updated image/name
+        const dbUser = await db.user.findUnique({
+          where: { id: token.userId },
+          select: { name: true, image: true }
+        });
+        if (dbUser) {
+          token.name = dbUser.name;
+          token.image = dbUser.image;
+        }
       }
       return token;
     },
@@ -73,6 +85,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.userId || '';
         session.user.plan = token.plan || 'FREE';
         session.user.hasCompletedOnboarding = !!token.hasCompletedOnboarding;
+        session.user.name = token.name ?? null;
+        session.user.image = token.image ?? null;
       }
       return session;
     },
