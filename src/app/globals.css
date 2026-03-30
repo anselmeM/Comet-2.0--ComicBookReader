@@ -57,6 +57,7 @@ body {
   --color-comet-text:     var(--color-text);
   --color-comet-muted:    var(--color-text-muted);
   --color-comet-accent:   var(--color-accent);
+  --color-comet-accent-hover: var(--color-accent-hover);
 }
 
 /* ── Reader overlay ───────────────────────────────────────────────────────── */
