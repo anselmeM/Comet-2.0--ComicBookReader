@@ -1,11 +1,11 @@
 import type { NextConfig } from 'next';
 
 const cspHeader = `
-    default-src 'self';
+    default-src 'self' https:;
     script-src 'self' 'unsafe-eval' 'unsafe-inline';
-    style-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' data: https://fonts.gstatic.com;
     img-src 'self' blob: data: https:;
-    font-src 'self' data:;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
