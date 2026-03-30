@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react';
+import { signOut as authSignOut } from '@/auth';
+import { useRouter } from 'next/navigation';
 import {
   Search, 
   Bell, 
@@ -419,6 +421,7 @@ export function DashboardLayout({
   
   // Get session for user info
   const { data: session } = useSession();
+  const router = useRouter();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -624,7 +627,8 @@ export function DashboardLayout({
 
   const handleNavClick = async (view: string) => {
     if (view === 'logout') {
-      await signOut({ callbackUrl: '/login' });
+      // Use next-auth/react signOut which clears the session client-side
+      await nextAuthSignOut({ callbackUrl: '/login' });
       return;
     }
     setActiveView(view);

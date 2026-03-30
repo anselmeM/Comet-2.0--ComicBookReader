@@ -13,7 +13,7 @@ export default function LibraryPage() {
   const { parseComic, isParsing, progress } = useComicParser();
   const [currentPage, setCurrentPage] = useState(1);
   const { data: libraryData, isLoading, error, refetch } = useLibrary({ page: currentPage, limit: 20 });
-  const { data: session, status } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const [isDragging, setIsDragging] = useState(false);
 
   // Extract comics from paginated response
@@ -38,11 +38,12 @@ export default function LibraryPage() {
     }));
   }, [comics]);
 
-  // Redirect unauthenticated users to login
-  if (status === 'unauthenticated') {
-    router.push('/login');
-    return null;
-  }
+  // Handle session state safely - redirect only after session is confirmed unauthenticated
+  React.useEffect(() => {
+    if (sessionStatus === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [sessionStatus, router]);
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
@@ -79,8 +80,8 @@ export default function LibraryPage() {
     e.target.value = '';
   };
 
-  // Show loading state
-  if (status === 'loading' || isLoading) {
+  // Show loading state while checking session or loading library
+  if (sessionStatus === 'loading' || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200 flex items-center justify-center">
         <div className="bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center gap-4">
@@ -91,8 +92,9 @@ export default function LibraryPage() {
     );
   }
 
-  // Show error state
+  // Handle error state - log for debugging
   if (error) {
+    console.error('[LibraryPage] Error loading library:', error);
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200 flex items-center justify-center">
         <div className="bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center gap-4 max-w-md">
@@ -100,7 +102,7 @@ export default function LibraryPage() {
             <Library size={32} className="text-red-500" />
           </div>
           <h2 className="text-xl font-bold text-gray-900">Failed to load library</h2>
-          <p className="text-gray-600 text-center">{error.message}</p>
+          <p className="text-gray-600 text-center">{error.message || 'Could not connect to the server'}</p>
           <button 
             onClick={() => refetch()}
             className="bg-blue-500 text-white px-6 py-2 rounded-full font-medium hover:bg-blue-600 transition-colors"

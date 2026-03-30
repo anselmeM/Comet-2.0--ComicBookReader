@@ -42,7 +42,9 @@ const nextConfig: NextConfig = {
   },
 
   // Enable Turbopack for faster development
-  turbopack: {},
+  turbopack: {
+    root: process.cwd(),
+  },
 
   async headers() {
     return [
