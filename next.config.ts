@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
   // Enable standalone output for containerized deployments
   output: 'standalone',
 
+  // Disable Turbopack for production builds (causes MIME type issues)
+  // Only enable in development
+  turbopack: process.env.NODE_ENV === 'development' ? {
+    root: process.cwd(),
+  } : undefined,
+
   // Image optimization
   images: {
     remotePatterns: [
@@ -39,11 +45,6 @@ const nextConfig: NextConfig = {
   // Optimize package imports - reduces bundle size
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', '@tanstack/react-query'],
-  },
-
-  // Enable Turbopack for faster development
-  turbopack: {
-    root: process.cwd(),
   },
 
   async headers() {
