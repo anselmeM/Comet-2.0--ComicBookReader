@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
-import { Zap, CloudOff, Shield, Rocket, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { Zap, CloudOff, Shield, Rocket, ArrowRight, Menu, X } from "lucide-react";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -22,19 +22,14 @@ const staggerContainer = {
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-comet-bg text-comet-text">
       {/* ── Background Elements ─────────────────────────────────────────── */}
       <div className="absolute inset-0 z-0">
-        <Image
-          src="/images/hero-concept.png"
-          alt="Cosmic comet background"
-          fill
-          className="object-cover opacity-40 mix-blend-screen"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-comet-bg/50 to-comet-bg" />
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-comet-bg/80 to-indigo-900/30" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-comet-accent/10 via-transparent to-transparent" />
       </div>
 
       {/* ── Navigation ─────────────────────────────────────────────────── */}
@@ -45,28 +40,62 @@ export default function Home() {
           </div>
           <span className="text-xl font-bold tracking-tight">Comet</span>
         </div>
-        <div className="flex items-center gap-5">
-          {status === "loading" ? null : !session ? (
-            <div className="hidden sm:flex items-center gap-4">
-              <Link
-                href="/login"
-                className="text-sm font-semibold text-comet-muted hover:text-white transition-colors"
-              >
-                Log in
-              </Link>
-              <Link
-                href="/register"
-                className="text-sm font-semibold text-comet-muted hover:text-white transition-colors"
-              >
-                Sign up
-              </Link>
-            </div>
+        <div className="flex items-center gap-4 sm:gap-5">
+          {status === "loading" ? (
+            <div className="h-8 w-24 bg-comet-surface/30 rounded-lg animate-pulse" />
+          ) : !session ? (
+            <>
+              {/* Desktop: Inline navigation */}
+              <div className="hidden sm:flex items-center gap-5">
+                <Link
+                  href="/login"
+                  className="text-sm font-semibold text-white/80 hover:text-white transition-colors"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center rounded-full bg-comet-accent px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(124,106,247,0.4)] transition-all hover:bg-comet-accent-hover hover:shadow-[0_6px_20px_rgba(124,106,247,0.5)] active:scale-95"
+                >
+                  Sign up
+                </Link>
+              </div>
+              {/* Mobile: Hamburger menu */}
+              <div className="sm:hidden relative">
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-comet-surface/50 backdrop-blur-md border border-comet-border text-comet-muted hover:text-white transition-colors"
+                  aria-label="Open menu"
+                >
+                  {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                </button>
+                {mobileMenuOpen && (
+                  <div className="absolute right-0 top-12 w-48 bg-comet-surface/95 backdrop-blur-xl border border-comet-border rounded-2xl p-4 shadow-xl z-50">
+                    <Link
+                      href="/login"
+                      className="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-white hover:bg-comet-accent hover:text-white transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Log in
+                    </Link>
+                    <Link
+                      href="/register"
+                      className="block w-full text-left px-4 py-3 mt-2 rounded-xl text-sm font-semibold bg-comet-accent text-white text-center hover:bg-comet-accent-hover transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Sign up
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <Link
               href="/library"
-              className="group flex items-center gap-2 rounded-full border border-comet-border bg-comet-surface/50 px-6 py-2.5 text-sm font-medium backdrop-blur-md transition-all hover:bg-comet-accent hover:text-white"
+              className="group flex items-center gap-2 rounded-full border border-comet-border bg-comet-surface/50 px-4 sm:px-6 py-2.5 text-sm font-medium backdrop-blur-md transition-all hover:bg-comet-accent hover:text-white"
             >
-              Open Library
+              <span className="hidden sm:inline">Open Library</span>
+              <span className="sm:hidden">Library</span>
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </Link>
           )}

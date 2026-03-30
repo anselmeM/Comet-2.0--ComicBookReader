@@ -1,15 +1,27 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { LogIn, Rocket, KeyRound, Mail, AlertCircle } from 'lucide-react';
+import { LogIn, Rocket, KeyRound, Mail, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect, useCallback } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const errorUrl = searchParams.get('error');
+  const { data: session, status } = useSession();
+  
+  // Get callback URL from query params (set by middleware)
+  const callbackUrl = searchParams.get('callbackUrl') || '/library';
+  const errorParam = searchParams.get('error');
+  
+  // Initialize error message from URL parameter (if present)
+  const initialErrorMsg = errorParam ? 'An error occurred during sign in. Please try again.' : '';
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(initialErrorMsg);
 
   // Framer Motion variants
   const containerVariants = {
@@ -32,36 +44,83 @@ function LoginForm() {
     }
   };
 
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(errorUrl ? "There was a problem signing you in. The test account may be unavailable or your credentials didn't match." : '');
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.push(callbackUrl);
+    }
+  }, [status, router, callbackUrl]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
     
-    // Dynamically import signIn from next-auth/react to avoid client/server component issues if applicable
-    const { signIn } = await import('next-auth/react');
-    
+    if (!email.trim() || !password.trim()) {
+      setErrorMsg('Please enter both email and password.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await signIn('credentials', {
-        email,
+      const result = await signIn('credentials', {
+        email: email.trim(),
         password,
         redirect: false,
       });
 
-      if (res?.error) {
-        setErrorMsg('Invalid email or password');
+      if (result?.error) {
+        // Handle specific error codes
+        if (result.error === 'CredentialsSignin') {
+          setErrorMsg('Invalid email or password. Please check your credentials and try again.');
+        } else {
+          setErrorMsg('Sign in failed. Please check your credentials and try again.');
+        }
         setLoading(false);
-      } else {
-        window.location.href = '/library';
+      } else if (result?.ok) {
+        // Successfully signed in, redirect to callback URL or library
+        router.push(callbackUrl);
       }
-    } catch {
-      setErrorMsg('An unexpected error occurred');
+    } catch (err) {
+      console.error('[LoginForm] Unexpected error:', err);
+      setErrorMsg('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };
+
+  const handleDemoLogin = useCallback(async () => {
+    setLoading(true);
+    setErrorMsg('');
+    
+    try {
+      const result = await signIn('credentials', {
+        email: 'test@example.com',
+        password: 'password',
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setErrorMsg('Demo account is unavailable. Please use the form below to sign in.');
+        setLoading(false);
+      } else if (result?.ok) {
+        router.push(callbackUrl);
+      }
+    } catch (err) {
+      console.error('[LoginForm] Demo login error:', err);
+      setErrorMsg('An error occurred with the demo account. Please use the form below.');
+      setLoading(false);
+    }
+  }, [router, callbackUrl]);
+
+  // Show loading while checking session
+  if (status === 'loading') {
+    return (
+      <div className="w-full max-w-md flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+        <p className="text-zinc-400 text-sm">Checking session...</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
@@ -84,17 +143,17 @@ function LoginForm() {
             Welcome back
           </h1>
           <p className="text-zinc-400 text-sm">
-            Sign in to your Comet library
+            Sign in to access your Comet library
           </p>
         </motion.div>
 
         {errorMsg && (
-            <motion.div variants={itemVariants} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-              <p className="text-sm text-red-200">
-                {errorMsg}
-              </p>
-            </motion.div>
+          <motion.div variants={itemVariants} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-200">
+              {errorMsg}
+            </p>
+          </motion.div>
         )}
 
         <div className="space-y-6">
@@ -110,6 +169,7 @@ function LoginForm() {
                 placeholder="name@example.com"
                 className="block w-full pl-11 pr-4 py-3 bg-zinc-950/50 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -121,14 +181,15 @@ function LoginForm() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 className="block w-full pl-11 pr-4 py-3 bg-zinc-950/50 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
                 required
+                disabled={loading}
               />
             </div>
 
-            <div className="text-right">
-              <Link href="/forgot-password" className="text-sm text-zinc-400 hover:text-white transition-colors">
+            <div className="flex items-center justify-between">
+              <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
                 Forgot password?
               </Link>
             </div>
@@ -154,48 +215,37 @@ function LoginForm() {
               <div className="w-full border-t border-zinc-800" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-transparent text-zinc-500 backdrop-blur-xl">Or continue with</span>
+              <span className="px-4 bg-transparent text-zinc-500 backdrop-blur-xl">Or use demo account</span>
             </div>
           </motion.div>
 
-          {/* Test Account Button */}
+          {/* Demo Account Button - Clearly labeled */}
           <motion.div variants={itemVariants}>
             <button
               type="button"
-              onClick={async () => {
-                setLoading(true);
-                setErrorMsg('');
-                const { signIn } = await import('next-auth/react');
-                try {
-                  const res = await signIn('credentials', {
-                    email: 'test@example.com',
-                    password: 'password',
-                    redirect: false,
-                  });
-                  if (res?.error) {
-                    setErrorMsg('Test account is unavailable');
-                    setLoading(false);
-                  } else {
-                    window.location.href = '/library';
-                  }
-                } catch {
-                  setErrorMsg('An unexpected error occurred');
-                  setLoading(false);
-                }
-              }}
+              onClick={handleDemoLogin}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 active:scale-[0.98] border border-zinc-700 hover:border-zinc-600 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-violet-500/20 disabled:opacity-50"
             >
-              <KeyRound className="w-5 h-5 text-zinc-400" />
-              Test Account (Demo)
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Rocket className="w-5 h-5" />
+                  Try Demo Account
+                </>
+              )}
             </button>
+            <p className="text-xs text-zinc-500 text-center mt-2">
+              Demo: test@example.com / password
+            </p>
           </motion.div>
 
         </div>
 
         <motion.div variants={itemVariants} className="mt-8 text-center">
           <p className="text-zinc-500 text-sm">
-            Don&apos;t have an account?{` `}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
               Create one now
             </Link>
@@ -213,6 +263,15 @@ export default function LoginPage() {
       {/* Background Orbs */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
+
+      {/* Back to Home Link */}
+      <Link 
+        href="/" 
+        className="absolute top-6 left-6 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+      >
+        <ArrowLeft size={20} />
+        <span className="text-sm">Back to home</span>
+      </Link>
 
       <Suspense fallback={
         <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 p-8 rounded-3xl shadow-2xl relative z-10 w-full max-w-md flex flex-col items-center gap-4">

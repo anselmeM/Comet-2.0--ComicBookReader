@@ -13,34 +13,21 @@ export interface FavoritesContextType {
 
 const FAVORITES_STORAGE_KEY = 'comic-favorites';
 
+// Cached empty array for SSR to prevent infinite loop
+const EMPTY_FAVORITES: string[] = [];
+
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
 interface FavoritesProviderProps {
   children: React.ReactNode;
 }
 
-// Helper to get initial favorites from localStorage
-function getInitialFavorites(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load favorites from localStorage:', error);
-  }
-  return [];
-}
-
 export function FavoritesProvider({ children }: FavoritesProviderProps): React.ReactElement {
-  const [favorites, setFavorites] = useState<string[]>(getInitialFavorites);
-  const [isLoaded, setIsLoaded] = useState(false);
+  // Use state for favorites - initialized from localStorage on client
+  const [favorites, setFavorites] = useState<string[]>(EMPTY_FAVORITES);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Load favorites from localStorage on mount (handles SSR case)
+  // Load favorites from localStorage on mount (client-side only)
   useEffect(() => {
     try {
       const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
@@ -53,68 +40,78 @@ export function FavoritesProvider({ children }: FavoritesProviderProps): React.R
     } catch (error) {
       console.error('Failed to load favorites from localStorage:', error);
     }
-    setIsLoaded(true);
+    setIsHydrated(true);
   }, []);
 
   // Persist to localStorage whenever favorites change
   useEffect(() => {
-    if (isLoaded) {
+    if (isHydrated) {
       try {
         localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
       } catch (error) {
         console.error('Failed to save favorites to localStorage:', error);
       }
     }
-  }, [favorites, isLoaded]);
+  }, [favorites, isHydrated]);
 
+  // Check if a comic is favorited
   const isFavorite = useCallback((comicId: string): boolean => {
     return favorites.includes(comicId);
   }, [favorites]);
 
+  // Toggle favorite status
   const toggleFavorite = useCallback((comicId: string) => {
     setFavorites(prev => {
-      if (prev.includes(comicId)) {
-        return prev.filter(id => id !== comicId);
-      }
-      return [...prev, comicId];
+      const newFavorites = prev.includes(comicId)
+        ? prev.filter(id => id !== comicId)
+        : [...prev, comicId];
+      return newFavorites;
     });
   }, []);
 
+  // Add a favorite
   const addFavorite = useCallback((comicId: string) => {
     setFavorites(prev => {
-      if (prev.includes(comicId)) return prev;
-      return [...prev, comicId];
+      if (!prev.includes(comicId)) {
+        return [...prev, comicId];
+      }
+      return prev;
     });
   }, []);
 
+  // Remove a favorite
   const removeFavorite = useCallback((comicId: string) => {
     setFavorites(prev => prev.filter(id => id !== comicId));
   }, []);
 
+  // Clear all favorites
   const clearFavorites = useCallback(() => {
     setFavorites([]);
   }, []);
 
+  const value: FavoritesContextType = {
+    favorites,
+    isFavorite,
+    toggleFavorite,
+    addFavorite,
+    removeFavorite,
+    clearFavorites,
+  };
+
   return (
-    <FavoritesContext.Provider
-      value={{
-        favorites,
-        isFavorite,
-        toggleFavorite,
-        addFavorite,
-        removeFavorite,
-        clearFavorites
-      }}
-    >
+    <FavoritesContext.Provider value={value}>
       {children}
     </FavoritesContext.Provider>
   );
 }
 
+// Custom hook to use the favorites context
 export function useFavorites(): FavoritesContextType {
   const context = useContext(FavoritesContext);
-  if (!context) {
+  
+  if (context === undefined) {
     throw new Error('useFavorites must be used within a FavoritesProvider');
   }
+  
   return context;
 }
