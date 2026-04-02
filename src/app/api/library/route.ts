@@ -10,15 +10,8 @@ import { db } from '@/lib/db';
 import type { AddComicPayload } from '@/types';
 
 /** GET /api/library */
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   const session = await auth();
-  const cookieHeader = req.headers.get('cookie') || 'None';
-  
-  console.log('[API GET /library] Auth check:', {
-    authenticated: !!session?.user?.id,
-    userId: session?.user?.id,
-    cookiePreview: cookieHeader.substring(0, 50) + '...',
-  });
   
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -58,26 +51,9 @@ export async function GET(req: Request) {
 /** POST /api/library */
 export async function POST(req: Request) {
   const session = await auth();
-  const cookieHeader = req.headers.get('cookie') || 'None';
-  
-  // High-resolution debugging
-  console.log('--- Auth Debug Start ---');
-  console.log('[API POST /library] Session:', session);
-  console.log('[API POST /library] Cookies:', cookieHeader);
-  console.log('[API POST /library] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
-  console.log('[API POST /library] AUTH_URL:', process.env.AUTH_URL);
-  console.log('--- Auth Debug End ---');
 
   if (!session?.user?.id) {
-    return NextResponse.json({ 
-      error: 'Unauthorized', 
-      details: 'No active session.',
-      debug: {
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        cookiePresent: cookieHeader !== 'None'
-      }
-    }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
