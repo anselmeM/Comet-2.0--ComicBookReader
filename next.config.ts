@@ -20,8 +20,8 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
 
-  // Enable standalone output for containerized deployments
-  output: 'standalone',
+  // Output configuration removed for Render/PaaS compatibility
+  // (Using default Next.js build output properly handles static files)
 
   // Disable Turbopack for production builds (causes MIME type issues)
   // Only enable in development
