@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react';
-import { signOut as authSignOut } from '@/auth';
 import { useRouter } from 'next/navigation';
 import {
   Search, 
@@ -21,11 +20,8 @@ import {
   Grid,
   List,
   Filter,
-  Upload,
   UploadCloud,
-  Loader2,
-  FileText,
-  X
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -93,7 +89,7 @@ const bottomNavItems = [
   { icon: <LogOut size={20} />, label: 'Log out', view: 'logout' },
 ];
 
-// Top Rated Comics - uses user's actual library with fallback to demo data
+// Top Rated Comics - uses user's actual library
 const useTopRatedComics = (comics: DashboardComic[]) => {
   return useMemo(() => {
     // If user has comics, use the first few as "featured" (until rating is implemented)
@@ -104,31 +100,10 @@ const useTopRatedComics = (comics: DashboardComic[]) => {
       }));
     }
     
-    // Fallback to demo data when no user comics
-    return [
-      { id: 'tr1', title: 'Amazing Spider-Man', author: 'Stan Lee', pageCount: 120, coverUrl: null, year: 1963, issue: 1 },
-      { id: 'tr2', title: 'The Dark Knight Returns', author: 'Frank Miller', pageCount: 200, coverUrl: null, year: 1986 },
-      { id: 'tr3', title: 'Watchmen', author: 'Alan Moore', pageCount: 400, coverUrl: null, year: 1986 },
-      { id: 'tr4', title: 'Saga', author: 'Brian K. Vaughan', pageCount: 150, coverUrl: null, year: 2012 },
-      { id: 'tr5', title: 'X-Men: Days of Future Past', author: 'Chris Claremont', pageCount: 160, coverUrl: null, year: 1981 },
-      { id: 'tr6', title: 'Batman: Year One', author: 'Frank Miller', pageCount: 96, coverUrl: null, year: 1987 },
-      { id: 'tr7', title: 'Ms. Marvel', author: 'G. Willow Wilson', pageCount: 140, coverUrl: null, year: 2014 },
-      { id: 'tr8', title: 'Invincible', author: 'Robert Kirkman', pageCount: 200, coverUrl: null, year: 2002 },
-    ] as (DashboardComic & { author: string })[];
+    // Return empty array when no user comics
+    return [] as (DashboardComic & { author: string })[];
   }, [comics]);
 };
-
-// Demo data (kept for reference but not used)
-const _demoTopRatedComics: (DashboardComic & { author: string })[] = [
-  { id: 'tr1', title: 'Amazing Spider-Man', author: 'Stan Lee', pageCount: 120, coverUrl: null, year: 1963, issue: 1 },
-  { id: 'tr2', title: 'The Dark Knight Returns', author: 'Frank Miller', pageCount: 200, coverUrl: null, year: 1986 },
-  { id: 'tr3', title: 'Watchmen', author: 'Alan Moore', pageCount: 400, coverUrl: null, year: 1986 },
-  { id: 'tr4', title: 'Saga', author: 'Brian K. Vaughan', pageCount: 150, coverUrl: null, year: 2012 },
-  { id: 'tr5', title: 'X-Men: Days of Future Past', author: 'Chris Claremont', pageCount: 160, coverUrl: null, year: 1981 },
-  { id: 'tr6', title: 'Batman: Year One', author: 'Frank Miller', pageCount: 96, coverUrl: null, year: 1987 },
-  { id: 'tr7', title: 'Ms. Marvel', author: 'G. Willow Wilson', pageCount: 140, coverUrl: null, year: 2014 },
-  { id: 'tr8', title: 'Invincible', author: 'Robert Kirkman', pageCount: 200, coverUrl: null, year: 2002 },
-];
 
 // Sortable DashboardComic Card Component
 function SortableDashboardComicCard({ comic, isDragging, onNotification, isFav, onToggleFav }: { comic: DashboardComic; isDragging?: boolean; onNotification?: (msg: string) => void; isFav?: boolean; onToggleFav?: () => void }) {
@@ -407,7 +382,7 @@ export function DashboardLayout({
     }));
   }, [comics]);
   
-  // Top Rated Comics - user's actual library with fallback to demo data
+  // Top Rated Comics - user's actual library
   const topRatedComics = useTopRatedComics(comics);
   
   // Upload state

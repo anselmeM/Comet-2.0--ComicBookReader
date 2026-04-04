@@ -49,13 +49,13 @@ export default function Home() {
               <div className="hidden sm:flex items-center gap-5">
                 <Link
                   href="/login"
-                  className="text-sm font-semibold text-white/80 hover:text-white transition-colors"
+                  className="text-sm font-semibold text-white hover:text-comet-accent transition-colors"
                 >
                   Log in
                 </Link>
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center rounded-full bg-comet-accent px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(124,106,247,0.4)] transition-all hover:bg-comet-accent-hover hover:shadow-[0_6px_20px_rgba(124,106,247,0.5)] active:scale-95"
+                  className="inline-flex items-center justify-center rounded-full bg-comet-accent px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(124,106,247,0.4)] transition-all hover:bg-comet-accent-hover hover:shadow-[0_6px_20px_rgba(124,106,247,0.5)] hover:scale-105 active:scale-95"
                 >
                   Sign up
                 </Link>

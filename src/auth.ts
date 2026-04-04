@@ -24,7 +24,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'text', placeholder: 'test@example.com' },
+        email: { label: 'Email', type: 'text', placeholder: 'name@example.com' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
@@ -67,14 +67,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.image = user.image ?? null;
       } else if (token.userId) {
         // Fetch fresh user data from database to get updated image/name
+        // If the user row no longer exists (e.g., DB reset), invalidate the token
+        // so Auth.js forces a re-login rather than propagating a dead userId.
         const dbUser = await db.user.findUnique({
           where: { id: token.userId },
-          select: { name: true, image: true }
+          select: { name: true, image: true, plan: true, hasCompletedOnboarding: true }
         });
-        if (dbUser) {
-          token.name = dbUser.name;
-          token.image = dbUser.image;
+        if (!dbUser) {
+          // Returning null signals Auth.js to invalidate this JWT session
+          return null;
         }
+        token.name = dbUser.name;
+        token.image = dbUser.image;
+        token.plan = dbUser.plan;
+        token.hasCompletedOnboarding = dbUser.hasCompletedOnboarding;
       }
       return token;
     },

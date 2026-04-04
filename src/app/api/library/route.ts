@@ -12,14 +12,7 @@ import type { AddComicPayload } from '@/types';
 /** GET /api/library */
 export async function GET(req: Request) {
   const session = await auth();
-  const cookieHeader = req.headers.get('cookie') || 'None';
-  
-  console.log('[API GET /library] Auth check:', {
-    authenticated: !!session?.user?.id,
-    userId: session?.user?.id,
-    cookiePreview: cookieHeader.substring(0, 50) + '...',
-  });
-  
+   
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -58,25 +51,11 @@ export async function GET(req: Request) {
 /** POST /api/library */
 export async function POST(req: Request) {
   const session = await auth();
-  const cookieHeader = req.headers.get('cookie') || 'None';
   
-  // High-resolution debugging
-  console.log('--- Auth Debug Start ---');
-  console.log('[API POST /library] Session:', session);
-  console.log('[API POST /library] Cookies:', cookieHeader);
-  console.log('[API POST /library] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
-  console.log('[API POST /library] AUTH_URL:', process.env.AUTH_URL);
-  console.log('--- Auth Debug End ---');
-
   if (!session?.user?.id) {
     return NextResponse.json({ 
       error: 'Unauthorized', 
       details: 'No active session.',
-      debug: {
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        cookiePresent: cookieHeader !== 'None'
-      }
     }, { status: 401 });
   }
 
@@ -104,6 +83,20 @@ export async function POST(req: Request) {
        return NextResponse.json(
         { error: 'Cover image too large', details: 'The cover image exceeds the maximum allowed size.' },
         { status: 413 },
+      );
+    }
+
+    // Verify user exists in database before attempting upsert
+    const dbUser = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true },
+    });
+
+    if (!dbUser) {
+      console.error('[API POST /library] User not found in database:', session.user.id);
+      return NextResponse.json(
+        { error: 'Unauthorized', details: 'Your session is stale. Please sign out and sign in again.' },
+        { status: 401 },
       );
     }
 

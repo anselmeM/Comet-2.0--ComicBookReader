@@ -182,6 +182,12 @@ export function useComicParser() {
               } catch (e) {
                 console.error('[useComicParser] Critical error reading response:', e);
               }
+
+              // Stale JWT / account not found — redirect to login so the user can re-authenticate
+              if (response.status === 401) {
+                window.location.href = '/login?error=SessionExpired';
+                return;
+              }
               
               reject(new Error(errorMsg));
               return;

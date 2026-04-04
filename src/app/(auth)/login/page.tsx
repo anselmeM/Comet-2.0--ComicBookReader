@@ -4,24 +4,28 @@ import { motion } from 'framer-motion';
 import { LogIn, Rocket, KeyRound, Mail, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   
   // Get callback URL from query params (set by middleware)
   const callbackUrl = searchParams.get('callbackUrl') || '/library';
   const errorParam = searchParams.get('error');
   
   // Initialize error message from URL parameter (if present)
-  const initialErrorMsg = errorParam ? 'An error occurred during sign in. Please try again.' : '';
+  const getInitialError = (param: string | null) => {
+    if (!param) return '';
+    if (param === 'SessionExpired') return 'Your session has expired. Please sign in again to continue.';
+    return 'An error occurred during sign in. Please try again.';
+  };
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(initialErrorMsg);
+  const [errorMsg, setErrorMsg] = useState(() => getInitialError(errorParam));
 
   // Framer Motion variants
   const containerVariants = {
@@ -78,7 +82,6 @@ function LoginForm() {
         }
         setLoading(false);
       } else if (result?.ok) {
-        // Successfully signed in, redirect to callback URL or library
         router.push(callbackUrl);
       }
     } catch (err) {
@@ -88,31 +91,7 @@ function LoginForm() {
     }
   };
 
-  const handleDemoLogin = useCallback(async () => {
-    setLoading(true);
-    setErrorMsg('');
-    
-    try {
-      const result = await signIn('credentials', {
-        email: 'test@example.com',
-        password: 'password',
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setErrorMsg('Demo account is unavailable. Please use the form below to sign in.');
-        setLoading(false);
-      } else if (result?.ok) {
-        router.push(callbackUrl);
-      }
-    } catch (err) {
-      console.error('[LoginForm] Demo login error:', err);
-      setErrorMsg('An error occurred with the demo account. Please use the form below.');
-      setLoading(false);
-    }
-  }, [router, callbackUrl]);
-
-  // Show loading while checking session
+  // Render the form
   if (status === 'loading') {
     return (
       <div className="w-full max-w-md flex flex-col items-center gap-4">
@@ -209,37 +188,6 @@ function LoginForm() {
               )}
             </button>
           </motion.form>
-
-          <motion.div variants={itemVariants} className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-zinc-800" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-transparent text-zinc-500 backdrop-blur-xl">Or use demo account</span>
-            </div>
-          </motion.div>
-
-          {/* Demo Account Button - Clearly labeled */}
-          <motion.div variants={itemVariants}>
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-violet-500/20 disabled:opacity-50"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Rocket className="w-5 h-5" />
-                  Try Demo Account
-                </>
-              )}
-            </button>
-            <p className="text-xs text-zinc-500 text-center mt-2">
-              Demo: test@example.com / password
-            </p>
-          </motion.div>
 
         </div>
 

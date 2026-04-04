@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { UserPlus, Sparkles, KeyRound, Mail, AlertCircle, ArrowLeft, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Suspense, useState, useEffect, useMemo, useCallback } from 'react';
+import { Suspense, useState, useEffect, useMemo } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 
 // Password requirement item component (defined outside to avoid "component during render" error)
@@ -22,7 +22,7 @@ function RequirementItem({ met, text }: { met: boolean; text: string }) {
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   
   const errorParam = searchParams.get('error');
   
@@ -146,30 +146,6 @@ function RegisterForm() {
       setLoading(false);
     }
   };
-
-  const handleDemoLogin = useCallback(async () => {
-    setLoading(true);
-    setErrorMsg('');
-    
-    try {
-      const result = await signIn('credentials', {
-        email: 'test@example.com',
-        password: 'password',
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setErrorMsg('Demo account is unavailable. Please register for a new account.');
-        setLoading(false);
-      } else if (result?.ok) {
-        router.push('/library');
-      }
-    } catch (err) {
-      console.error('[RegisterForm] Demo login error:', err);
-      setErrorMsg('An error occurred with the demo account.');
-      setLoading(false);
-    }
-  }, [router]);
 
   // Show loading while checking session
   if (status === 'loading') {
@@ -314,37 +290,6 @@ function RegisterForm() {
               )}
             </button>
           </motion.form>
-
-          <motion.div variants={itemVariants} className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-zinc-800" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-transparent text-zinc-500 backdrop-blur-xl">Or try demo first</span>
-            </div>
-          </motion.div>
-
-          {/* Demo Account Button */}
-          <motion.div variants={itemVariants}>
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 active:scale-[0.98] border border-zinc-700 hover:border-zinc-600 disabled:opacity-50"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 text-zinc-400" />
-                  Try demo account
-                </>
-              )}
-            </button>
-            <p className="text-xs text-zinc-500 text-center mt-2">
-              Demo: test@example.com / password
-            </p>
-          </motion.div>
 
         </div>
 
