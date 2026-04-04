@@ -9,7 +9,7 @@ const cspHeader = `
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors: 'none';
+    frame-ancestors 'none';
     worker-src 'self' blob:;
     connect-src 'self' http://localhost:* https://localhost:* https://comicvine.gamespot.com https://*.aws.neon.tech https://*.supabase.co;
 `;
