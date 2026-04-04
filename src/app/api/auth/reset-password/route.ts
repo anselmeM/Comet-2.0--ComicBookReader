@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       data: {
         resetToken,
         resetTokenExpiry,
-      } as any,
+      },
     });
 
     // In a production app, you would send an email here

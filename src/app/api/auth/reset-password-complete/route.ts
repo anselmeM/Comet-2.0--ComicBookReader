@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         resetToken: null,
         resetTokenExpiry: null,
-      } as any,
+      },
     });
 
     return NextResponse.json({ message: 'Password has been reset successfully' }, { status: 200 });
