@@ -68,7 +68,7 @@ export function BlobImage({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imgRef}
-        src={objectUrl || ''}
+        src={objectUrl ?? undefined}
         alt={alt}
         className={`w-full h-full object-contain transition-opacity duration-300 ${objectUrl ? 'opacity-100' : 'opacity-0'}`}
         onError={onLoadError}

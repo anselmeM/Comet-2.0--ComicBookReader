@@ -1,25 +1,35 @@
-import withPWAInit from '@ducanh2912/next-pwa';
 import type { NextConfig } from 'next';
 
 const cspHeader = `
-    default-src 'self';
+    default-src 'self' https:;
     script-src 'self' 'unsafe-eval' 'unsafe-inline';
-    style-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' data: https://fonts.gstatic.com;
     img-src 'self' blob: data: https:;
-    font-src 'self' data:;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
     worker-src 'self' blob:;
-    connect-src 'self' https://comicvine.gamespot.com https://*.aws.neon.tech;
+    connect-src 'self' http://localhost:* https://localhost:* https://comicvine.gamespot.com https://*.aws.neon.tech https://*.supabase.co;
 `;
 
 const nextConfig: NextConfig = {
+  // Production optimizations
   reactStrictMode: true,
-  turbopack: {
-    root: '.',
-  },
+  compress: true,
+  poweredByHeader: false,
+
+  // Output configuration removed for Render/PaaS compatibility
+  // (Using default Next.js build output properly handles static files)
+
+  // Disable Turbopack for production builds (causes MIME type issues)
+  // Only enable in development
+  turbopack: process.env.NODE_ENV === 'development' ? {
+    root: process.cwd(),
+  } : undefined,
+
+  // Image optimization
   images: {
     remotePatterns: [
       {
@@ -27,7 +37,16 @@ const nextConfig: NextConfig = {
         hostname: 'comicvine.gamespot.com',
       },
     ],
+    // Increase cache duration for optimized images
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+    formats: ['image/avif', 'image/webp'],
   },
+
+  // Optimize package imports - reduces bundle size
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion', '@tanstack/react-query'],
+  },
+
   async headers() {
     return [
       {
@@ -49,21 +68,14 @@ const nextConfig: NextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
         ],
       },
     ];
   },
 };
 
-const withPWA = withPWAInit({
-  dest: 'public',
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === 'development',
-  workboxOptions: {
-    disableDevLogs: true,
-  },
-});
-
-export default withPWA(nextConfig);
+export default nextConfig;

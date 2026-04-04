@@ -38,13 +38,12 @@ export async function DELETE(
       where: { id },
     });
 
-    console.log(`[API DELETE /library/${id}] Deleted by ${session.user.id}`);
     return NextResponse.json({ success: true }, { status: 200 });
 
   } catch (err: unknown) {
     console.error(`[API DELETE /library/${id}] ERROR:`, err);
     return NextResponse.json(
-      { error: 'Internal server error', details: err instanceof Error ? err.message : 'Unknown error' },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }

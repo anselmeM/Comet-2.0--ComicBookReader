@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Providers } from '@/app/providers';
+import { NetworkStatusIndicator } from '@/components/atoms/NetworkStatusIndicator';
+import { PWAUpdater } from '@/components/atoms/PWAUpdater';
 import './globals.css';
 
 // ── Fonts ─────────────────────────────────────────────────────────────────────
+// ... existing font setup ...
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
@@ -22,6 +25,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'Comet' }],
   creator: 'Comet',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icons/icon-192.svg',
+    apple: '/icons/icon-192.svg',
+    shortcut: '/icons/icon-192.svg',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -52,10 +60,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-      </head>
       <body className="bg-comet-bg text-comet-text antialiased">
+        <NetworkStatusIndicator />
+        <PWAUpdater />
         <Providers>{children}</Providers>
       </body>
     </html>

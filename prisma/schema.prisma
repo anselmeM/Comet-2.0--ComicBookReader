@@ -1,14 +1,30 @@
 // Comet — Prisma Schema
 // Run: npx prisma db push (dev) | npx prisma migrate deploy (prod)
+//
+// DATABASE CONFIGURATION:
+// - Development: Uses SQLite (file:./dev.db)
+// - Production: Use PostgreSQL (set DATABASE_URL in .env)
+//
+// To switch to PostgreSQL:
+// 1. Update your .env with DATABASE_URL for PostgreSQL
+// 2. Change provider below to "postgresql"
+// 3. Run: npx prisma db push (for new DB) or npx prisma migrate
 
 generator client {
   provider = "prisma-client-js"
 }
 
+// Use environment variable for database URL (supports both SQLite and PostgreSQL)
 datasource db {
   provider  = "sqlite"
-  url       = "file:./dev.db"
+  url       = env("DATABASE_URL")
 }
+
+// NOTE: For PostgreSQL in production, change the datasource to:
+// datasource db {
+//   provider  = "sqlite"
+//   url       = env("DATABASE_URL")
+// }
 
 // ────────────────────────────────────────────────────
 // AUTH (Auth.js v5 required models)
@@ -20,8 +36,11 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   password      String?
+  resetToken    String?   // Password reset token
+  resetTokenExpiry DateTime? // Password reset token expiry
   image         String?
   plan          String    @default("FREE")
+  hasCompletedOnboarding Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -29,6 +48,7 @@ model User {
   sessions  Session[]
   library   Comic[]
   progress  ReadingProgress[]
+  bookmarks Bookmark[]
 }
 
 model Account {
@@ -88,6 +108,11 @@ model Comic {
   year        Int?
   metadata    String?   // Raw ComicVine enrichment payload
 
+  // New fields for enhanced library features
+  isFavorite  Boolean   @default(false)  // Quick access favorites
+  rating      Int       @default(0)      // 0-5 stars
+  tags        String?   // JSON array: ["Marvel", "Spider-Man"]
+
   addedAt     DateTime  @default(now())
   lastReadAt  DateTime?
 
@@ -97,6 +122,7 @@ model Comic {
   @@index([userId])
   @@index([filehash])
   @@index([userId, lastReadAt]) // Efficient "Continue Reading" queries
+  @@index([userId, series])     // For series grouping queries
 }
 
 model ReadingProgress {
@@ -112,8 +138,26 @@ model ReadingProgress {
   readStatus  String     @default("UNREAD")
   updatedAt   DateTime   @updatedAt
 
+  bookmarks   Bookmark[]
+
   @@index([userId])
   @@index([userId, readStatus])
 }
 
+model Bookmark {
+  id          String          @id @default(cuid())
+  userId      String
+  comicId     String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comic       ReadingProgress @relation(fields: [comicId], references: [comicId], onDelete: Cascade)
+
+  pageNumber  Int
+  label       String?         // Optional user-defined label/notes
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([userId, comicId, pageNumber]) // One bookmark per page per comic per user
+  @@index([userId])
+  @@index([comicId])
+}
 

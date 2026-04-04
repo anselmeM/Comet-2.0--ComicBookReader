@@ -2,11 +2,16 @@ import { useQuery } from '@tanstack/react-query';
 import { getCachedComic } from '@/lib/idb';
 import { CachedComic, ComicDTO } from '@/types';
 
+export type ComicLoadErrorType = 'metadata' | 'cache' | 'auth' | 'unknown';
+
 export interface UseComicPagesResult {
   comic: CachedComic | null;
   metadata: ComicDTO | null;
   loading: boolean;
   error: Error | null;
+  errorType: ComicLoadErrorType;
+  is404: boolean;
+  isAuthError: boolean;
 }
 
 /**
@@ -23,7 +28,9 @@ export function useComicPages(comicId: string): UseComicPagesResult {
     queryFn: async () => {
       const res = await fetch(`/api/comics/${comicId}`);
       if (!res.ok) {
-        throw new Error(`Failed to fetch metadata for comic ${comicId}`);
+        const err = new Error(`Failed to fetch metadata for comic ${comicId}`) as Error & { status?: number };
+        err.status = res.status;
+        throw err;
       }
       return res.json();
     },
@@ -38,7 +45,7 @@ export function useComicPages(comicId: string): UseComicPagesResult {
     queryFn: async () => {
       const cached = await getCachedComic(comicId);
       if (!cached) {
-        throw new Error('Comic not found in local cache. You may need to import the file again.');
+        throw new Error('Comic not found in local storage. Please re-import the comic file.');
       }
       return cached;
     },
@@ -46,10 +53,35 @@ export function useComicPages(comicId: string): UseComicPagesResult {
     staleTime: Infinity, // Local binary data doesn't "expire" in the same way
   });
 
+  // Determine error type based on which query failed
+  const error = (metaQuery.error as Error) || (pagesQuery.error as Error) || null;
+  let errorType: ComicLoadErrorType = 'unknown';
+  let is404 = false;
+  let isAuthError = false;
+
+  if (metaQuery.error) {
+    const metaError = metaQuery.error as { status?: number };
+    // Check for specific HTTP status codes in the error response
+    if (metaError?.status === 401 || metaError?.status === 403) {
+      errorType = 'auth';
+      isAuthError = true;
+    } else if (metaError?.status === 404) {
+      errorType = 'metadata';
+      is404 = true;
+    } else {
+      errorType = 'metadata';
+    }
+  } else if (pagesQuery.error) {
+    errorType = 'cache';
+  }
+
   return {
     comic: pagesQuery.data ?? null,
     metadata: metaQuery.data ?? null,
     loading: metaQuery.isLoading || pagesQuery.isLoading,
-    error: (metaQuery.error as Error) || (pagesQuery.error as Error) || null,
+    error,
+    errorType,
+    is404,
+    isAuthError,
   };
 }

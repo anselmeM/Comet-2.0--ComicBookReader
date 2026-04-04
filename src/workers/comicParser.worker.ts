@@ -1,13 +1,16 @@
 import JSZip from 'jszip';
-// Note: unrar-js would normally be imported or loaded here,
-// but for the sake of standard Web Worker setup without Webpack magic,
-// it might need to be imported via absolute URL or bundled.
-// For now, we stub CBR parsing and focus on CBZ (ZIP) parsing.
+// Import node-unrar-js for CBR support
+import { createExtractorFromData } from 'node-unrar-js';
 
 const IMAGE_REGEX = /\.(jpg|jpeg|png|webp|gif|avif)$/i;
 
+// Helper to check if a filename is an image
+function isImageFile(filename: string): boolean {
+  return IMAGE_REGEX.test(filename);
+}
+
 self.addEventListener('message', async (event) => {
-  const { type, file, comicId } = event.data;
+  const { type, file, comicId, wasmBinary } = event.data;
 
   if (type !== 'PARSE') return;
 
@@ -21,17 +24,80 @@ self.addEventListener('message', async (event) => {
 
     if (isCbr) {
       // --------------------------------------------------------
-      // CBR Parsing Logic (unrar.js)
+      // CBR Parsing Logic (node-unrar-js with WASM)
       // --------------------------------------------------------
-      // For a real production app, you would load the unrar.wasm 
-      // module here and extract the files into an ArrayBuffer array.
-      // E.g.
-      // import { createExtractorFromData } from 'node-unrar-js'
-      // const extractor = await createExtractorFromData({ data: arrayBuffer, wasmBinary: ... })
-      // const { files } = extractor.extract({ files: (f) => IMAGE_REGEX.test(f.fileHeader.name) });
-      // pageEntries = files.map(f => ({ name: f.fileHeader.name, blob: new Blob([f.extraction]) }));
+      console.log('[CBR Parser] Starting extraction for:', file.name);
+
+      // Use the WASM binary passed from the main thread
+      if (!wasmBinary) {
+        throw new Error('WASM binary not provided. Cannot parse CBR files.');
+      }
+
+      // Create the extractor with WASM binary
+      const extractor = await createExtractorFromData({
+        data: arrayBuffer,
+        wasmBinary: wasmBinary
+      });
+
+      // Extract files - filter to only image files
+      const extracted = extractor.extract({
+        files: (fileHeader) => isImageFile(fileHeader.name)
+      });
+
+      const files = [...extracted.files];
+      console.log('[CBR Parser] Found', files.length, 'image files');
+
+      // Sort alphabetically (natural sort is better for "Page 1.jpg" vs "Page 10.jpg")
+      const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+      files.sort((a, b) => collator.compare(a.fileHeader.name, b.fileHeader.name));
+
+      const total = files.length;
+
+      for (let i = 0; i < total; i++) {
+        const fileEntry = files[i];
+
+        // Check if extraction exists
+        if (!fileEntry.extraction) {
+          console.warn(`Skipping file ${fileEntry.fileHeader.name} - no extraction data`);
+          continue;
+        }
+
+        // Create a new ArrayBuffer with proper type by copying the data
+        const extractionData = fileEntry.extraction;
+        const arrayBuffer = new ArrayBuffer(extractionData.length);
+        new Uint8Array(arrayBuffer).set(extractionData);
+        const blob = new Blob([arrayBuffer]);
+
+        // Get dimensions to prevent layout shift (CLS) in the reader
+        let width = 0;
+        let height = 0;
+        try {
+          const bitmap = await createImageBitmap(blob);
+          width = bitmap.width;
+          height = bitmap.height;
+          bitmap.close();
+        } catch (e) {
+          console.warn(`Failed to get dimensions for page ${i}:`, e);
+        }
+
+        pageEntries.push({
+          name: fileEntry.fileHeader.name,
+          blob,
+          width,
+          height
+        });
+
+        if (i % 10 === 0 || i === total - 1) {
+          self.postMessage({
+            type: 'PROGRESS',
+            comicId,
+            page: i + 1,
+            total,
+          });
+        }
+      }
       
-      throw new Error("CBR format parsing via WebAssembly is stubbed in this version. Please use CBZ.");
+      console.log('[CBR Parser] Extraction complete. Total pages:', pageEntries.length);
     } else {
       // --------------------------------------------------------
       // CBZ Parsing Logic (jszip)

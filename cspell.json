@@ -1,0 +1,32 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "cuid",
+    "filehash",
+    "dedup",
+    "comicId",
+    "userId",
+    "comicvine",
+    "neon",
+    "shadcn",
+    "lucide",
+    "tanstack",
+    "zustand",
+    "precaching",
+    "amotc",
+    "ducanh",
+    "unrar",
+    "prefs",
+    "nextauth",
+    "Agentic",
+    "turbopack",
+    "gamespot",
+    "nosniff"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    ".next",
+    "prisma/dev.db"
+  ]
+}

@@ -8,11 +8,25 @@
 // ────────────────────────────────────────────────────
 
 /** The 4 reading modes supported by ComicReader */
-export type ReadingMode =
+export type ReaderMode =
   | 'single-vertical' // Mobile: 1 page, scroll down
   | 'dual-spread'     // Desktop ≥1024px: 2 pages side-by-side
   | 'manga-rtl'       // User toggle: 2-page spread, RTL order
   | 'guided-view';    // User toggle: auto-zoom between detected panels
+
+// ────────────────────────────────────────────────────
+// Guided View / Panel Detection
+// ────────────────────────────────────────────────────
+
+/** A detected panel boundary in a comic page */
+export interface Panel {
+  /** X coordinate in pixels relative to original image */
+  x: number;
+  /** Y coordinate in pixels relative to original image */
+  y: number;
+  width: number;
+  height: number;
+}
 
 // ────────────────────────────────────────────────────
 // Comic / Library DTOs

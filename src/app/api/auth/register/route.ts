@@ -48,8 +48,7 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        { message: 'Invalid input', errors: (error as any).errors },
+        { message: 'Invalid input', errors: error.flatten().fieldErrors },
         { status: 400 }
       );
     }

@@ -14,7 +14,7 @@ import Credentials from 'next-auth/providers/credentials';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
-
+  trustHost: true,
   pages: {
     signIn: '/login',
     error: '/login',
@@ -24,7 +24,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Credentials({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'text', placeholder: 'test@example.com' },
+        email: { label: 'Email', type: 'text', placeholder: 'name@example.com' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
@@ -60,17 +60,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // Include userId in the JWT so API routes can access it without a DB lookup
     async jwt({ token, user }) {
       if (user) {
-        token.userId = user.id;
-        token.plan = (user as { plan?: string }).plan ?? 'FREE';
+        token.userId = user.id!;
+        token.plan = user.plan ?? 'FREE';
+        token.hasCompletedOnboarding = user.hasCompletedOnboarding ?? false;
+        token.name = user.name ?? null;
+        token.image = user.image ?? null;
+      } else if (token.userId) {
+        // Fetch fresh user data from database to get updated image/name
+        // If the user row no longer exists (e.g., DB reset), invalidate the token
+        // so Auth.js forces a re-login rather than propagating a dead userId.
+        const dbUser = await db.user.findUnique({
+          where: { id: token.userId },
+          select: { name: true, image: true, plan: true, hasCompletedOnboarding: true }
+        });
+        if (!dbUser) {
+          // Returning null signals Auth.js to invalidate this JWT session
+          return null;
+        }
+        token.name = dbUser.name;
+        token.image = dbUser.image;
+        token.plan = dbUser.plan;
+        token.hasCompletedOnboarding = dbUser.hasCompletedOnboarding;
       }
       return token;
     },
 
-    // Expose userId and plan to client-side session
+    // Expose userId, plan and onboarding status to client-side session
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.userId as string;
-        (session.user as { plan?: string }).plan = token.plan as string;
+        session.user.id = token.userId || '';
+        session.user.plan = token.plan || 'FREE';
+        session.user.hasCompletedOnboarding = !!token.hasCompletedOnboarding;
+        session.user.name = token.name ?? null;
+        session.user.image = token.image ?? null;
       }
       return session;
     },

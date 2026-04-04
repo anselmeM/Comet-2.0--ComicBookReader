@@ -10,79 +10,104 @@ import { db } from '@/lib/db';
 import type { AddComicPayload } from '@/types';
 
 /** GET /api/library */
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   const session = await auth();
-  const cookieHeader = req.headers.get('cookie') || 'None';
-  
-  console.log('[API GET /library] Auth check:', {
-    authenticated: !!session?.user?.id,
-    userId: session?.user?.id,
-    cookiePreview: cookieHeader.substring(0, 50) + '...',
-  });
   
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Parse pagination parameters from URL
+  const { searchParams } = new URL(_req.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '20');
+  const skip = (page - 1) * limit;
+
+  // Get total count for pagination info
+  const total = await db.comic.count({
+    where: { userId: session.user.id },
+  });
+
   const comics = await db.comic.findMany({
     where: { userId: session.user.id },
     include: { progress: true },
     orderBy: { lastReadAt: 'desc' },
+    take: limit,
+    skip: skip,
   });
 
-  return NextResponse.json(comics, { status: 200 });
+  // Return paginated response
+  return NextResponse.json({
+    data: comics,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  }, { status: 200 });
 }
 
 /** POST /api/library */
 export async function POST(req: Request) {
   const session = await auth();
-  const cookieHeader = req.headers.get('cookie') || 'None';
   
-  // High-resolution debugging
-  console.log('--- Auth Debug Start ---');
-  console.log('[API POST /library] Session:', session);
-  console.log('[API POST /library] Cookies:', cookieHeader);
-  console.log('[API POST /library] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
-  console.log('[API POST /library] AUTH_URL:', process.env.AUTH_URL);
-  console.log('--- Auth Debug End ---');
-
   if (!session?.user?.id) {
     return NextResponse.json({ 
       error: 'Unauthorized', 
       details: 'No active session.',
-      debug: {
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        cookiePresent: cookieHeader !== 'None'
-      }
     }, { status: 401 });
   }
 
   try {
     const contentType = req.headers.get('content-type');
-    const contentLength = req.headers.get('content-length');
-    console.log(`[API POST /library] Request: ${contentType}, Length: ${contentLength} bytes`);
+    if (!contentType || !contentType.includes('application/json')) {
+      return NextResponse.json({ error: 'Invalid content type. Expected application/json' }, { status: 415 });
+    }
 
     const body = (await req.json()) as AddComicPayload;
-    console.log('[API POST /library] payload received:', body.title, body.filehash);
 
-    // Basic validation
-    if (!body.title || !body.filehash || !body.pageCount) {
-      console.warn('[API POST /library] missing fields:', { 
-        title: !!body.title, 
-        filehash: !!body.filehash, 
-        pageCount: !!body.pageCount 
-      });
+    // Validation
+    if (!body.title || !body.filehash || typeof body.pageCount !== 'number') {
       return NextResponse.json(
-        { error: 'Missing required fields: title, filehash, pageCount' },
+        {
+          error: 'Validation failed',
+          details: 'Missing or invalid required fields: title, filehash, pageCount'
+        },
         { status: 400 },
+      );
+    }
+
+    // Protection against massive base64 payloads even if client sends them
+    if (body.coverUrl && body.coverUrl.length > 200000) { // 200KB hard limit for cover
+       return NextResponse.json(
+        { error: 'Cover image too large', details: 'The cover image exceeds the maximum allowed size.' },
+        { status: 413 },
+      );
+    }
+
+    // Verify user exists in database before attempting upsert
+    const dbUser = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true },
+    });
+
+    if (!dbUser) {
+      console.error('[API POST /library] User not found in database:', session.user.id);
+      return NextResponse.json(
+        { error: 'Unauthorized', details: 'Your session is stale. Please sign out and sign in again.' },
+        { status: 401 },
       );
     }
 
     // Upsert: if same user uploads same file again, update instead of duplicating
     const comic = await db.comic.upsert({
       where: { userId_filehash: { userId: session.user.id, filehash: body.filehash } },
-      update: { title: body.title, coverUrl: body.coverUrl, lastReadAt: new Date() },
+      update: {
+        title: body.title,
+        coverUrl: body.coverUrl || undefined,
+        lastReadAt: new Date()
+      },
       create: {
         userId: session.user.id,
         title: body.title,
@@ -95,9 +120,13 @@ export async function POST(req: Request) {
     return NextResponse.json(comic, { status: 201 });
   } catch (err: unknown) {
     console.error('[API POST /library] ERROR:', err);
-    const details = err instanceof Error ? err.stack || err.message : String(err);
+
+    if (err instanceof SyntaxError) {
+      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+    }
+
     return NextResponse.json(
-      { error: 'Internal server error', details },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }
