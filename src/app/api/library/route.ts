@@ -10,15 +10,15 @@ import { db } from '@/lib/db';
 import type { AddComicPayload } from '@/types';
 
 /** GET /api/library */
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   const session = await auth();
-   
+  
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   // Parse pagination parameters from URL
-  const { searchParams } = new URL(req.url);
+  const { searchParams } = new URL(_req.url);
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');
   const skip = (page - 1) * limit;

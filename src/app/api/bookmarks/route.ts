@@ -29,8 +29,7 @@ export async function GET(req: NextRequest) {
 
     // Check if bookmark model is available in Prisma client
     if (!hasBookmarkModel(db)) {
-      console.warn('Bookmark model not available in Prisma client');
-      return NextResponse.json({ bookmarks: [], warning: 'Database model not available' });
+      return NextResponse.json({ bookmarks: [] });
     }
 
     // First ensure ReadingProgress exists for this comic
@@ -84,8 +83,7 @@ export async function POST(req: NextRequest) {
 
     // Check if bookmark model is available
     if (!hasBookmarkModel(db)) {
-      console.warn('Bookmark model not available in Prisma client');
-      return NextResponse.json({ error: 'Database model not available' }, { status: 503 });
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
     }
 
     // First ensure ReadingProgress exists for this comic
@@ -141,7 +139,7 @@ export async function PUT(req: NextRequest) {
 
     // Check if bookmark model is available
     if (!hasBookmarkModel(db)) {
-      return NextResponse.json({ error: 'Database model not available' }, { status: 503 });
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
     }
 
     const body = await req.json();
@@ -178,7 +176,7 @@ export async function DELETE(req: NextRequest) {
 
     // Check if bookmark model is available
     if (!hasBookmarkModel(db)) {
-      return NextResponse.json({ error: 'Database model not available' }, { status: 503 });
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
     }
 
     const { searchParams } = new URL(req.url);
