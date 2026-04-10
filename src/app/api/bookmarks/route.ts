@@ -32,22 +32,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ bookmarks: [] });
     }
 
-    // First ensure ReadingProgress exists for this comic
-    let progress = await db.readingProgress.findUnique({
-      where: { comicId },
-    });
-
-    if (!progress) {
-      // Create ReadingProgress if it doesn't exist
-      progress = await db.readingProgress.create({
-        data: {
-          userId: session.user.id,
-          comicId,
-          totalPages: 0,
-        },
-      });
-    }
-
     // Get bookmarks for this comic
     const bookmarks = await db.bookmark.findMany({
       where: {
