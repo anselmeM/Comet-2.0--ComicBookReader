@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
     });
 
     const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3100'}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-    console.log(`[Password Reset] Reset URL for ${email}: ${resetUrl}`);
 
     // Set up email sending via SMTP if configured
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
@@ -76,13 +75,10 @@ export async function POST(req: NextRequest) {
             </div>
           `,
         });
-        console.log(`[Password Reset] Email sent successfully to ${email}`);
       } catch (emailError) {
         console.error('[Password Reset] Failed to send email via SMTP:', emailError);
         // We still return 200 below so we don't leak user existence
       }
-    } else {
-      console.warn('[Password Reset] SMTP credentials not configured in environment variables. Email sending skipped.');
     }
 
     return NextResponse.json({ message: 'If an account exists, a reset link will be sent' }, { status: 200 });

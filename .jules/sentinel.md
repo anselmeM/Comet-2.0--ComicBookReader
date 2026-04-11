@@ -10,3 +10,8 @@
 **Vulnerability:** The `/api/user/profile/route.ts` API endpoint lacked input validation for the `image` parameter in the PUT request body, allowing arbitrary or potentially malicious strings to be directly written to the database via `db.user.update`.
 **Learning:** Even internal API routes updating seemingly non-critical fields like a profile image URL can be vectors for injection or data corruption if input is not validated against an expected format.
 **Prevention:** Always validate and sanitize user input at the boundaries (e.g., using `zod` schema) before processing or persisting it to the database, ensuring expected types and constraints are enforced.
+
+## 2024-04-11 - Exposed Password Reset Tokens in Server Logs
+**Vulnerability:** The password reset token and user email were exposed in the server logs via `console.log` when generating the password reset link in `src/app/api/auth/reset-password/route.ts`. Any user with access to server logs could view these tokens and hijack the password reset process, leading to complete account takeover.
+**Learning:** Developers sometimes log full URLs for local debugging purposes (especially for email verification processes when SMTP is not set up locally), but these debug logs can leak sensitive credentials/tokens if left in production-bound code.
+**Prevention:** Remove debug logging containing sensitive tokens before committing. Enforce linting rules against `console.log` in production or use a dedicated logging library (like Winston/Pino) with redaction configured for fields like "token", "password", or "url".
