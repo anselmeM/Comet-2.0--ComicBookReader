@@ -2,11 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import {
   Search, 
   Bell, 
-  LayoutDashboard, 
   Library, 
   Bookmark, 
   Clock, 
@@ -21,7 +19,8 @@ import {
   List,
   Filter,
   UploadCloud,
-  Loader2
+  Loader2,
+  LayoutDashboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -62,7 +61,6 @@ export interface DashboardComic {
 }
 
 interface DashboardLayoutProps {
-  children: React.ReactNode;
   comics: DashboardComic[];
   onComicUpload?: (comic: DashboardComic) => void;
   onFileSelect?: (file: File) => Promise<void>;
@@ -106,7 +104,7 @@ const useTopRatedComics = (comics: DashboardComic[]) => {
 };
 
 // Sortable DashboardComic Card Component
-function SortableDashboardComicCard({ comic, isDragging, onNotification, isFav, onToggleFav }: { comic: DashboardComic; isDragging?: boolean; onNotification?: (msg: string) => void; isFav?: boolean; onToggleFav?: () => void }) {
+function SortableDashboardComicCard({ comic, onNotification, isFav, onToggleFav }: { comic: DashboardComic; onNotification?: (msg: string) => void; isFav?: boolean; onToggleFav?: () => void }) {
   const {
     attributes,
     listeners,
@@ -323,7 +321,6 @@ function TopRatedCard({ comic, onNotification }: { comic: DashboardComic & { aut
 
 // Main Dashboard Layout Component
 export function DashboardLayout({ 
-  children, 
   comics: initialDashboardComics, 
   onComicUpload,
   onFileSelect,
@@ -358,7 +355,7 @@ export function DashboardLayout({
   
   // Favorites filter state
   type FavoritesFilter = 'all' | 'favourites';
-  const [favoritesFilter, setFavoritesFilter] = useState<FavoritesFilter>('all');
+  const [favoritesFilter] = useState<FavoritesFilter>('all');
   
   // Get favorites from context
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
@@ -388,7 +385,6 @@ export function DashboardLayout({
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Get notification function from context
@@ -396,7 +392,6 @@ export function DashboardLayout({
   
   // Get session for user info
   const { data: session } = useSession();
-  const router = useRouter();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -442,14 +437,12 @@ export function DashboardLayout({
     if (!file) return;
 
     // Reset states
-    setUploadError(null);
     setUploadProgress(0);
     setIsUploading(true);
 
     // Validate file
     const validationError = validateFile(file);
     if (validationError) {
-      setUploadError(validationError);
       triggerNotification(validationError, 'error');
       setIsUploading(false);
       // Reset input
@@ -524,7 +517,6 @@ export function DashboardLayout({
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-      setUploadError(errorMessage);
       triggerNotification(errorMessage, 'error');
       setIsUploading(false);
     }
@@ -592,7 +584,7 @@ export function DashboardLayout({
       comic.title.toLowerCase().includes(query) ||
       comic.author.toLowerCase().includes(query)
     );
-  }, [debouncedSearch]);
+  }, [debouncedSearch, topRatedComics]);
 
   // Featured comic
   const featuredDashboardComic = comics.find(c => c.progress && c.progress.lastPage > 0) || comics[0];

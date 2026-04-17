@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useBookmarks, Bookmark } from '@/hooks/useBookmarks';
 import { useReaderStore } from '@/stores/readerStore';
-import { X, Edit2, Trash2, Plus, ChevronRight, Bookmark as BookmarkIcon, ExternalLink } from 'lucide-react';
+import { X, Edit2, Trash2, Plus, ChevronRight, Bookmark as BookmarkIcon } from 'lucide-react';
 
 interface BookmarkPanelProps {
   comicId: string;
@@ -13,7 +13,6 @@ interface BookmarkPanelProps {
 export function BookmarkPanel({ comicId, onClose }: BookmarkPanelProps) {
   const { bookmarks, isLoading, error, addBookmark, updateBookmark, removeBookmark, isBookmarked } = useBookmarks({ comicId });
   const currentPage = useReaderStore((state) => state.currentPage);
-  const totalPages = useReaderStore((state) => state.totalPages);
   const setPage = useReaderStore((state) => state.setPage);
   
   const [editingId, setEditingId] = useState<string | null>(null);

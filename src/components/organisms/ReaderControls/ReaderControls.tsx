@@ -9,7 +9,6 @@ import { BookmarkPanel } from '@/components/organisms/BookmarkPanel';
 import { Settings, Sun, Columns, File, Maximize, AlignRight, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Maximize2, Minimize2, Bookmark, BookmarkCheck, Home } from 'lucide-react';
 
 // Extended types for vendor-prefixed fullscreen APIs
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface ExtendedDocument extends Document {
   webkitFullscreenEnabled?: boolean;
   mozFullScreenEnabled?: boolean;
@@ -22,7 +21,6 @@ interface ExtendedDocument extends Document {
   msExitFullscreen?: () => Promise<void>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface ExtendedElement extends HTMLElement {
   webkitRequestFullscreen?: () => Promise<void>;
   mozRequestFullScreen?: () => Promise<void>;
@@ -143,18 +141,6 @@ export function ReaderControls({ type }: ReaderControlsProps) {
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
   }, [isFullscreen, toggleFullscreen]);
-
-  // Handle bookmark toggle - show panel if there are bookmarks or add new
-  const handleBookmarkToggle = () => {
-    if (bookmarks.length > 0) {
-      setShowBookmarkPanel(true);
-    } else {
-      // No bookmarks yet, add current page as bookmark
-      if (comicId) {
-        toggleBookmark(currentPage);
-      }
-    }
-  };
 
   if (type === 'top') {
     const bookmarked = comicId ? isBookmarked(currentPage) : false;

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { DashboardLayout, DashboardComic } from '@/components/organisms/Dashboard/DashboardLayout';
 import { UploadCloud, Loader2, Library } from 'lucide-react';
 import { useComicParser } from '@/hooks/useComicParser';
-import { useLibrary, LibraryComic } from '@/hooks/useLibrary';
+import { useLibrary, type LibraryComic } from '@/hooks/useLibrary';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
@@ -13,17 +13,16 @@ export default function LibraryPage() {
   const { parseComic, isParsing, progress } = useComicParser();
   const [currentPage, setCurrentPage] = useState(1);
   const { data: libraryData, isLoading, error, refetch } = useLibrary({ page: currentPage, limit: 20 });
-  const { data: session, status: sessionStatus } = useSession();
+  const { status: sessionStatus } = useSession();
   const [isDragging, setIsDragging] = useState(false);
 
-  // Extract comics from paginated response
-  const comics = libraryData?.data ?? [];
+  // Extract pagination from response
   const pagination = libraryData?.pagination;
 
   // Transform real comics from API to DashboardComic format
   const dashboardComics: DashboardComic[] = useMemo(() => {
-    if (!comics) return [];
-    return comics.map((comic: any) => ({
+    const comics = libraryData?.data ?? [];
+    return comics.map((comic: LibraryComic) => ({
       id: comic.id,
       title: comic.title,
       author: undefined, // Author is stored in metadata field
@@ -36,7 +35,7 @@ export default function LibraryPage() {
         totalPages: comic.progress.totalPages,
       } : undefined,
     }));
-  }, [comics]);
+  }, [libraryData?.data]);
 
   // Handle session state safely - redirect only after session is confirmed unauthenticated
   React.useEffect(() => {
@@ -238,9 +237,7 @@ export default function LibraryPage() {
           totalPages: pagination.totalPages
         } : undefined}
         onPageChange={(page) => setCurrentPage(page)}
-      >
-        <div className="hidden" />
-      </DashboardLayout>
+      />
     </>
   );
 }

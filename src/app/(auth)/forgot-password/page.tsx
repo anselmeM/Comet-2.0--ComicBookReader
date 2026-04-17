@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
       } else {
         setError(data.error || 'Something went wrong');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to send reset request');
     } finally {
       setIsLoading(false);

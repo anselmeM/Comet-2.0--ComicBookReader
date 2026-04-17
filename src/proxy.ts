@@ -25,7 +25,6 @@ const PUBLIC_API_PREFIXES = ['/api/auth'];
 
 export default auth((req: NextRequest & { auth: unknown }) => {
   const { pathname } = req.nextUrl;
-  const searchParams = req.nextUrl.searchParams;
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
   const isPublicApi = PUBLIC_API_PREFIXES.some((prefix) =>

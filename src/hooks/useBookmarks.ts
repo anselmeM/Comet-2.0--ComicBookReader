@@ -26,6 +26,14 @@ interface UseBookmarksReturn {
   refreshBookmarks: () => Promise<void>;
 }
 
+interface RawBookmark {
+  id: string;
+  pageNumber: number;
+  label?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function useBookmarks({ comicId }: UseBookmarksOptions): UseBookmarksReturn {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +56,7 @@ export function useBookmarks({ comicId }: UseBookmarksOptions): UseBookmarksRetu
       const data = await response.json();
       
       // Convert date strings to Date objects
-      const parsedBookmarks = (data.bookmarks || []).map((b: any) => ({
+      const parsedBookmarks = (data.bookmarks || []).map((b: RawBookmark) => ({
         ...b,
         createdAt: new Date(b.createdAt),
         updatedAt: new Date(b.updatedAt),

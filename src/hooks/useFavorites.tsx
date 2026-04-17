@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-export interface FavoritesContextType {
+interface FavoritesState {
   favorites: string[];
   isFavorite: (comicId: string) => boolean;
   toggleFavorite: (comicId: string) => void;
@@ -11,85 +12,65 @@ export interface FavoritesContextType {
   clearFavorites: () => void;
 }
 
-const FAVORITES_STORAGE_KEY = 'comic-favorites';
+export const useFavoritesStore = create<FavoritesState>()(
+  persist(
+    (set, get) => ({
+      favorites: [],
 
-// Cached empty array for SSR to prevent infinite loop
-const EMPTY_FAVORITES: string[] = [];
+      isFavorite: (comicId: string) => {
+        return get().favorites.includes(comicId);
+      },
 
-const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
+      toggleFavorite: (comicId: string) => {
+        set((state) => {
+          const isFav = state.favorites.includes(comicId);
+          const newFavorites = isFav
+            ? state.favorites.filter((id) => id !== comicId)
+            : [...state.favorites, comicId];
+          return { favorites: newFavorites };
+        });
+      },
 
-interface FavoritesProviderProps {
-  children: React.ReactNode;
-}
+      addFavorite: (comicId: string) => {
+        set((state) => {
+          if (!state.favorites.includes(comicId)) {
+            return { favorites: [...state.favorites, comicId] };
+          }
+          return state;
+        });
+      },
 
-export function FavoritesProvider({ children }: FavoritesProviderProps): React.ReactElement {
-  // Use state for favorites - initialized from localStorage on client
-  const [favorites, setFavorites] = useState<string[]>(EMPTY_FAVORITES);
-  const [isHydrated, setIsHydrated] = useState(false);
+      removeFavorite: (comicId: string) => {
+        set((state) => ({
+          favorites: state.favorites.filter((id) => id !== comicId),
+        }));
+      },
 
-  // Load favorites from localStorage on mount (client-side only)
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setFavorites(parsed);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load favorites from localStorage:', error);
+      clearFavorites: () => {
+        set({ favorites: [] });
+      },
+    }),
+    {
+      name: 'comet-favorites-storage',
     }
-    setIsHydrated(true);
-  }, []);
+  )
+);
 
-  // Persist to localStorage whenever favorites change
-  useEffect(() => {
-    if (isHydrated) {
-      try {
-        localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
-      } catch (error) {
-        console.error('Failed to save favorites to localStorage:', error);
-      }
-    }
-  }, [favorites, isHydrated]);
+/**
+ * Backward compatibility hook to match the previous FavoritesContext API
+ * while using the new Zustand store.
+ */
+export function useFavorites() {
+  const { 
+    favorites, 
+    isFavorite, 
+    toggleFavorite, 
+    addFavorite, 
+    removeFavorite, 
+    clearFavorites 
+  } = useFavoritesStore();
 
-  // Check if a comic is favorited
-  const isFavorite = useCallback((comicId: string): boolean => {
-    return favorites.includes(comicId);
-  }, [favorites]);
-
-  // Toggle favorite status
-  const toggleFavorite = useCallback((comicId: string) => {
-    setFavorites(prev => {
-      const newFavorites = prev.includes(comicId)
-        ? prev.filter(id => id !== comicId)
-        : [...prev, comicId];
-      return newFavorites;
-    });
-  }, []);
-
-  // Add a favorite
-  const addFavorite = useCallback((comicId: string) => {
-    setFavorites(prev => {
-      if (!prev.includes(comicId)) {
-        return [...prev, comicId];
-      }
-      return prev;
-    });
-  }, []);
-
-  // Remove a favorite
-  const removeFavorite = useCallback((comicId: string) => {
-    setFavorites(prev => prev.filter(id => id !== comicId));
-  }, []);
-
-  // Clear all favorites
-  const clearFavorites = useCallback(() => {
-    setFavorites([]);
-  }, []);
-
-  const value: FavoritesContextType = {
+  return {
     favorites,
     isFavorite,
     toggleFavorite,
@@ -97,21 +78,4 @@ export function FavoritesProvider({ children }: FavoritesProviderProps): React.R
     removeFavorite,
     clearFavorites,
   };
-
-  return (
-    <FavoritesContext.Provider value={value}>
-      {children}
-    </FavoritesContext.Provider>
-  );
-}
-
-// Custom hook to use the favorites context
-export function useFavorites(): FavoritesContextType {
-  const context = useContext(FavoritesContext);
-  
-  if (context === undefined) {
-    throw new Error('useFavorites must be used within a FavoritesProvider');
-  }
-  
-  return context;
 }

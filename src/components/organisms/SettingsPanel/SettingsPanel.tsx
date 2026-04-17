@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useStorage } from '@/hooks/useStorage';
 import { useReaderStore } from '@/stores/readerStore';
 import type { ReaderMode } from '@/stores/readerStore';
+import NextImage from 'next/image';
 import { Trash2, Smartphone, HardDrive, Monitor, BookOpen, RefreshCw, User, Camera, Loader2 } from 'lucide-react';
 
 function formatBytes(bytes: number, decimals = 2) {
@@ -99,10 +100,13 @@ export function SettingsPanel() {
         <div className="flex items-center gap-6 p-6 bg-neutral-900 border border-neutral-800 rounded-2xl">
           <div className="relative">
             {session?.user?.image ? (
-              <img 
+              <NextImage 
                 src={session.user.image} 
                 alt={session.user.name || 'User'}
+                width={96}
+                height={96}
                 className="w-24 h-24 rounded-full object-cover border-2 border-neutral-700"
+                unoptimized
               />
             ) : (
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold border-2 border-neutral-700">
