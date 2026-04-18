@@ -13,9 +13,10 @@ const collectionUpdateSchema = z.object({
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,7 +24,7 @@ export async function GET(
 
     const collection = await db.collection.findUnique({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id
       },
       include: {
@@ -64,9 +65,10 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -76,12 +78,12 @@ export async function PATCH(
     const result = collectionUpdateSchema.safeParse(body);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
+      return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 });
     }
 
     const updated = await db.collection.update({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id
       },
       data: result.data
@@ -99,9 +101,10 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -109,7 +112,7 @@ export async function DELETE(
 
     await db.collection.delete({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id
       }
     });

@@ -19,7 +19,7 @@ export function PanelEditor({ image, initialPanels, onSave, onCancel }: PanelEdi
   const [imgDims, setImgDims] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    const img = new Image();
+    const img = new window.Image();
     img.src = image;
     img.onload = () => {
       setImgDims({ width: img.naturalWidth, height: img.naturalHeight });

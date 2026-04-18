@@ -10,3 +10,7 @@
 **Vulnerability:** The `/api/user/profile/route.ts` API endpoint lacked input validation for the `image` parameter in the PUT request body, allowing arbitrary or potentially malicious strings to be directly written to the database via `db.user.update`.
 **Learning:** Even internal API routes updating seemingly non-critical fields like a profile image URL can be vectors for injection or data corruption if input is not validated against an expected format.
 **Prevention:** Always validate and sanitize user input at the boundaries (e.g., using `zod` schema) before processing or persisting it to the database, ensuring expected types and constraints are enforced.
+## 2025-04-18 - [Missing Rate Limiting on Password Reset Complete]
+**Vulnerability:** The `/api/auth/reset-password-complete/route.ts` endpoint did not have rate limiting, making it susceptible to brute force attacks on the password reset token or denial-of-service (DoS) attacks.
+**Learning:** Even though the initialization of the reset token was rate limited, the actual reset endpoint accepting the token wasn't, leaving an attack vector open.
+**Prevention:** Implement rate limiting consistently across all authentication and sensitive endpoints, typically matching the initial endpoint's behavior.

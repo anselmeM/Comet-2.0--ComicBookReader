@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, Trash2, MoreVertical, Sparkles, Loader2 } from 'lucide-react';
 import { useDeleteComic } from '@/hooks/useLibrary';
 import { useEnrichment } from '@/hooks/useEnrichment';
-import { DashboardComic } from '@/components/organisms/Dashboard/DashboardLayout';
+import { DashboardComic } from '@/components/molecules/DashboardComicCard';
 
 interface ComicCardProps {
   comic: DashboardComic;
