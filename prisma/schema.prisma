@@ -27,6 +27,34 @@ model User {
   library                Comic[]
   progress               ReadingProgress[]
   sessions               Session[]
+  collections            Collection[]
+}
+
+model Collection {
+  id          String           @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       CollectionItem[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model CollectionItem {
+  id           String     @id @default(cuid())
+  collectionId String
+  comicId      String
+  addedAt      DateTime   @default(now())
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  comic        Comic      @relation(fields: [comicId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, comicId])
+  @@index([collectionId])
+  @@index([comicId])
 }
 
 model Account {
@@ -83,6 +111,7 @@ model Comic {
   lastReadAt  DateTime?
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   progress    ReadingProgress?
+  collections CollectionItem[]
 
   @@unique([userId, filehash])
   @@index([userId])

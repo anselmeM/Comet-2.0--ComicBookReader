@@ -122,16 +122,6 @@ const withPWA = withPWAInit({
   },
 });
 
-const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline';
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    font-src 'self' data: https://fonts.gstatic.com;
-    img-src 'self' blob: data: https:;
-    worker-src 'self' blob:;
-    connect-src 'self' https://comicvine.gamespot.com https://*.aws.neon.tech https://*.supabase.co;
-`;
-
 const nextConfig: NextConfig = {
   // Production optimizations
   reactStrictMode: true,
@@ -173,7 +163,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' blob: data: https:; worker-src 'self' blob:; connect-src 'self' https:;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' blob: data: https:; worker-src 'self' blob:; connect-src 'self' http://localhost:* https:; form-action 'self';",
           },
           {
             key: 'X-Content-Type-Options',

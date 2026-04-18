@@ -21,7 +21,7 @@ interface BBox {
  */
 export async function detectPanels(
   image: ImageBitmap | HTMLImageElement,
-  options = { threshold: 18, minPanelSize: 50, gutterWidth: 4 }
+  options = { threshold: 22, minPanelSize: 60, gutterWidth: 6, maxDepth: 12 }
 ): Promise<Panel[]> {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -29,7 +29,7 @@ export async function detectPanels(
   if (!ctx) throw new Error('Could not create detection canvas context');
 
   // 1. Preprocessing: Scale down for performance
-  const MAX_DIM = 600;
+  const MAX_DIM = 800; // Increased for better accuracy
   const scale = Math.min(MAX_DIM / image.width, MAX_DIM / image.height, 1);
   canvas.width = image.width * scale;
   canvas.height = image.height * scale;
@@ -46,8 +46,11 @@ export async function detectPanels(
 
     for (let i = start; i < end; i++) {
       const px = isRow ? (index * width + i) * 4 : (i * width + index) * 4;
-      // Faster grayscale: (R + G*2 + B) >> 2
-      const val = (data[px] + data[px + 1] * 2 + data[px + 2]) >> 2;
+      const r = data[px];
+      const g = data[px + 1];
+      const b = data[px + 2];
+      // Grayscale value
+      const val = (r * 0.299 + g * 0.587 + b * 0.114);
       sum += val;
       sumSq += val * val;
       count++;
@@ -71,7 +74,7 @@ export async function detectPanels(
       y++; h--;
     }
     // Trim from bottom
-    while (h > options.minPanelSize && getVariance(true, y + h - 1, x, x + w) < options.threshold) {
+    while (h > options.minPanelSize && getVariance(true, Math.max(0, y + h - 1), x, x + w) < options.threshold) {
       h--;
     }
     // Trim from left
@@ -79,7 +82,7 @@ export async function detectPanels(
       x++; w--;
     }
     // Trim from right
-    while (w > options.minPanelSize && getVariance(false, x + w - 1, y, y + h) < options.threshold) {
+    while (w > options.minPanelSize && getVariance(false, Math.max(0, x + w - 1), y, y + h) < options.threshold) {
       w--;
     }
 
@@ -90,7 +93,7 @@ export async function detectPanels(
    * Recursive function to split a region into panels.
    */
   const splitRegion = (x: number, y: number, w: number, h: number, depth: number) => {
-    if (depth > 10 || w < options.minPanelSize || h < options.minPanelSize) {
+    if (depth > options.maxDepth || w < options.minPanelSize || h < options.minPanelSize) {
       panels.push(trimPanel({ x, y, width: w, height: h }));
       return;
     }
@@ -147,8 +150,7 @@ export async function detectPanels(
 
   splitRegion(0, 0, width, height, 0);
 
-  // Filter out tiny noise and map back to original image coordinates
-  return panels
+  const finalPanels = panels
     .filter(p => p.width >= options.minPanelSize && p.height >= options.minPanelSize)
     .map(p => ({
       x: Math.round(p.x / scale),
@@ -156,4 +158,24 @@ export async function detectPanels(
       width: Math.round(p.width / scale),
       height: Math.round(p.height / scale)
     }));
+
+  return sortPanels(finalPanels);
+}
+
+/**
+ * Sorts panels in reading order (Top-to-Bottom, Left-to-Right).
+ */
+export function sortPanels(panels: Panel[], rtl = false): Panel[] {
+  return [...panels].sort((a, b) => {
+    // 1. Group by rows (if Y difference is small, they are in the same row)
+    const rowThreshold = 50; 
+    const yDiff = a.y - b.y;
+    
+    if (Math.abs(yDiff) > rowThreshold) {
+      return yDiff;
+    }
+    
+    // 2. Sort by X within the row
+    return rtl ? b.x - a.x : a.x - b.x;
+  });
 }

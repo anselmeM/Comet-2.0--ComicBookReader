@@ -16,7 +16,8 @@ import {
   Hash,
   X,
   Clock,
-  Calendar
+  Calendar,
+  Folder
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -31,6 +32,8 @@ import {
 import Link from 'next/link';
 import { useNotification } from '@/components/atoms/Toast';
 import { useFavorites } from '@/hooks/useFavorites';
+import { ErrorBoundary } from '@/components/atoms/ErrorBoundary';
+import Image from 'next/image';
 
 // Modular Imports
 import { DashboardComic } from '@/components/molecules/DashboardComicCard';
@@ -40,6 +43,8 @@ import { CollectionsView } from './views/CollectionsView';
 import { HistoryView } from './views/HistoryView';
 import { FavouritesView } from './views/FavouritesView';
 import { FavouriteHeroesView } from './views/FavouriteHeroesView';
+import { FriendsView } from './views/FriendsView';
+import { useCollections } from '@/hooks/useCollections';
 
 interface DashboardLayoutProps {
   comics: DashboardComic[];
@@ -94,8 +99,10 @@ export function DashboardLayout(props: DashboardLayoutProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
   
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { collections, addItem } = useCollections();
   const { triggerNotification } = useNotification();
   const { data: session } = useSession();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -111,6 +118,20 @@ export function DashboardLayout(props: DashboardLayoutProps) {
       return; 
     }
     setActiveView(viewId);
+  };
+
+  const handleMoveToCollection = async (collectionId: string, collectionName: string) => {
+    try {
+      await Promise.all(selectedIds.map(comicId => 
+        addItem.mutateAsync({ collectionId, comicId })
+      ));
+      triggerNotification(`Moved ${selectedIds.length} items to ${collectionName}`, 'success');
+      setSelectedIds([]);
+      setIsEditMode(false);
+      setIsMoveMenuOpen(false);
+    } catch {
+      triggerNotification('Failed to move items', 'error');
+    }
   };
 
   const viewProps = {
@@ -131,25 +152,41 @@ export function DashboardLayout(props: DashboardLayoutProps) {
   };
 
   const renderActiveView = () => {
+    let viewNode: React.ReactNode;
+
     switch (activeView) {
       case 'dashboard':
-        return <DashboardView {...viewProps} />;
+        viewNode = <DashboardView {...viewProps} />;
+        break;
       case 'collections':
-        return <CollectionsView {...viewProps} />;
+        viewNode = <CollectionsView {...viewProps} />;
+        break;
       case 'favourites':
-        return <FavouritesView {...viewProps} />;
+        viewNode = <FavouritesView {...viewProps} />;
+        break;
       case 'history':
-        return <HistoryView comics={comics} setActiveView={setActiveView} />;
+        viewNode = <HistoryView comics={comics} setActiveView={setActiveView} />;
+        break;
       case 'favourite-heroes':
-        return <FavouriteHeroesView favouriteHeroes={favouriteHeroes} setActiveView={setActiveView} />;
+        viewNode = <FavouriteHeroesView favouriteHeroes={favouriteHeroes} setActiveView={setActiveView} />;
+        break;
+      case 'friends':
+        viewNode = <FriendsView setActiveView={setActiveView} />;
+        break;
       default:
-        return (
+        viewNode = (
           <div className="text-center py-40">
             <Clock size={80} className="mx-auto mb-6 text-neutral-100" />
             <h4 className="text-4xl font-black text-neutral-200 uppercase tracking-tighter italic opacity-50 underline decoration-comet-accent">Preparing {activeView}...</h4>
           </div>
         );
     }
+
+    return (
+      <ErrorBoundary key={activeView} name={activeView}>
+        {viewNode}
+      </ErrorBoundary>
+    );
   };
 
   return (
@@ -165,8 +202,40 @@ export function DashboardLayout(props: DashboardLayoutProps) {
                  <span className="text-xl font-black tracking-tighter">{selectedIds.length} items</span>
                </div>
                <div className="flex gap-4">
+                 <div className="relative">
+                   <button 
+                    onClick={() => setIsMoveMenuOpen(!isMoveMenuOpen)}
+                    className="bg-white/10 hover:bg-white/20 px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-95 flex items-center gap-3"
+                   >
+                     <Folder size={18} /> Move to
+                   </button>
+                   
+                   <AnimatePresence>
+                     {isMoveMenuOpen && (
+                       <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: -10 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="absolute bottom-full left-0 mb-4 bg-neutral-800 border border-white/10 rounded-2xl shadow-2xl py-3 min-w-[200px] overflow-hidden"
+                       >
+                         <p className="px-5 py-2 text-[10px] font-black uppercase text-neutral-500 tracking-widest border-b border-white/5 mb-2">Select Collection</p>
+                         {collections.length === 0 && <p className="px-5 py-4 text-xs text-neutral-400 italic">No collections yet</p>}
+                         {collections.map(col => (
+                           <button 
+                            key={col.id}
+                            onClick={() => handleMoveToCollection(col.id, col.name)}
+                            className="w-full text-left px-5 py-3 hover:bg-blue-500 transition-colors font-bold text-sm"
+                           >
+                             {col.name}
+                           </button>
+                         ))}
+                       </motion.div>
+                     )}
+                   </AnimatePresence>
+                 </div>
+
                  <button onClick={async () => { if(confirm(`Delete ${selectedIds.length} items?`)) await onBulkDelete?.(selectedIds); setSelectedIds([]); setIsEditMode(false); }} className="bg-red-500 hover:bg-red-600 px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-red-500/20 active:scale-95 flex items-center gap-3">Delete Forever</button>
-                 <button onClick={() => { setIsEditMode(false); setSelectedIds([]); }} className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all"><X size={24} /></button>
+                 <button onClick={() => { setIsEditMode(false); setSelectedIds([]); setIsMoveMenuOpen(false); }} className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all"><X size={24} /></button>
                </div>
             </motion.div>
           )}
@@ -264,10 +333,12 @@ export function DashboardLayout(props: DashboardLayoutProps) {
                  </div>
                  <Link href="/settings" className="shrink-0 group">
                    {session?.user?.image ? (
-                     <img 
+                     <Image 
                        src={session.user.image} 
                        alt={session?.user?.name || 'User profile'} 
-                       className="w-11 h-11 rounded-full object-cover border border-slate-200 group-hover:border-blue-500 transition-colors" 
+                       width={44}
+                       height={44}
+                       className="rounded-full object-cover border border-slate-200 group-hover:border-blue-500 transition-colors" 
                      />
                    ) : (
                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-black text-sm border border-slate-200 group-hover:border-blue-500 transition-colors">

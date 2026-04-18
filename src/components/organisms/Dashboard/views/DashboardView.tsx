@@ -1,12 +1,13 @@
-import React from 'react';
-import { Heart, BookOpen, ArrowRight, Users } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Heart, BookOpen, ArrowRight, Users, Edit3, ChevronLeft, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { DashboardComic, DashboardComicCard } from '@/components/molecules/DashboardComicCard';
 import { CircularProgress } from '@/components/molecules/CircularProgress';
 import { DndContext, closestCenter, SensorDescriptor, SensorOptions } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
-import { Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FavouriteHero, TopRatedComic } from '../mockData';
 import Image from 'next/image';
+import { useEnrichment } from '@/hooks/useEnrichment';
+import Link from 'next/link';
 
 interface DashboardViewProps {
   comics: DashboardComic[];
@@ -46,10 +47,42 @@ export const DashboardView = ({
   triggerNotification,
   sensors
 }: DashboardViewProps) => {
-  const featuredComic = comics[0];
+  const enrichment = useEnrichment();
+
+  // Logic for Dynamic Hero: Find the most read series
+  const seriesStats = useMemo(() => {
+    const stats: Record<string, { count: number; lastRead: number; comic: DashboardComic }> = {};
+    
+    comics.forEach(comic => {
+      if (comic.series && (comic.progress?.lastPage ?? 0) > 0) {
+        if (!stats[comic.series]) {
+          stats[comic.series] = { count: 0, lastRead: 0, comic };
+        }
+        stats[comic.series].count += 1;
+        stats[comic.series].comic = comic;
+      }
+    });
+
+    return Object.values(stats).sort((a, b) => b.count - a.count);
+  }, [comics]);
+
+  const dynamicFeaturedComic = seriesStats.length > 0 ? seriesStats[0].comic : comics[0];
+  
+  const featuredComic = dynamicFeaturedComic;
   const continueComic = comics.find(c => (c.progress?.lastPage ?? 0) > 0) || comics[1] || comics[0];
   const isFeaturedFav = featuredComic ? isFavorite(featuredComic.id) : false;
   const isContinueFav = continueComic ? isFavorite(continueComic.id) : false;
+
+  const handleEnrichFeatured = async () => {
+    if (!featuredComic) return;
+    try {
+      triggerNotification(`Enriching "${featuredComic.title}"...`, 'info');
+      await enrichment.mutateAsync(featuredComic.id);
+      triggerNotification(`Metadata updated for "${featuredComic.title}"!`, 'success');
+    } catch {
+      triggerNotification(`Failed to enrich "${featuredComic.title}"`, 'error');
+    }
+  };
 
   return (
     <div className="space-y-12 animate-in fade-in duration-500 pb-20">
@@ -59,7 +92,7 @@ export const DashboardView = ({
         <section className="lg:col-span-8 relative h-[400px] rounded-[2.5rem] overflow-hidden group shadow-2xl">
           <div className="absolute inset-0">
             <Image 
-              src="https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?w=1200&q=80" 
+              src={featuredComic?.coverUrl || "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?w=1200&q=80"} 
               alt="Featured Hero"
               fill
               priority
@@ -69,24 +102,41 @@ export const DashboardView = ({
           </div>
           
           {featuredComic && (
-            <button 
-              onClick={() => toggleFavorite(featuredComic.id)}
-              className="absolute top-8 right-8 z-20 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 hover:bg-white/20 transition-all group/fav"
-              aria-label={isFeaturedFav ? "Remove from favorites" : "Add to favorites"}
-            >
-              <Heart size={24} className={`${isFeaturedFav ? 'text-red-500 fill-red-500' : 'text-white'}`} />
-            </button>
+            <div className="absolute top-8 right-8 z-20 flex gap-2">
+              <button
+                onClick={handleEnrichFeatured}
+                disabled={enrichment.isPending}
+                className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 hover:bg-white/20 transition-all group/enrich disabled:opacity-50"
+                title="Enrich metadata"
+              >
+                {enrichment.isPending ? <Loader2 size={24} className="animate-spin text-white" /> : <Sparkles size={24} className="text-white" />}
+              </button>
+              <button 
+                onClick={() => toggleFavorite(featuredComic.id)}
+                className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 hover:bg-white/20 transition-all group/fav"
+                aria-label={isFeaturedFav ? "Remove from favorites" : "Add to favorites"}
+              >
+                <Heart size={24} className={`${isFeaturedFav ? 'text-red-500 fill-red-500' : 'text-white'}`} />
+              </button>
+            </div>
           )}
 
           <div className="absolute inset-0 p-12 flex flex-col justify-end">
             <div className="space-y-4 max-w-xl">
-              <span className="text-xs font-black uppercase tracking-[0.3em] text-blue-400">Featured Author: Nick Spencer</span>
+              <span className="text-xs font-black uppercase tracking-[0.3em] text-blue-400">
+                {featuredComic?.series ? `Featured Series: ${featuredComic.series}` : `Featured Author: Nick Spencer`}
+              </span>
               <h2 className="text-4xl md:text-5xl font-black text-white leading-tight tracking-tighter">
-                the Amazing Spider-Man Vol. 1: <br /> Back To Basics
+                {featuredComic?.title || "the Amazing Spider-Man Vol. 1: Back To Basics"}
               </h2>
-              <button className="bg-blue-500 hover:bg-blue-600 text-white px-10 py-4 rounded-full font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-blue-500/30 active:scale-95 w-fit mt-4">
-                Read Now
-              </button>
+              {featuredComic && (
+                <Link 
+                  href={`/reader/${featuredComic.id}`}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-10 py-4 rounded-full font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-blue-500/30 active:scale-95 w-fit mt-4 flex items-center gap-2"
+                >
+                  Read Now
+                </Link>
+              )}
             </div>
           </div>
         </section>
