@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiting (T-AUTH-003)
+    const ip = (req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
+    const limiter = await rateLimit(`reset_complete_${ip}`, 5, 60 * 60 * 1000); // 5 per hour
+
+    if (limiter.isLimited) {
+      return NextResponse.json(
+        { error: 'Too many reset attempts. Please try again in an hour.' },
+        { status: 429, headers: limiter.headers }
+      );
+    }
+
     const { email, token, newPassword } = await req.json();
 
     if (!email || !token || !newPassword) {
