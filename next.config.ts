@@ -151,6 +151,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'comicvine.gamespot.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
     // Increase cache duration for optimized images
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days

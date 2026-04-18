@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, Users } from 'lucide-react';
+import Image from 'next/image';
 
 import { FavouriteHero } from '../mockData';
 
@@ -32,9 +33,11 @@ export const FavouriteHeroesView = ({
       {favouriteHeroes.map(hero => (
         <div key={hero.id} className="group flex flex-col items-center gap-6 cursor-pointer">
           <div className={`relative w-32 h-32 md:w-40 md:h-40 rounded-full ${hero.color} p-1.5 overflow-hidden transition-all duration-500 group-hover:-translate-y-3 group-hover:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.3)]`}>
-            <img 
+            <Image 
               src={hero.image} 
               alt={hero.name} 
+              width={160}
+              height={160}
               className="w-full h-full rounded-full object-cover mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity" 
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

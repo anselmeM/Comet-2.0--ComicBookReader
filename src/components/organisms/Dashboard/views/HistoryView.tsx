@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronLeft, History, BookOpen, ArrowRight } from 'lucide-react';
 import { DashboardComic } from '@/components/molecules/DashboardComicCard';
-import Link from 'next/link';
+import Image from 'next/image';
 
 interface HistoryViewProps {
   comics: DashboardComic[];
@@ -38,11 +38,17 @@ export const HistoryView = ({
             const progress = comic.progress ? Math.round((comic.progress.lastPage / comic.progress.totalPages) * 100) : 0;
             return (
               <div key={comic.id} className="bg-white p-6 rounded-[2.5rem] border border-neutral-100 shadow-sm flex gap-6 group hover:shadow-xl transition-all">
-                <div className="w-32 h-48 rounded-2xl overflow-hidden shrink-0 shadow-lg">
+                <div className="relative w-32 h-48 rounded-2xl overflow-hidden shrink-0 shadow-lg">
                   {comic.coverUrl ? (
-                    <img src={comic.coverUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={comic.title} />
+                    <Image 
+                      src={comic.coverUrl} 
+                      alt={comic.title}
+                      fill
+                      sizes="128px"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500" 
+                    />
                   ) : (
-                    <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-neutral-300">
+                    <div className="absolute inset-0 bg-neutral-100 flex items-center justify-center text-neutral-300">
                       <BookOpen size={40} />
                     </div>
                   )}

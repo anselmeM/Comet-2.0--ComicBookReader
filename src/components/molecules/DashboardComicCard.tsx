@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Heart, Loader2, Sparkles, CheckCircle2, Circle, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEnrichment } from '@/hooks/useEnrichment';
 
 export interface DashboardComic {
@@ -132,7 +133,13 @@ export function DashboardComicCard({
 
       <div className="block relative aspect-[2/3] bg-neutral-800 w-full overflow-hidden">
         {comic.coverUrl ? (
-          <img src={comic.coverUrl} alt={comic.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+          <Image 
+            src={comic.coverUrl} 
+            alt={comic.title} 
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105" 
+          />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-neutral-600">
             <LayoutGrid size={48} strokeWidth={1} />

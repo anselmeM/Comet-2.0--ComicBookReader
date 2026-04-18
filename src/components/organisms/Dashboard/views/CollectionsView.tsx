@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Folder, BookOpen, CheckCircle2, Edit3, Plus } from 'lucide-react';
 import { DashboardComic, DashboardComicCard } from '@/components/molecules/DashboardComicCard';
 import { DndContext, closestCenter, SensorDescriptor, SensorOptions } from '@dnd-kit/core';
@@ -38,8 +38,11 @@ export const CollectionsView = ({
   triggerNotification,
   sensors
 }: CollectionsViewProps) => {
-  const totalPages = comics.reduce((acc, c) => acc + c.pageCount, 0);
-  const completedComics = comics.filter(c => c.progress && c.progress.lastPage === c.progress.totalPages - 1).length;
+  const stats = useMemo(() => {
+    const totalPages = comics.reduce((acc, c) => acc + c.pageCount, 0);
+    const completedComics = comics.filter(c => c.progress && c.progress.lastPage === c.progress.totalPages - 1).length;
+    return { totalPages, completedComics };
+  }, [comics]);
 
   return (
     <div className="space-y-12 animate-in fade-in duration-500 pb-20">
@@ -78,7 +81,7 @@ export const CollectionsView = ({
           </div>
           <div>
             <span className="text-[10px] font-black uppercase text-neutral-400 tracking-widest">Pages Stored</span>
-            <h4 className="text-3xl font-black text-neutral-900 tracking-tighter">{totalPages.toLocaleString()}</h4>
+            <h4 className="text-3xl font-black text-neutral-900 tracking-tighter">{stats.totalPages.toLocaleString()}</h4>
           </div>
         </div>
         <div className="bg-white p-8 rounded-[2rem] border border-neutral-100 shadow-sm flex items-center gap-6">
@@ -87,7 +90,7 @@ export const CollectionsView = ({
           </div>
           <div>
             <span className="text-[10px] font-black uppercase text-neutral-400 tracking-widest">Finished</span>
-            <h4 className="text-3xl font-black text-neutral-900 tracking-tighter">{completedComics}</h4>
+            <h4 className="text-3xl font-black text-neutral-900 tracking-tighter">{stats.completedComics}</h4>
           </div>
         </div>
       </div>

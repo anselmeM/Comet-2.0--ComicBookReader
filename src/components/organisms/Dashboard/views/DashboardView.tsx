@@ -6,6 +6,7 @@ import { DndContext, closestCenter, SensorDescriptor, SensorOptions } from '@dnd
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FavouriteHero, TopRatedComic } from '../mockData';
+import Image from 'next/image';
 
 interface DashboardViewProps {
   comics: DashboardComic[];
@@ -57,10 +58,12 @@ export const DashboardView = ({
         {/* Featured Hero Card */}
         <section className="lg:col-span-8 relative h-[400px] rounded-[2.5rem] overflow-hidden group shadow-2xl">
           <div className="absolute inset-0">
-            <img 
+            <Image 
               src="https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?w=1200&q=80" 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" 
-              alt="Featured Hero" 
+              alt="Featured Hero"
+              fill
+              priority
+              className="object-cover group-hover:scale-105 transition-transform duration-1000" 
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
           </div>
@@ -137,11 +140,13 @@ export const DashboardView = ({
         <div className="flex flex-wrap gap-8">
           {favouriteHeroes.slice(0, 4).map(hero => (
             <div key={hero.id} className="group flex flex-col items-center gap-4 cursor-pointer">
-              <div className={`w-24 h-24 rounded-full ${hero.color} p-1 overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl`}>
-                <img 
+              <div className={`relative w-24 h-24 rounded-full ${hero.color} p-1 overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl`}>
+                <Image 
                   src={hero.image} 
                   alt={hero.name} 
-                  className="w-full h-full rounded-full object-cover mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity" 
+                  width={96}
+                  height={96}
+                  className="rounded-full object-cover mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity" 
                 />
               </div>
               <span className="text-sm font-black text-neutral-400 group-hover:text-blue-500 transition-colors uppercase tracking-widest text-[10px]">{hero.name}</span>
@@ -169,7 +174,13 @@ export const DashboardView = ({
           {topRatedComics.map(comic => (
             <div key={comic.id} className="group flex flex-col gap-4">
               <div className="aspect-[2/3] rounded-2xl overflow-hidden shadow-lg border border-neutral-100 relative group-hover:shadow-2xl transition-all">
-                <img src={comic.coverUrl} alt={comic.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                <Image 
+                  src={comic.coverUrl} 
+                  alt={comic.title} 
+                  fill
+                  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 20vw, 15vw"
+                  className="object-cover group-hover:scale-110 transition-transform duration-700" 
+                />
                 <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/20 transition-all" />
               </div>
               <div className="flex flex-col gap-1">

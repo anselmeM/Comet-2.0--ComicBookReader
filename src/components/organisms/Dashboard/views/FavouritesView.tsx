@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Heart, ChevronLeft } from 'lucide-react';
 import { DashboardComic, DashboardComicCard } from '@/components/molecules/DashboardComicCard';
 import { DndContext, closestCenter, SensorDescriptor, SensorOptions } from '@dnd-kit/core';
@@ -27,7 +27,9 @@ export const FavouritesView = ({
   triggerNotification,
   sensors
 }: FavouritesViewProps) => {
-  const favouritedComics = comics.filter(c => isFavorite(c.id));
+  const favouritedComics = useMemo(() => 
+    comics.filter(c => isFavorite(c.id)),
+  [comics, isFavorite]);
   
   return (
     <div className="space-y-12 animate-in fade-in duration-500 pb-20">
