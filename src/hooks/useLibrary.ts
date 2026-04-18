@@ -21,15 +21,42 @@ export interface PaginatedLibraryResponse {
 interface UseLibraryOptions {
   page?: number;
   limit?: number;
+  search?: string;
+  series?: string;
+  sortBy?: string;
+  yearStart?: number | null;
+  yearEnd?: number | null;
+  readStatus?: string;
 }
 
 export function useLibrary(options: UseLibraryOptions = {}) {
-  const { page = 1, limit = 20 } = options;
+  const { 
+    page = 1, 
+    limit = 20, 
+    search = '', 
+    series = '', 
+    sortBy = 'recent',
+    yearStart = null,
+    yearEnd = null,
+    readStatus = 'all'
+  } = options;
   
   return useQuery<PaginatedLibraryResponse>({
-    queryKey: ['library', page, limit],
+    queryKey: ['library', page, limit, search, series, sortBy, yearStart, yearEnd, readStatus],
     queryFn: async () => {
-      const res = await fetch(`/api/library?page=${page}&limit=${limit}`);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        search,
+        series,
+        sortBy,
+        readStatus
+      });
+      
+      if (yearStart !== null) params.set('yearStart', yearStart.toString());
+      if (yearEnd !== null) params.set('yearEnd', yearEnd.toString());
+      
+      const res = await fetch(`/api/library?${params.toString()}`);
       if (!res.ok) {
         throw new Error('Failed to fetch library');
       }

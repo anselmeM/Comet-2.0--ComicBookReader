@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface FavoritesState {
   favorites: string[];
@@ -52,6 +52,7 @@ export const useFavoritesStore = create<FavoritesState>()(
     }),
     {
       name: 'comet-favorites-storage',
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );

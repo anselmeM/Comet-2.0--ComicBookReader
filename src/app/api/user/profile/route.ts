@@ -4,9 +4,15 @@ import { db } from '@/lib/db';
 import { z } from 'zod';
 
 const profileUpdateSchema = z.object({
-  image: z.string().url('Invalid image URL').or(z.literal('')),
+  name: z.string().min(2, 'Name must be at least 2 characters').max(50).optional(),
+  image: z.string().url('Invalid image URL').or(z.literal('')).optional(),
+  defaultReadingMode: z.enum(['single-page', 'single-vertical', 'dual-spread', 'manga-rtl']).optional(),
+  theme: z.enum(['dark', 'light', 'sepia']).optional(),
 });
 
+/**
+ * PUT /api/user/profile — Updates user profile and preferences.
+ */
 export async function PUT(req: Request) {
   try {
     const session = await auth();
@@ -28,23 +34,25 @@ export async function PUT(req: Request) {
       );
     }
 
-    const { image } = parsed.data;
-
-    // Update user profile image
+    // Update user profile and preferences
     const updatedUser = await db.user.update({
       where: { id: session.user.id },
-      data: { image },
+      data: {
+        ...parsed.data,
+      },
       select: {
         id: true,
         name: true,
         email: true,
         image: true,
+        defaultReadingMode: true,
+        theme: true,
       },
     });
 
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error('Error updating profile:', error);
+    console.error('[API] Profile Update Error:', error);
     return NextResponse.json(
       { error: 'Failed to update profile' },
       { status: 500 }

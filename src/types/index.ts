@@ -112,6 +112,16 @@ export interface CachedComic {
 // ────────────────────────────────────────────────────
 
 /** Enrichment data returned from /api/comics/[id]/enrich */
+export interface SyncTask {
+  id: string;
+  url: string;
+  method: 'POST' | 'PUT' | 'DELETE';
+  body: any;
+  headers: Record<string, string>;
+  timestamp: number;
+  attempts: number;
+}
+
 export interface EnrichmentData {
   comicVineId: string;
   series: string | null;

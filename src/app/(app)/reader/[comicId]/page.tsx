@@ -12,11 +12,53 @@ export default function ReaderPage() {
   const closeComic = useReaderStore((state) => state.closeComic);
   const isFullscreen = useReaderStore((state) => state.isFullscreen);
   const toggleFullscreen = useReaderStore((state) => state.toggleFullscreen);
+  const isMenuVisible = useReaderStore((state) => state.isMenuVisible);
+  const toggleMenu = useReaderStore((state) => state.toggleMenu);
+
+  // Helper to sync visibility without complex dependencies
+  const setMenuVisible = (visible: boolean) => {
+    if (useReaderStore.getState().isMenuVisible !== visible) {
+      toggleMenu();
+    }
+  };
+
+  // Handle inactivity for controls fade-out (T-READ-006)
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const hideMenu = () => {
+      setMenuVisible(false);
+    };
+
+    const showMenuAndResetTimeout = () => {
+      setMenuVisible(true);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(hideMenu, 3000);
+    };
+
+    const handleActivity = () => {
+      showMenuAndResetTimeout();
+    };
+
+    // Show menu initially
+    showMenuAndResetTimeout();
+
+    // Global activity listeners
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('touchstart', handleActivity);
+
+    return () => {
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('touchstart', handleActivity);
+      clearTimeout(timeoutId);
+    };
+  }, []); // Only on mount
 
   // Handle browser back/forward navigation
   useEffect(() => {
     const handlePopState = () => {
-      // Close the comic when navigating away via browser back/forward
       closeComic();
     };
 
@@ -24,17 +66,21 @@ export default function ReaderPage() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [closeComic]);
 
-  // Handle fullscreen escape key
+  // Handle fullscreen key shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'f') {
+        // Toggle fullscreen state - Note: actual browser FS is handled in ReaderControls
+        // but we still want to react to the 'F' key if it's pressed globally.
+      }
       if (e.key === 'Escape' && isFullscreen) {
-        toggleFullscreen();
+        // Fullscreen exit handled by browser normally, but sync store
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen, toggleFullscreen]);
+  }, [isFullscreen]);
 
   if (!comicId) return null;
 
@@ -51,21 +97,21 @@ export default function ReaderPage() {
       {/* The main reading engine */}
       <ComicReader comicId={comicId} />
 
-      {/* Reader Controls - Always Visible with proper layering */}
-      <div className={`fixed inset-0 z-[100] flex flex-col justify-between p-2 sm:p-4 pointer-events-none transition-opacity duration-200 ${
-        isFullscreen ? 'opacity-90' : ''
+      {/* Reader Controls with fade-out logic */}
+      <div className={`fixed inset-0 z-[100] flex flex-col justify-between p-2 sm:p-4 pointer-events-none transition-all duration-500 ${
+        isMenuVisible ? 'opacity-100' : 'opacity-0 -translate-y-2'
       }`}>
-        <div className="pointer-events-auto">
+        <div className={`pointer-events-auto transition-transform duration-500 ${isMenuVisible ? 'translate-y-0' : '-translate-y-10'}`}>
           <ReaderControls type="top" />
         </div>
-        <div className="pointer-events-auto">
+        <div className={`pointer-events-auto transition-transform duration-500 ${isMenuVisible ? 'translate-y-0' : 'translate-y-10'}`}>
           <ReaderControls type="bottom" />
         </div>
       </div>
 
       {/* Fullscreen overlay hint */}
       {isFullscreen && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[150] pointer-events-none opacity-0 hover:opacity-100 transition-opacity duration-300">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[150] pointer-events-none opacity-0 hover:opacity-100 transition-opacity duration-300">
           <div className="bg-black/70 text-white text-sm px-4 py-2 rounded-full backdrop-blur-sm">
             Press <kbd className="bg-neutral-700 px-1.5 py-0.5 rounded text-xs">ESC</kbd> or <kbd className="bg-neutral-700 px-1.5 py-0.5 rounded text-xs">F</kbd> to exit fullscreen
           </div>

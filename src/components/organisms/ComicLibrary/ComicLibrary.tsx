@@ -112,13 +112,10 @@ export function ComicLibrary() {
         ) : comics && comics.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {comics.map((comic) => (
-              <ComicCard 
-                key={comic.id} 
+              <ComicCard
+                key={comic.id}
                 comic={comic}
-                onDelete={(id) => deleteComic(id)}
-                disabled={isDeleting}
-              />
-            ))}
+              />            ))}
           </div>
         ) : (
           <div className="text-center p-12 bg-neutral-900 rounded-3xl border border-neutral-800 text-neutral-500">

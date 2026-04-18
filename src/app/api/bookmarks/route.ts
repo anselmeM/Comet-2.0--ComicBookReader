@@ -1,21 +1,13 @@
-'use server';
-
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DbType = any;
-
-// Simple type guard to check if bookmark model exists
-function hasBookmarkModel(db: DbType): db is { bookmark: DbType } {
-  return db && typeof db === 'object' && 'bookmark' in db;
-}
-
+/**
+ * GET /api/bookmarks?comicId=... — Returns all bookmarks for a specific comic.
+ */
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -27,28 +19,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Comic ID is required' }, { status: 400 });
     }
 
-    // Check if bookmark model is available in Prisma client
-    if (!hasBookmarkModel(db)) {
-      return NextResponse.json({ bookmarks: [] });
-    }
-
-    // First ensure ReadingProgress exists for this comic
-    let progress = await db.readingProgress.findUnique({
-      where: { comicId },
-    });
-
-    if (!progress) {
-      // Create ReadingProgress if it doesn't exist
-      progress = await db.readingProgress.create({
-        data: {
-          userId: session.user.id,
-          comicId,
-          totalPages: 0,
-        },
-      });
-    }
-
-    // Get bookmarks for this comic
     const bookmarks = await db.bookmark.findMany({
       where: {
         userId: session.user.id,
@@ -61,15 +31,17 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ bookmarks });
   } catch (error) {
-    console.error('Error fetching bookmarks:', error);
-    return NextResponse.json({ bookmarks: [], error: 'Using local storage' }, { status: 200 });
+    console.error('[API] Bookmark GET error:', error);
+    return NextResponse.json({ error: 'Failed to fetch bookmarks' }, { status: 500 });
   }
 }
 
+/**
+ * POST /api/bookmarks — Creates or updates a bookmark for a specific page.
+ */
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -81,23 +53,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Comic ID and page number are required' }, { status: 400 });
     }
 
-    // Check if bookmark model is available
-    if (!hasBookmarkModel(db)) {
-      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
-    }
-
-    // First ensure ReadingProgress exists for this comic
+    // Ensure ReadingProgress exists (required by Bookmark relation in schema)
     let progress = await db.readingProgress.findUnique({
       where: { comicId },
     });
 
     if (!progress) {
-      // Create ReadingProgress if it doesn't exist
+      // Find the comic to get totalPages
+      const comic = await db.comic.findUnique({ where: { id: comicId } });
+      
       progress = await db.readingProgress.create({
         data: {
           userId: session.user.id,
           comicId,
-          totalPages: 0,
+          totalPages: comic?.pageCount || 0,
         },
       });
     }
@@ -124,22 +93,19 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ bookmark });
   } catch (error) {
-    console.error('Error creating bookmark:', error);
+    console.error('[API] Bookmark POST error:', error);
     return NextResponse.json({ error: 'Failed to create bookmark' }, { status: 500 });
   }
 }
 
+/**
+ * PUT /api/bookmarks — Updates a bookmark label by ID.
+ */
 export async function PUT(req: NextRequest) {
   try {
     const session = await auth();
-    
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if bookmark model is available
-    if (!hasBookmarkModel(db)) {
-      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
     }
 
     const body = await req.json();
@@ -161,22 +127,19 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ bookmark });
   } catch (error) {
-    console.error('Error updating bookmark:', error);
+    console.error('[API] Bookmark PUT error:', error);
     return NextResponse.json({ error: 'Failed to update bookmark' }, { status: 500 });
   }
 }
 
+/**
+ * DELETE /api/bookmarks?id=... — Deletes a bookmark by ID.
+ */
 export async function DELETE(req: NextRequest) {
   try {
     const session = await auth();
-    
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if bookmark model is available
-    if (!hasBookmarkModel(db)) {
-      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -195,7 +158,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting bookmark:', error);
+    console.error('[API] Bookmark DELETE error:', error);
     return NextResponse.json({ error: 'Failed to delete bookmark' }, { status: 500 });
   }
 }

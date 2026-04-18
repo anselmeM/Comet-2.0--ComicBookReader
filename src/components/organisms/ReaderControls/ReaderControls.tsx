@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useReaderStore } from '@/stores/readerStore';
 import { useParams } from 'next/navigation';
 import { useLibrary } from '@/hooks/useLibrary';
+import { useBookmarks } from '@/hooks/useBookmarks';
 import { BookmarkPanel } from '@/components/organisms/BookmarkPanel';
-import { Settings, Sun, Columns, File, Maximize, AlignRight, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Maximize2, Minimize2, Bookmark, BookmarkCheck, Home } from 'lucide-react';
+import { Settings, Sun, Columns, File, Maximize, AlignRight, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Maximize2, Minimize2, Bookmark, Home, List } from 'lucide-react';
 
 // Extended types for vendor-prefixed fullscreen APIs
 interface ExtendedDocument extends Document {
@@ -58,10 +59,24 @@ export function ReaderControls({ type }: ReaderControlsProps) {
   const setBrightness = useReaderStore((state) => state.setBrightness);
   const isFullscreen = useReaderStore((state) => state.isFullscreen);
   const toggleFullscreen = useReaderStore((state) => state.toggleFullscreen);
-  const toggleBookmark = useReaderStore((state) => state.toggleBookmark);
-  const isBookmarked = useReaderStore((state) => state.isBookmarked);
   const resetZoom = useReaderStore((state) => state.resetZoom);
-  const bookmarks = useReaderStore((state) => state.bookmarks);
+
+  const { 
+    bookmarks, 
+    isBookmarked, 
+    addBookmark, 
+    removeBookmark 
+  } = useBookmarks({ comicId });
+
+  const handleBookmarkToggle = async () => {
+    if (!comicId) return;
+    const existing = bookmarks.find(b => b.pageNumber === currentPage);
+    if (existing) {
+      await removeBookmark(existing.id);
+    } else {
+      await addBookmark(currentPage);
+    }
+  };
 
   // Check if fullscreen API is supported (only in browser)
   const isFullscreenSupported = typeof window !== 'undefined' && 
@@ -165,9 +180,9 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                 if (bookmarks.length > 0) {
                   // Show bookmark list
                   setShowBookmarkPanel(true);
-                } else if (comicId) {
+                } else {
                   // Add bookmark for current page
-                  toggleBookmark(currentPage);
+                  handleBookmarkToggle();
                 }
               }}
               className={`p-2 rounded-lg transition-colors relative ${
@@ -178,7 +193,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               title={bookmarked ? `Page ${currentPage + 1} bookmarked - Click for list` : `Add bookmark for page ${currentPage + 1}`}
               aria-label={bookmarked ? 'View bookmarks' : 'Add bookmark'}
             >
-              {bookmarked ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
+              <Bookmark size={20} fill={bookmarked ? "currentColor" : "none"} />
               {bookmarks.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 text-black text-xs font-bold rounded-full flex items-center justify-center">
                   {bookmarks.length > 9 ? '9+' : bookmarks.length}
@@ -224,7 +239,10 @@ export function ReaderControls({ type }: ReaderControlsProps) {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => prevPage()}
+          onClick={() => {
+            console.log('Action: prevPage');
+            prevPage();
+          }}
           disabled={currentPage === 0}
           className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           title="Previous Page"
@@ -238,14 +256,21 @@ export function ReaderControls({ type }: ReaderControlsProps) {
           min={0}
           max={Math.max(0, totalPages - 1)}
           value={currentPage}
-          onChange={(e) => setPage(parseInt(e.target.value, 10))}
+          onChange={(e) => {
+            const page = parseInt(e.target.value, 10);
+            console.log('Action: setPage', page);
+            setPage(page);
+          }}
           className="flex-1 h-2 bg-neutral-700 rounded-full appearance-none outline-none accent-blue-500"
           aria-label="Page navigation"
         />
         <span className="text-xs text-neutral-400 font-mono min-w-[40px] text-center">{totalPages}</span>
         <button
           type="button"
-          onClick={() => nextPage()}
+          onClick={() => {
+            console.log('Action: nextPage');
+            nextPage();
+          }}
           disabled={currentPage >= totalPages - 1}
           className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           title="Next Page"
@@ -261,26 +286,47 @@ export function ReaderControls({ type }: ReaderControlsProps) {
         {/* Reading Modes */}
         <div className="flex items-center gap-1 bg-neutral-800 p-1 rounded-xl">
           <ModeButton 
-            active={mode === 'single-vertical'} 
-            onClick={() => setMode('single-vertical')}
+            active={mode === 'single-page'} 
+            onClick={() => {
+              console.log('Action: setMode single-page');
+              setMode('single-page');
+            }}
             icon={<File size={18} />} 
             label="Single" 
           />
           <ModeButton 
+            active={mode === 'single-vertical'} 
+            onClick={() => {
+              console.log('Action: setMode single-vertical');
+              setMode('single-vertical');
+            }}
+            icon={<List size={18} />} 
+            label="Vertical" 
+          />
+          <ModeButton 
             active={mode === 'dual-spread'} 
-            onClick={() => setMode('dual-spread')}
+            onClick={() => {
+              console.log('Action: setMode dual-spread');
+              setMode('dual-spread');
+            }}
             icon={<Columns size={18} />} 
             label="Spread" 
           />
           <ModeButton 
             active={mode === 'manga-rtl'} 
-            onClick={() => setMode('manga-rtl')}
+            onClick={() => {
+              console.log('Action: setMode manga-rtl');
+              setMode('manga-rtl');
+            }}
             icon={<AlignRight size={18} />} 
             label="Manga" 
           />
           <ModeButton 
             active={isGuidedViewEnabled} 
-            onClick={() => toggleGuidedView()}
+            onClick={() => {
+              console.log('Action: toggleGuidedView');
+              toggleGuidedView();
+            }}
             icon={<Maximize size={18} />} 
             label="Guided" 
           />
@@ -290,7 +336,10 @@ export function ReaderControls({ type }: ReaderControlsProps) {
         <div className="flex items-center gap-1 bg-neutral-800 p-1 rounded-xl">
           <button 
             type="button"
-            onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
+            onClick={() => {
+              console.log('Action: zoomOut, current zoom:', zoomLevel);
+              setZoomLevel(Math.max(0.5, zoomLevel - 0.25));
+            }}
             className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all"
             title="Zoom Out (-)"
           >
@@ -298,7 +347,10 @@ export function ReaderControls({ type }: ReaderControlsProps) {
           </button>
           <button 
             type="button"
-            onClick={() => resetZoom()}
+            onClick={() => {
+              console.log('Action: resetZoom');
+              resetZoom();
+            }}
             className="p-1 text-xs font-mono w-10 text-center text-neutral-400 hover:text-white hover:bg-neutral-700 rounded transition-all"
             title="Reset Zoom (0)"
           >
@@ -306,7 +358,10 @@ export function ReaderControls({ type }: ReaderControlsProps) {
           </button>
           <button 
             type="button"
-            onClick={() => setZoomLevel(Math.min(5, zoomLevel + 0.25))}
+            onClick={() => {
+              console.log('Action: zoomIn, current zoom:', zoomLevel);
+              setZoomLevel(Math.min(5, zoomLevel + 0.25));
+            }}
             className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all"
             title="Zoom In (+)"
           >

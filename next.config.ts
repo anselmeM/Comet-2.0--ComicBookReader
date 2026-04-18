@@ -1,17 +1,135 @@
 import type { NextConfig } from 'next';
+import withPWAInit from '@ducanh2912/next-pwa';
+
+const withPWA = withPWAInit({
+  dest: 'public',
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === 'development',
+  workboxOptions: {
+    disableDevLogs: true,
+    runtimeCaching: [
+      {
+        urlPattern: /\/offline\.html$/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'offline-page',
+        },
+      },
+      {
+        urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-fonts',
+          expiration: {
+            maxEntries: 4,
+            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'static-font-assets',
+          expiration: {
+            maxEntries: 4,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'static-image-assets',
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /\/_next\/image\?url=.+/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'next-image',
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:js)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'static-js-assets',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:css|less)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'static-style-assets',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /\/_next\/data\/.+\/.+\.json$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'next-data',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /\/api\/.*$/i,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'api-cache',
+          expiration: {
+            maxEntries: 16,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+          networkTimeoutSeconds: 10, // fall back to cache if no response in 10s
+        },
+      },
+      {
+        urlPattern: /.*/i,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'others',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+          networkTimeoutSeconds: 10,
+        },
+      },
+    ],
+  },
+});
 
 const cspHeader = `
-    default-src 'self' https:;
+    default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' data: https://fonts.gstatic.com;
     img-src 'self' blob: data: https:;
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    frame-ancestors 'none';
     worker-src 'self' blob:;
-    connect-src 'self' http://localhost:* https://localhost:* https://comicvine.gamespot.com https://*.aws.neon.tech https://*.supabase.co;
+    connect-src 'self' https://comicvine.gamespot.com https://*.aws.neon.tech https://*.supabase.co;
 `;
 
 const nextConfig: NextConfig = {
@@ -19,9 +137,6 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
-
-  // Output configuration removed for Render/PaaS compatibility
-  // (Using default Next.js build output properly handles static files)
 
   // Disable Turbopack for production builds (causes MIME type issues)
   // Only enable in development
@@ -54,23 +169,11 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: cspHeader.replace(/\n/g, ''),
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' blob: data: https:; worker-src 'self' blob:; connect-src 'self' https:;",
           },
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
           },
         ],
       },
@@ -78,4 +181,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);

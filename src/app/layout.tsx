@@ -3,17 +3,16 @@ import { Inter } from 'next/font/google';
 import { Providers } from '@/app/providers';
 import { NetworkStatusIndicator } from '@/components/atoms/NetworkStatusIndicator';
 import { PWAUpdater } from '@/components/atoms/PWAUpdater';
+import { ThemeManager } from '@/components/atoms/ThemeManager';
+import { SyncManagerInit } from '@/components/atoms/SyncManagerInit';
 import './globals.css';
 
-// ── Fonts ─────────────────────────────────────────────────────────────────────
-// ... existing font setup ...
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
 });
 
-// ── SEO & PWA Metadata ────────────────────────────────────────────────────────
 export const metadata: Metadata = {
   title: {
     default: 'Comet — The Speed of Light Comic Reader',
@@ -52,7 +51,6 @@ export const viewport: Viewport = {
   themeColor: '#0a0a0f',
 };
 
-// ── Root Layout ───────────────────────────────────────────────────────────────
 export default function RootLayout({
   children,
 }: {
@@ -63,7 +61,11 @@ export default function RootLayout({
       <body className="bg-comet-bg text-comet-text antialiased">
         <NetworkStatusIndicator />
         <PWAUpdater />
-        <Providers>{children}</Providers>
+        <Providers>
+          <ThemeManager />
+          <SyncManagerInit />
+          {children}
+        </Providers>
       </body>
     </html>
   );

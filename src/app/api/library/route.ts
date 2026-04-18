@@ -7,127 +7,171 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
-import type { AddComicPayload } from '@/types';
+import { getCache, setCache, invalidateCache, genCacheKey } from '@/lib/cache';
 
-/** GET /api/library */
+/**
+ * GET /api/library — Returns the authenticated user's comic library
+ */
 export async function GET(_req: Request) {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // Parse pagination parameters from URL
-  const { searchParams } = new URL(_req.url);
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
-  const skip = (page - 1) * limit;
-
-  // Get total count for pagination info
-  const total = await db.comic.count({
-    where: { userId: session.user.id },
-  });
-
-  const comics = await db.comic.findMany({
-    where: { userId: session.user.id },
-    include: { progress: true },
-    orderBy: { lastReadAt: 'desc' },
-    take: limit,
-    skip: skip,
-  });
-
-  // Return paginated response
-  return NextResponse.json({
-    data: comics,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  }, { status: 200 });
-}
-
-/** POST /api/library */
-export async function POST(req: Request) {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    return NextResponse.json({ 
-      error: 'Unauthorized', 
-      details: 'No active session.',
-    }, { status: 401 });
-  }
-
   try {
-    const contentType = req.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      return NextResponse.json({ error: 'Invalid content type. Expected application/json' }, { status: 415 });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = (await req.json()) as AddComicPayload;
+    // Parse parameters from URL
+    const { searchParams } = new URL(_req.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || '';
+    const series = searchParams.get('series') || '';
+    const sortBy = searchParams.get('sortBy') || 'recent';
+    const yearStart = searchParams.get('yearStart') ? parseInt(searchParams.get('yearStart')!) : null;
+    const yearEnd = searchParams.get('yearEnd') ? parseInt(searchParams.get('yearEnd')!) : null;
+    const readStatus = searchParams.get('readStatus') || 'all'; // all, unread, reading, completed
     
-    // Validation
-    if (!body.title || !body.filehash || typeof body.pageCount !== 'number') {
+    // Check Cache (T-INF-004)
+    const cacheKey = genCacheKey(session.user.id, 'library', { 
+      page, limit, search, series, sortBy, yearStart, yearEnd, readStatus 
+    });
+    const cachedData = getCache<any>(cacheKey);
+    if (cachedData) {
+      return NextResponse.json(cachedData, { 
+        status: 200, 
+        headers: { 'X-Cache': 'HIT' } 
+      });
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where: any = { userId: session.user.id };
+    
+    if (search) {
+      where.OR = [
+        { title: { contains: search } },
+        { series: { contains: search } },
+      ];
+    }
+    
+    if (series) {
+      where.series = series;
+    }
+
+    if (yearStart !== null || yearEnd !== null) {
+      where.year = {};
+      if (yearStart !== null) where.year.gte = yearStart;
+      if (yearEnd !== null) where.year.lte = yearEnd;
+    }
+
+    if (readStatus !== 'all') {
+      if (readStatus === 'unread') {
+        where.progress = null;
+      } else if (readStatus === 'reading') {
+        where.progress = { readStatus: 'READING' };
+      } else if (readStatus === 'completed') {
+        where.progress = { readStatus: 'COMPLETED' };
+      }
+    }
+
+    // Build order clause
+    let orderBy: any = { lastReadAt: 'desc' };
+    if (sortBy === 'title_asc') orderBy = { title: 'asc' };
+    if (sortBy === 'title_desc') orderBy = { title: 'desc' };
+    if (sortBy === 'added') orderBy = { addedAt: 'desc' };
+    if (sortBy === 'year_desc') orderBy = { year: 'desc' };
+    if (sortBy === 'year_asc') orderBy = { year: 'asc' };
+    if (sortBy === 'pages_desc') orderBy = { pageCount: 'desc' };
+    if (sortBy === 'pages_asc') orderBy = { pageCount: 'asc' };
+
+    // Get total count for pagination info
+    const total = await db.comic.count({ where });
+
+    const comics = await db.comic.findMany({
+      where,
+      include: { progress: true },
+      orderBy,
+      take: limit,
+      skip: skip,
+    });
+
+    const response = {
+      data: comics,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+
+    // Store in Cache for 5 minutes (T-INF-004)
+    setCache(cacheKey, response, 5 * 60);
+
+    return NextResponse.json(response, { 
+      status: 200, 
+      headers: { 'X-Cache': 'MISS' } 
+    });
+  } catch (error) {
+    console.error('[API] Library GET error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/library — Adds a new comic to the library
+ */
+export async function POST(_req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Invalidate library cache for this user (T-INF-004)
+    invalidateCache(`u:${session.user.id}:library`, true);
+
+    const body = await _req.json();
+    const { title, filehash, pageCount, coverUrl } = body;
+
+    if (!title || !filehash || !pageCount) {
       return NextResponse.json(
-        { 
-          error: 'Validation failed', 
-          details: 'Missing or invalid required fields: title, filehash, pageCount' 
-        },
+        { error: 'Missing required fields' },
         { status: 400 },
       );
     }
 
-    // Protection against massive base64 payloads even if client sends them
-    if (body.coverUrl && body.coverUrl.length > 200000) { // 200KB hard limit for cover
-       return NextResponse.json(
-        { error: 'Cover image too large', details: 'The cover image exceeds the maximum allowed size.' },
-        { status: 413 },
-      );
-    }
-
-    // Verify user exists in database before attempting upsert
-    const dbUser = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { id: true },
+    // Check if comic already exists for this user (filehash deduplication)
+    const existing = await db.comic.findUnique({
+      where: {
+        userId_filehash: {
+          userId: session.user.id,
+          filehash,
+        },
+      },
     });
 
-    if (!dbUser) {
-      console.error('[API POST /library] User not found in database:', session.user.id);
-      return NextResponse.json(
-        { error: 'Unauthorized', details: 'Your session is stale. Please sign out and sign in again.' },
-        { status: 401 },
-      );
+    if (existing) {
+      return NextResponse.json(existing, { status: 200 });
     }
 
-    // Upsert: if same user uploads same file again, update instead of duplicating
-    const comic = await db.comic.upsert({
-      where: { userId_filehash: { userId: session.user.id, filehash: body.filehash } },
-      update: { 
-        title: body.title, 
-        coverUrl: body.coverUrl || undefined, 
-        lastReadAt: new Date() 
-      },
-      create: {
+    // Create the comic record
+    const comic = await db.comic.create({
+      data: {
+        title,
+        filehash,
+        pageCount,
+        coverUrl,
         userId: session.user.id,
-        title: body.title,
-        filehash: body.filehash,
-        pageCount: body.pageCount,
-        coverUrl: body.coverUrl ?? null,
       },
     });
 
     return NextResponse.json(comic, { status: 201 });
-  } catch (err: unknown) {
-    console.error('[API POST /library] ERROR:', err);
-    
+  } catch (err) {
+    console.error('[API] Library POST error:', err);
     if (err instanceof SyntaxError) {
       return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
-
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

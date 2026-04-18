@@ -2,9 +2,9 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
-type ToastType = 'success' | 'error' | 'info';
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface ToastAction {
   label: string;
@@ -68,6 +68,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return <CheckCircle className="text-green-400" size={20} />;
       case 'error':
         return <AlertCircle className="text-red-400" size={20} />;
+      case 'warning':
+        return <AlertTriangle className="text-amber-400" size={20} />;
       default:
         return <Info className="text-blue-400" size={20} />;
     }
@@ -79,6 +81,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return 'bg-green-500/10 border-green-500/20';
       case 'error':
         return 'bg-red-500/10 border-red-500/20';
+      case 'warning':
+        return 'bg-amber-500/10 border-amber-500/20';
       default:
         return 'bg-blue-500/10 border-blue-500/20';
     }
@@ -87,7 +91,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   return (
     <NotificationContext.Provider value={{ triggerNotification }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <div className="fixed bottom-4 right-4 z-[300] flex flex-col gap-2">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div

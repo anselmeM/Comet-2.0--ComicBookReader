@@ -1,6 +1,5 @@
 // Comet — Prisma Schema for PostgreSQL (Production)
-// Copy this file to schema.prisma when deploying to production
-// Or use this as reference for setting up PostgreSQL
+// This file is used for PostgreSQL deployments (e.g., Vercel + Neon)
 
 generator client {
   provider = "prisma-client-js"
@@ -9,6 +8,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // Recommended for Neon/Supabase migrations
 }
 
 // ────────────────────────────────────────────────────
@@ -21,9 +21,16 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   password      String?
+  resetToken    String?   @db.Text
+  resetTokenExpiry DateTime?
   image         String?
   plan          String    @default("FREE")
   hasCompletedOnboarding Boolean @default(false)
+  
+  // Reading Preferences
+  defaultReadingMode String   @default("single-page")
+  theme              String   @default("dark")
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -31,6 +38,7 @@ model User {
   sessions  Session[]
   library   Comic[]
   progress  ReadingProgress[]
+  bookmarks Bookmark[]
 }
 
 model Account {
@@ -83,22 +91,28 @@ model Comic {
   title       String
   filehash    String    // SHA-256 of the file (dedup key)
   pageCount   Int
-  coverUrl    String?   // Blob ObjectURL or remote CDN URL
-  comicVineId String?   // External metadata reference
+  coverUrl    String?   @db.Text
+  comicVineId String?
   series      String?
   issue       Int?
   year        Int?
-  metadata    String?   // Raw ComicVine enrichment payload
+  metadata    String?   @db.Text // Raw ComicVine enrichment payload
+  
+  // Library Features
+  isFavorite  Boolean   @default(false)
+  rating      Int       @default(0)
+  tags        String?   @db.Text // JSON string
 
   addedAt     DateTime  @default(now())
   lastReadAt  DateTime?
 
   progress    ReadingProgress?
 
-  @@unique([userId, filehash]) // Prevent duplicate uploads per user
+  @@unique([userId, filehash])
   @@index([userId])
   @@index([filehash])
-  @@index([userId, lastReadAt]) // Efficient "Continue Reading" queries
+  @@index([userId, lastReadAt])
+  @@index([userId, series])
 }
 
 model ReadingProgress {
@@ -114,6 +128,25 @@ model ReadingProgress {
   readStatus  String     @default("UNREAD")
   updatedAt   DateTime   @updatedAt
 
+  bookmarks   Bookmark[]
+
   @@index([userId])
   @@index([userId, readStatus])
+}
+
+model Bookmark {
+  id          String          @id @default(cuid())
+  userId      String
+  comicId     String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comic       ReadingProgress @relation(fields: [comicId], references: [comicId], onDelete: Cascade)
+
+  pageNumber  Int
+  label       String?         @db.Text
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([userId, comicId, pageNumber])
+  @@index([userId])
+  @@index([comicId])
 }

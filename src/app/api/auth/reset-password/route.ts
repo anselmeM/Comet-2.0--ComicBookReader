@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import crypto from 'crypto';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,6 +15,15 @@ export async function POST(req: NextRequest) {
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+
+    // Rate limiting (T-AUTH-003)
+    const limiter = await rateLimit(`reset_${email}`, 3, 60 * 60 * 1000); // 3 per hour
+    if (limiter.isLimited) {
+      return NextResponse.json(
+        { error: 'Too many reset attempts. Please try again in an hour.' },
+        { status: 429, headers: limiter.headers }
+      );
     }
 
     // Validate email format
