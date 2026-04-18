@@ -54,12 +54,12 @@ export const DashboardView = ({
     const stats: Record<string, { count: number; lastRead: number; comic: DashboardComic }> = {};
     
     comics.forEach(comic => {
-      if (comic.series && (comic.progress?.lastPage ?? 0) > 0) {
-        if (!stats[comic.series]) {
-          stats[comic.series] = { count: 0, lastRead: 0, comic };
+      if (comic.author && (comic.progress?.lastPage ?? 0) > 0) {
+        if (!stats[comic.author]) {
+          stats[comic.author] = { count: 0, lastRead: 0, comic };
         }
-        stats[comic.series].count += 1;
-        stats[comic.series].comic = comic;
+        stats[comic.author].count += 1;
+        stats[comic.author].comic = comic;
       }
     });
 
@@ -124,7 +124,7 @@ export const DashboardView = ({
           <div className="absolute inset-0 p-12 flex flex-col justify-end">
             <div className="space-y-4 max-w-xl">
               <span className="text-xs font-black uppercase tracking-[0.3em] text-blue-400">
-                {featuredComic?.series ? `Featured Series: ${featuredComic.series}` : `Featured Author: Nick Spencer`}
+                {featuredComic?.author ? `Featured Series: ${featuredComic.author}` : `Featured Author: Nick Spencer`}
               </span>
               <h2 className="text-4xl md:text-5xl font-black text-white leading-tight tracking-tighter">
                 {featuredComic?.title || "the Amazing Spider-Man Vol. 1: Back To Basics"}

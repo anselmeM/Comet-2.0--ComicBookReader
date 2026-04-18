@@ -7,9 +7,10 @@ import { db } from '@/lib/db';
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,7 +25,7 @@ export async function POST(
 
     // Verify collection ownership
     const collection = await db.collection.findUnique({
-      where: { id: params.id, userId: session.user.id }
+      where: { id, userId: session.user.id }
     });
 
     if (!collection) {
@@ -34,13 +35,13 @@ export async function POST(
     const item = await db.collectionItem.upsert({
       where: {
         collectionId_comicId: {
-          collectionId: params.id,
+          collectionId: id,
           comicId
         }
       },
       update: {}, // No-op if already exists
       create: {
-        collectionId: params.id,
+        collectionId: id,
         comicId
       }
     });
@@ -57,9 +58,10 @@ export async function POST(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -76,7 +78,7 @@ export async function DELETE(
     await db.collectionItem.delete({
       where: {
         collectionId_comicId: {
-          collectionId: params.id,
+          collectionId: id,
           comicId
         },
         collection: {

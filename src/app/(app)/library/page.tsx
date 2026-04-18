@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { DashboardLayout, DashboardComic } from '@/components/organisms/Dashboard/DashboardLayout';
+import DashboardLayout from '@/components/organisms/Dashboard/DashboardLayout';
+import { DashboardComic } from '@/components/molecules/DashboardComicCard';
 import { UploadCloud, Loader2, Library } from 'lucide-react';
 import { useComicParser } from '@/hooks/useComicParser';
 import { useLibrary, type LibraryComic, useDeleteComic } from '@/hooks/useLibrary';
