@@ -16,7 +16,6 @@ export function NetworkStatusIndicator() {
   useEffect(() => {
     if (!isOnline) {
       wasOffline.current = true;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowIndicator(true);
     } else {
       if (wasOffline.current) {

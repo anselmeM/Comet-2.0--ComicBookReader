@@ -130,9 +130,9 @@ const nextConfig: NextConfig = {
 
   // Disable Turbopack for production builds (causes MIME type issues)
   // Only enable in development
-  turbopack: process.env.NODE_ENV === 'development' ? {
+  turbopack: {
     root: process.cwd(),
-  } : undefined,
+  } ,
 
   // Image optimization
   images: {
