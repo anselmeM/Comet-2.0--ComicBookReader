@@ -46,8 +46,16 @@ export function useStorage() {
 
   useEffect(() => {
     isMounted.current = true;
-    refresh();
-    return () => { isMounted.current = false; };
+    
+    // Defer to next tick to avoid "set state in effect" warning if synchronous
+    const timeout = setTimeout(() => {
+      refresh();
+    }, 0);
+
+    return () => { 
+      isMounted.current = false; 
+      clearTimeout(timeout);
+    };
   }, [refresh]);
 
   const clearCache = async () => {

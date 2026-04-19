@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { DashboardLayout, DashboardComic } from '@/components/organisms/Dashboard/DashboardLayout';
+import { DashboardLayout } from '@/components/organisms/Dashboard/DashboardLayout';
+import { DashboardComic } from '@/components/molecules/DashboardComicCard';
 import { UploadCloud, Loader2, Library } from 'lucide-react';
 import { useComicParser } from '@/hooks/useComicParser';
-import { useLibrary, type LibraryComic, useDeleteComic } from '@/hooks/useLibrary';
+import { useLibrary, useDeleteComic } from '@/hooks/useLibrary';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { ComicDTO } from '@/types';
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -49,11 +51,11 @@ export default function LibraryPage() {
 
   // Transform real comics from API to DashboardComic format
   const dashboardComics: DashboardComic[] = useMemo(() => {
-    const comics = libraryData?.data ?? [];
-    return comics.map((comic: LibraryComic) => ({
+    const comics: ComicDTO[] = libraryData?.data ?? [];
+    return comics.map((comic) => ({
       id: comic.id,
       title: comic.title,
-      author: (comic as any).series || undefined,
+      author: comic.series || undefined,
       coverUrl: comic.coverUrl || undefined,
       pageCount: comic.pageCount,
       year: comic.year || undefined,
@@ -117,12 +119,13 @@ export default function LibraryPage() {
   }
 
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Could not connect to the server';
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200 flex items-center justify-center text-comet-text">
         <div className="bg-comet-surface p-8 rounded-3xl shadow-xl flex flex-col items-center gap-4 max-w-md text-center border border-comet-border">
           <Library size={32} className="text-red-500 mx-auto" />
           <h2 className="text-xl font-bold">Failed to load library</h2>
-          <p className="text-comet-muted">{(error as any).message || 'Could not connect to the server'}</p>
+          <p className="text-comet-muted">{errorMessage}</p>
           <button onClick={() => refetch()} className="bg-comet-accent text-white px-6 py-2 rounded-full font-medium">Try Again</button>
         </div>
       </div>

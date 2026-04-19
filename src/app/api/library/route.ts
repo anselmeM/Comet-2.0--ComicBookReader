@@ -8,6 +8,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { getCache, setCache, invalidateCache, genCacheKey } from '@/lib/cache';
+import { Prisma } from '@prisma/client';
+import { PaginatedLibraryResponseDTO } from '@/types';
 
 /**
  * GET /api/library — Returns the authenticated user's comic library
@@ -34,7 +36,7 @@ export async function GET(_req: Request) {
     const cacheKey = genCacheKey(session.user.id, 'library', { 
       page, limit, search, series, sortBy, yearStart, yearEnd, readStatus 
     });
-    const cachedData = getCache<any>(cacheKey);
+    const cachedData = getCache<PaginatedLibraryResponseDTO>(cacheKey);
     if (cachedData) {
       return NextResponse.json(cachedData, { 
         status: 200, 
@@ -45,7 +47,7 @@ export async function GET(_req: Request) {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: any = { userId: session.user.id };
+    const where: Prisma.ComicWhereInput = { userId: session.user.id };
     
     if (search) {
       where.OR = [
@@ -66,16 +68,16 @@ export async function GET(_req: Request) {
 
     if (readStatus !== 'all') {
       if (readStatus === 'unread') {
-        where.progress = null;
+        where.progress = { is: null };
       } else if (readStatus === 'reading') {
-        where.progress = { readStatus: 'READING' };
+        where.progress = { isNot: null, readStatus: 'READING' };
       } else if (readStatus === 'completed') {
-        where.progress = { readStatus: 'COMPLETED' };
+        where.progress = { isNot: null, readStatus: 'COMPLETED' };
       }
     }
 
     // Build order clause
-    let orderBy: any = { lastReadAt: 'desc' };
+    let orderBy: Prisma.ComicOrderByWithRelationInput = { lastReadAt: 'desc' };
     if (sortBy === 'title_asc') orderBy = { title: 'asc' };
     if (sortBy === 'title_desc') orderBy = { title: 'desc' };
     if (sortBy === 'added') orderBy = { addedAt: 'desc' };
@@ -95,8 +97,8 @@ export async function GET(_req: Request) {
       skip: skip,
     });
 
-    const response = {
-      data: comics,
+    const response: PaginatedLibraryResponseDTO = {
+      data: comics as any, // Cast required as Prisma generated type slightly differs from DTO
       pagination: {
         page,
         limit,

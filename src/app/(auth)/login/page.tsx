@@ -5,7 +5,8 @@ import { LogIn, Rocket, KeyRound, Mail, AlertCircle, ArrowLeft } from 'lucide-re
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState, useEffect } from 'react';
-import { signIn, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { loginAction } from './actions';
 
 function LoginForm() {
   const router = useRouter();
@@ -16,16 +17,10 @@ function LoginForm() {
   const callbackUrl = searchParams.get('callbackUrl') || '/library';
   const errorParam = searchParams.get('error');
   
-  // Initialize error message from URL parameter (if present)
-  const getInitialError = (param: string | null) => {
-    if (!param) return '';
-    if (param === 'SessionExpired') return 'Your session has expired. Please sign in again to continue.';
-    return 'An error occurred during sign in. Please try again.';
-  };
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(() => getInitialError(errorParam));
+  const [errorMsg, setErrorMsg] = useState('');
 
   // Framer Motion variants
   const containerVariants = {
@@ -55,37 +50,51 @@ function LoginForm() {
     }
   }, [status, router, callbackUrl]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  // Initialize error message from URL parameter (if present)
+  useEffect(() => {
+    if (errorParam === 'SessionExpired') {
+      setErrorMsg('Your session has expired. Please sign in again to continue.');
+    } else if (errorParam === 'CredentialsSignin') {
+      setErrorMsg('Invalid email or password.');
+    } else if (errorParam) {
+      setErrorMsg('An error occurred during sign in. Please try again.');
+    }
+  }, [errorParam]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
-    
-    if (!email.trim() || !password.trim()) {
+
+    if (!email || !password) {
       setErrorMsg('Please enter both email and password.');
       setLoading(false);
       return;
     }
 
     try {
-      const result = await signIn('credentials', {
-        email: email.trim(),
-        password,
-        redirect: false,
-      });
-
+      // Use Server Action instead of client-side signIn to avoid "Failed to fetch"
+      const formData = new FormData();
+      formData.append('email', email.trim().toLowerCase());
+      formData.append('password', password);
+      formData.append('callbackUrl', callbackUrl);
+      
+      const result = await loginAction(null, formData);
+      
       if (result?.error) {
-        // Handle specific error codes
-        if (result.error === 'CredentialsSignin') {
-          setErrorMsg('Invalid email or password. Please check your credentials and try again.');
-        } else {
-          setErrorMsg('Sign in failed. Please check your credentials and try again.');
-        }
+        setErrorMsg(result.error);
         setLoading(false);
-      } else if (result?.ok) {
-        router.push(callbackUrl);
+      } else if (result?.success && result?.redirectUrl) {
+        // Handle redirect manually to avoid "Failed to fetch" from server action redirect
+        router.push(result.redirectUrl);
       }
-    } catch (err) {
-      console.error('[LoginForm] Unexpected error:', err);
+      // If success, server action will handle redirect
+    } catch (err: any) {
+      // Next.js redirect "error" should be allowed to bubble up
+      if (err.message === 'NEXT_REDIRECT') {
+        throw err;
+      }
+      console.error('[LoginForm] Sign in error:', err);
       setErrorMsg('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
@@ -136,7 +145,7 @@ function LoginForm() {
         )}
 
         <div className="space-y-6">
-          <motion.form variants={itemVariants} onSubmit={handleLogin} className="space-y-4">
+          <motion.form variants={itemVariants} onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-zinc-500" />
@@ -168,7 +177,7 @@ function LoginForm() {
             </div>
 
             <div className="flex items-center justify-between">
-              <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+              <Link href="/forgot-password" disabled={loading} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
                 Forgot password?
               </Link>
             </div>

@@ -11,8 +11,8 @@ export function ThemeManager() {
   const { data: session } = useSession();
 
   useEffect(() => {
-    // Get theme from session (cast to any to access custom field)
-    const theme = (session?.user as any)?.theme || 'dark';
+    // Get theme from session
+    const theme = session?.user?.theme || 'dark';
     
     // Remove all possible theme classes
     document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-sepia');

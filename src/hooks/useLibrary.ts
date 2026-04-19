@@ -1,22 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Comic, ReadingProgress } from '@prisma/client';
 import { evictCachedComic } from '@/lib/idb';
-
-// The API might return comics with some joined relation if needed
-export type LibraryComic = Comic & {
-  progress?: ReadingProgress | null;
-};
-
-// Pagination response type
-export interface PaginatedLibraryResponse {
-  data: LibraryComic[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
+import { PaginatedLibraryResponseDTO } from '@/types';
 
 interface UseLibraryOptions {
   page?: number;
@@ -41,7 +25,7 @@ export function useLibrary(options: UseLibraryOptions = {}) {
     readStatus = 'all'
   } = options;
   
-  return useQuery<PaginatedLibraryResponse>({
+  return useQuery<PaginatedLibraryResponseDTO>({
     queryKey: ['library', page, limit, search, series, sortBy, yearStart, yearEnd, readStatus],
     queryFn: async () => {
       const params = new URLSearchParams({

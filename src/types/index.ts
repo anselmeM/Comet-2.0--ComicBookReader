@@ -112,11 +112,22 @@ export interface CachedComic {
 // ────────────────────────────────────────────────────
 
 /** Enrichment data returned from /api/comics/[id]/enrich */
+export interface PaginatedLibraryResponse {
+  data: ComicDTO[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+/** Enrichment data returned from /api/comics/[id]/enrich */
 export interface SyncTask {
   id: string;
   url: string;
   method: 'POST' | 'PUT' | 'DELETE';
-  body: any;
+  body: Record<string, unknown> | null;
   headers: Record<string, string>;
   timestamp: number;
   attempts: number;
@@ -131,4 +142,14 @@ export interface EnrichmentData {
   coverUrl: string | null;
   characters: string[];
   publishers: string[];
+}
+
+export interface PaginatedLibraryResponseDTO {
+  data: ComicDTO[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }

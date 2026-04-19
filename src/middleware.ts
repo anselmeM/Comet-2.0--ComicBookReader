@@ -1,9 +1,12 @@
 /**
  * @file Next.js Middleware — Route Protection
  */
-import { auth } from '@/auth';
+import NextAuth from 'next-auth';
+import { authConfig } from './auth.config';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+
+const { auth } = NextAuth(authConfig);
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = [
@@ -25,7 +28,7 @@ export default auth((req: NextRequest & { auth: any }) => {
 
   const isAuthenticated = !!req.auth;
 
-  console.log(`[Middleware] Path: ${pathname} | Auth: ${isAuthenticated ? 'YES' : 'NO'}`);
+  // console.log(`[Middleware] Path: ${pathname} | Auth: ${isAuthenticated ? 'YES' : 'NO'}`);
 
   // 1. Allow public routes
   if (isPublicRoute || isPublicApi) {
@@ -43,7 +46,6 @@ export default auth((req: NextRequest & { auth: any }) => {
   }
 
   // 3. Authenticated users
-  // Bypass onboarding check for now to fix the loop
   return NextResponse.next();
 });
 
