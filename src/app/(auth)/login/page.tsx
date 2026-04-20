@@ -85,8 +85,8 @@ function LoginForm() {
         setErrorMsg(result.error);
         setLoading(false);
       } else if (result?.success && result?.redirectUrl) {
-        // Handle redirect manually to avoid "Failed to fetch" from server action redirect
-        router.push(result.redirectUrl);
+        // Use window.location.href for a full page load to ensure session is picked up
+        window.location.href = result.redirectUrl;
       }
       // If success, server action will handle redirect
     } catch (err: any) {
@@ -177,7 +177,7 @@ function LoginForm() {
             </div>
 
             <div className="flex items-center justify-between">
-              <Link href="/forgot-password" disabled={loading} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+              <Link href="/forgot-password" className={`text-sm text-blue-400 hover:text-blue-300 transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}>
                 Forgot password?
               </Link>
             </div>

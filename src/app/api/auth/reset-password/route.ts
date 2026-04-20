@@ -41,13 +41,14 @@ export async function POST(req: NextRequest) {
 
     // Generate a secure reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Save the token to the database
+    // Save the hashed token to the database
     await db.user.update({
       where: { id: user.id },
       data: {
-        resetToken,
+        resetToken: hashedResetToken,
         resetTokenExpiry,
       },
     });

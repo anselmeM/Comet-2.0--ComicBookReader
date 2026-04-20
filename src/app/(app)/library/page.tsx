@@ -67,13 +67,6 @@ export default function LibraryPage() {
     }));
   }, [libraryData?.data]);
 
-  // Handle session state
-  React.useEffect(() => {
-    if (sessionStatus === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [sessionStatus, router]);
-
   const handleFileUpload = async (file: File) => {
     if (!file) return;
     try {

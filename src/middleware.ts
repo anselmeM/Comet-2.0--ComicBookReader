@@ -3,50 +3,38 @@
  */
 import NextAuth from 'next-auth';
 import { authConfig } from './auth.config';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
 const { auth } = NextAuth(authConfig);
 
-// Routes that don't require authentication
-const PUBLIC_ROUTES = [
-  '/', 
-  '/login', 
-  '/register',
-  '/forgot-password',
-  '/reset-password'
-];
-const PUBLIC_API_PREFIXES = ['/api/auth'];
+export default auth((req) => {
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
 
-export default auth((req: NextRequest & { auth: any }) => {
-  const { pathname } = req.nextUrl;
+  const isPublicRoute = ['/', '/login', '/register', '/forgot-password', '/reset-password'].includes(nextUrl.pathname);
+  const isPublicApiRoute = nextUrl.pathname.startsWith('/api/auth');
 
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
-  const isPublicApi = PUBLIC_API_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
-
-  const isAuthenticated = !!req.auth;
-
-  // console.log(`[Middleware] Path: ${pathname} | Auth: ${isAuthenticated ? 'YES' : 'NO'}`);
-
-  // 1. Allow public routes
-  if (isPublicRoute || isPublicApi) {
-    return NextResponse.next();
+  if (isPublicApiRoute) {
+    return;
   }
 
-  // 2. Redirect unauthenticated users to login
-  if (!isAuthenticated) {
-    if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (isPublicRoute) {
+    if (isLoggedIn && (nextUrl.pathname === '/login' || nextUrl.pathname === '/register')) {
+      return Response.redirect(new URL('/library', nextUrl));
     }
-    const loginUrl = new URL('/login', req.url);
-    loginUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(loginUrl);
+    return;
   }
 
-  // 3. Authenticated users
-  return NextResponse.next();
+  if (!isLoggedIn) {
+    let callbackUrl = nextUrl.pathname;
+    if (nextUrl.search) {
+      callbackUrl += nextUrl.search;
+    }
+
+    const encodedCallbackUrl = encodeURIComponent(callbackUrl);
+    return Response.redirect(new URL(`/login?callbackUrl=${encodedCallbackUrl}`, nextUrl));
+  }
+
+  return;
 });
 
 export const config = {

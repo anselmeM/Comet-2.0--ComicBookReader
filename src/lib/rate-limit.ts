@@ -2,14 +2,12 @@
  * @file Basic In-Memory Rate Limiter for Auth Routes
  */
 
-interface RateLimitStore {
-  [key: string]: {
-    count: number;
-    resetAt: number;
-  };
+interface RateLimitRecord {
+  count: number;
+  resetAt: number;
 }
 
-const store: RateLimitStore = {};
+const store = new Map<string, RateLimitRecord>();
 
 /**
  * Checks if a request should be rate-limited.
@@ -21,24 +19,33 @@ const store: RateLimitStore = {};
  */
 export async function rateLimit(key: string, limit: number, windowMs: number) {
   const now = Date.now();
-  const record = store[key];
+  let record = store.get(key);
 
   // Cleanup expired record
   if (record && now > record.resetAt) {
-    delete store[key];
+    store.delete(key);
+    record = undefined;
   }
 
-  if (!store[key]) {
-    store[key] = {
+  if (!record) {
+    store.set(key, {
       count: 1,
       resetAt: now + windowMs,
-    };
+    });
   } else {
-    store[key].count++;
+    record.count++;
+    store.set(key, record);
   }
 
-  const current = store[key].count;
-  const reset = store[key].resetAt;
+  // Prevent memory leak by capping the map size
+  if (store.size > 5000) {
+    const oldestKey = store.keys().next().value;
+    if (oldestKey) store.delete(oldestKey);
+  }
+
+  const currentRecord = store.get(key)!;
+  const current = currentRecord.count;
+  const reset = currentRecord.resetAt;
   const remaining = Math.max(0, limit - current);
   const isLimited = current > limit;
 

@@ -47,11 +47,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     action?: ToastAction,
     duration?: number
   ) => {
-    const id = Math.random().toString(36).substring(7);
+    const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(7);
     const toastDuration = duration ?? 3000;
-    
-    setToasts((prev) => [...prev, { id, message, type, action }]);
 
+    setToasts((prev) => [...prev, { id, message, type, action }]);
     // Auto-dismiss after the specified duration
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));

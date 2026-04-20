@@ -70,9 +70,9 @@ export async function GET(_req: Request) {
       if (readStatus === 'unread') {
         where.progress = { is: null };
       } else if (readStatus === 'reading') {
-        where.progress = { isNot: null, readStatus: 'READING' };
+        where.progress = { readStatus: 'READING' };
       } else if (readStatus === 'completed') {
-        where.progress = { isNot: null, readStatus: 'COMPLETED' };
+        where.progress = { readStatus: 'COMPLETED' };
       }
     }
 

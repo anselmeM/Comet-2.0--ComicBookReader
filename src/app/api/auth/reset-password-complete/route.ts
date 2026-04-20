@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
@@ -26,11 +27,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
     }
 
-    // Find user with the reset token
+    // Hash the received token to compare with the one stored in DB
+    const hashedResetToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with the hashed reset token
     const user = await db.user.findFirst({
       where: {
         email,
-        resetToken: token,
+        resetToken: hashedResetToken,
         resetTokenExpiry: {
           gt: new Date(), // Token must not be expired
         },
