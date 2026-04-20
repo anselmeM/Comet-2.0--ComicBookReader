@@ -13,7 +13,10 @@ export async function POST(
     const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+        { status: 401 }
+      );
     }
 
     const body = await req.json();
@@ -64,7 +67,10 @@ export async function DELETE(
     const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(req.url);

@@ -1,10 +1,20 @@
 'use server';
-
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
+import { rateLimit } from '@/lib/rate-limit';
+import { headers } from 'next/headers';
 
 export async function loginAction(prevState: any, formData: FormData) {
   try {
+    // 1. Rate limiting (T-AUTH-002)
+    const headerList = await headers();
+    const ip = (headerList.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
+    const limiter = await rateLimit(`login_${ip}`, 10, 60 * 60 * 1000); // 10 attempts per hour
+
+    if (limiter.isLimited) {
+      return { error: 'Too many login attempts. Please try again in an hour.' };
+    }
+
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const callbackUrl = (formData.get('callbackUrl') as string) || '/library';
@@ -36,6 +46,11 @@ export async function loginAction(prevState: any, formData: FormData) {
         return { error: 'Invalid email or password.' };
       }
       return { error: 'Something went wrong. Please try again.' };
+    }
+    
+    // Handle custom lockout error
+    if (error.message?.includes('Account locked')) {
+      return { error: error.message };
     }
     
     if (error instanceof AuthError) {

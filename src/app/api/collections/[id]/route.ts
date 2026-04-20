@@ -19,7 +19,10 @@ export async function GET(
     const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+        { status: 401 }
+      );
     }
 
     const collection = await db.collection.findUnique({
@@ -71,7 +74,10 @@ export async function PATCH(
     const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+        { status: 401 }
+      );
     }
 
     const body = await req.json();
@@ -107,7 +113,10 @@ export async function DELETE(
     const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+        { status: 401 }
+      );
     }
 
     await db.collection.delete({

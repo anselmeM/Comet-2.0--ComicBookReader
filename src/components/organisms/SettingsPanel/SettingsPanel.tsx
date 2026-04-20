@@ -185,7 +185,7 @@ export function SettingsPanel() {
               {session?.user?.image ? (
                 <NextImage 
                   src={session.user.image} 
-                  alt={session.user.name || 'User'}
+                  alt={name || session.user.name || 'User'}
                   width={96}
                   height={96}
                   className="w-24 h-24 rounded-full object-cover border-2 border-neutral-700"
@@ -193,7 +193,7 @@ export function SettingsPanel() {
                 />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold border-2 border-neutral-700">
-                  {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : 'U'}
+                  {(name || session?.user?.name || 'U').charAt(0).toUpperCase()}
                 </div>
               )}
               <button 
@@ -214,7 +214,7 @@ export function SettingsPanel() {
             </div>
             
             <div className="flex-1 text-center sm:text-left">
-              <h3 className="text-lg font-semibold text-white">{session?.user?.name || 'User'}</h3>
+              <h3 className="text-lg font-semibold text-white">{name || session?.user?.name || 'User'}</h3>
               <p className="text-neutral-400 text-sm">{session?.user?.email}</p>
             </div>
           </div>

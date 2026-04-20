@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { evictCachedComic } from '@/lib/idb';
 import { PaginatedLibraryResponseDTO } from '@/types';
+import { useAuthCallback } from './useAuthCallback';
 
 interface UseLibraryOptions {
   page?: number;
@@ -14,6 +15,7 @@ interface UseLibraryOptions {
 }
 
 export function useLibrary(options: UseLibraryOptions = {}) {
+  const { handleAuthError } = useAuthCallback();
   const { 
     page = 1, 
     limit = 20, 
@@ -42,6 +44,7 @@ export function useLibrary(options: UseLibraryOptions = {}) {
       
       const res = await fetch(`/api/library?${params.toString()}`);
       if (!res.ok) {
+        await handleAuthError(res);
         throw new Error('Failed to fetch library');
       }
       return res.json();
@@ -52,6 +55,7 @@ export function useLibrary(options: UseLibraryOptions = {}) {
 
 export function useDeleteComic() {
   const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
 
   return useMutation({
     mutationFn: async (comicId: string) => {
@@ -61,6 +65,9 @@ export function useDeleteComic() {
       });
       
       if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        
         const error = await res.json();
         throw new Error(error.error || 'Failed to delete comic');
       }

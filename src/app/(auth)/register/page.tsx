@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { UserPlus, Sparkles, KeyRound, Mail, AlertCircle, ArrowLeft, Check, X } from 'lucide-react';
+import { UserPlus, Sparkles, KeyRound, Mail, AlertCircle, ArrowLeft, Check, X, User } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState, useEffect, useMemo } from 'react';
@@ -33,6 +33,7 @@ function RegisterForm() {
     ? 'Registration failed. Please try again.'
     : '';
   
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -113,7 +114,7 @@ function RegisterForm() {
       const registerRes = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
       });
 
       if (!registerRes.ok) {
@@ -167,19 +168,30 @@ function RegisterForm() {
       {/* Glass Card */}
       <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 p-8 rounded-3xl shadow-2xl relative z-10">
         
-        <motion.div variants={itemVariants} className="flex justify-center mb-8">
-          <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-4 rounded-2xl shadow-lg shadow-indigo-500/20">
-            <Sparkles className="w-8 h-8 text-white" />
+        <motion.div variants={itemVariants} className="flex flex-col items-center mb-8">
+          <div className="relative mb-4">
+            <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-4 rounded-2xl shadow-lg shadow-indigo-500/20">
+              <Sparkles className="w-8 h-8 text-white" />
+            </div>
+            {name && (
+              <motion.div 
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="absolute -top-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center text-indigo-600 font-black text-lg border-2 border-indigo-600 shadow-xl"
+              >
+                {name.charAt(0).toUpperCase()}
+              </motion.div>
+            )}
           </div>
-        </motion.div>
 
-        <motion.div variants={itemVariants} className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-2">
-            Create your account
-          </h1>
-          <p className="text-zinc-400 text-sm">
-            Start building your ultimate digital comic library
-          </p>
+          <div className="text-center">
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-1">
+              {name ? `Hi, ${name}!` : 'Create your account'}
+            </h1>
+            <p className="text-zinc-400 text-sm">
+              {name ? 'Ready to build your ultimate library?' : 'Start building your ultimate digital comic library'}
+            </p>
+          </div>
         </motion.div>
 
         {errorMsg && (
@@ -193,6 +205,22 @@ function RegisterForm() {
 
         <div className="space-y-6">
           <motion.form variants={itemVariants} onSubmit={handleRegister} className="space-y-4">
+            {/* Name Field */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-zinc-500" />
+              </div>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="What should we call you?"
+                className="block w-full pl-11 pr-4 py-3 bg-zinc-950/50 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
+                required
+                disabled={loading}
+              />
+            </div>
+
             {/* Email Field */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

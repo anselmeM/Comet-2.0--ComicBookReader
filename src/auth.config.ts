@@ -1,6 +1,11 @@
-import type { NextAuthConfig } from 'next-auth';
+import type { NextAuthConfig, User } from 'next-auth';
 
-// This config is edge-compatible. It does not import the database.
+/**
+ * @file Shared NextAuth Configuration
+ * 
+ * This config is edge-compatible (no database imports).
+ * It is used by both the auth handler (src/auth.ts) and the middleware.
+ */
 export const authConfig: NextAuthConfig = {
   trustHost: true,
   secret: process.env.AUTH_SECRET,
@@ -28,22 +33,52 @@ export const authConfig: NextAuthConfig = {
       return true;
     },
     async jwt({ token, user, trigger, session }) {
+      const now = Math.floor(Date.now() / 1000);
+
       if (trigger === 'update' && session) {
-        return { ...token, ...session };
+        if (session.name) token.name = session.name;
+        if (session.defaultReadingMode) token.defaultReadingMode = session.defaultReadingMode;
+        if (session.theme) token.theme = session.theme;
+        return token;
       }
 
       if (user) {
+        const u = user as User;
         return {
           ...token,
-          userId: user.id,
-          email: user.email,
-          plan: (user as any).plan ?? 'FREE',
-          hasCompletedOnboarding: (user as any).hasCompletedOnboarding ?? false,
-          name: user.name ?? null,
-          defaultReadingMode: (user as any).defaultReadingMode ?? 'single-page',
-          issuedAt: Math.floor(Date.now() / 1000),
+          userId: u.id,
+          email: u.email,
+          plan: u.plan ?? 'FREE',
+          hasCompletedOnboarding: u.hasCompletedOnboarding ?? false,
+          name: u.name ?? null,
+          defaultReadingMode: u.defaultReadingMode ?? 'single-page',
+          theme: u.theme ?? 'dark',
+          issuedAt: now,
+          iss: process.env.NEXTAUTH_URL || 'comet-reader',
+          aud: 'comet-app',
         };
       }
+
+      // Phase 2: Security Validation
+      // 1. Clock skew / Future token check
+      if (token.issuedAt && (token.issuedAt as number) > now + 60) {
+        console.error('[Auth] Token validation failed: Issued in the future (skew)');
+        return null;
+      }
+
+      // 2. Issuer validation
+      const expectedIss = process.env.NEXTAUTH_URL || 'comet-reader';
+      if (token.iss && token.iss !== expectedIss) {
+        console.error('[Auth] Token validation failed: Issuer mismatch');
+        return null;
+      }
+
+      // 3. Audience validation
+      if (token.aud && token.aud !== 'comet-app') {
+        console.error('[Auth] Token validation failed: Audience mismatch');
+        return null;
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -54,6 +89,7 @@ export const authConfig: NextAuthConfig = {
         session.user.name = (token.name as string) ?? null;
         session.user.email = (token.email as string) || '';
         session.user.defaultReadingMode = (token.defaultReadingMode as string) || 'single-page';
+        session.user.theme = (token.theme as string) || 'dark';
       }
       return session;
     },

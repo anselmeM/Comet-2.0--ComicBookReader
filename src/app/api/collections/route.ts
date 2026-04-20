@@ -15,7 +15,10 @@ export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+        { status: 401 }
+      );
     }
 
     const collections = await db.collection.findMany({
@@ -42,7 +45,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+        { status: 401 }
+      );
     }
 
     const body = await req.json();

@@ -45,6 +45,8 @@ import { FavouritesView } from './views/FavouritesView';
 import { FavouriteHeroesView } from './views/FavouriteHeroesView';
 import { FriendsView } from './views/FriendsView';
 import { useCollections } from '@/hooks/useCollections';
+import { useNotifications } from '@/hooks/useNotifications';
+import { NotificationDropdown } from '../Notifications/NotificationDropdown';
 
 interface DashboardLayoutProps {
   comics: DashboardComic[];
@@ -103,9 +105,13 @@ export function DashboardLayout(props: DashboardLayoutProps) {
   
   const { isFavorite, toggleFavorite } = useFavorites();
   const { collections, addItem } = useCollections();
+  const { data: notificationData } = useNotifications();
   const { triggerNotification } = useNotification();
   const { data: session } = useSession();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const [showNotifications, setShowNotifications] = useState(false);
+  const unreadCount = notificationData?.unreadCount || 0;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -316,23 +322,39 @@ export function DashboardLayout(props: DashboardLayoutProps) {
                
                <div className="h-12 w-px bg-neutral-100 mx-2" />
 
-               <button 
-                 className="p-5 bg-white border border-neutral-100 text-neutral-300 rounded-2xl hover:text-blue-500 transition-all relative shadow-sm"
-                 aria-label="Notifications"
-               >
-                 <Bell size={24} />
-                 <span className="absolute top-4 right-4 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" aria-hidden="true" />
-               </button>
+               <div className="relative">
+                 <button 
+                   onClick={() => setShowNotifications(!showNotifications)}
+                   className={`p-5 border rounded-2xl transition-all relative shadow-sm ${
+                     showNotifications ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white border-neutral-100 text-neutral-300 hover:text-blue-500'
+                   }`}
+                   aria-label="Notifications"
+                 >
+                   <Bell size={24} />
+                   {unreadCount > 0 && (
+                     <span className="absolute top-4 right-4 w-5 h-5 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black" aria-hidden="true">
+                       {unreadCount > 9 ? '9+' : unreadCount}
+                     </span>
+                   )}
+                 </button>
+
+                 <AnimatePresence>
+                   {showNotifications && (
+                     <NotificationDropdown onClose={() => setShowNotifications(false)} />
+                   )}
+                 </AnimatePresence>
+               </div>
 
                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-5 bg-white border border-neutral-100 text-neutral-300 rounded-2xl hover:text-neutral-900 transition-all shadow-sm"><AlignRight size={24} /></button>
 
                <div className="flex items-center gap-4 ml-4">
                  <div className="flex flex-col items-end hidden md:flex">
-                   <span className="text-sm font-black tracking-tighter text-neutral-900">{session?.user?.name || 'Melissa Doe'}</span>
-                   <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Premium User</span>
+                   <span className="text-sm font-black tracking-tighter text-neutral-900">{session?.user?.name || session?.user?.email?.split('@')[0] || 'Reader'}</span>
+                   <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                     {session?.user?.plan === 'FREE' ? 'Free Reader' : 'Premium User'}
+                   </span>
                  </div>
-                 <Link href="/settings" className="shrink-0 group">
-                   {session?.user?.image ? (
+                 <Link href="/settings" className="shrink-0 group">                   {session?.user?.image ? (
                      <Image 
                        src={session.user.image} 
                        alt={session?.user?.name || 'User profile'} 

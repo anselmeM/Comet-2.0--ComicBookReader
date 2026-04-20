@@ -19,9 +19,11 @@ export async function GET(
 ) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+      { status: 401 }
+    );
   }
-
   const { id: comicId } = await params;
 
   try {
@@ -60,9 +62,11 @@ export async function PUT(
 ) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+      { status: 401 }
+    );
   }
-
   const { id: comicId } = await params;
   const body = (await req.json()) as UpdateProgressPayload;
 
@@ -140,9 +144,11 @@ export async function DELETE(
 ) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+      { status: 401 }
+    );
   }
-
   const { id: comicId } = await params;
 
   try {

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getCachedComic } from '@/lib/idb';
 import { CachedComic, ComicDTO } from '@/types';
+import { useAuthCallback } from './useAuthCallback';
 
 export type ComicLoadErrorType = 'metadata' | 'cache' | 'auth' | 'unknown';
 
@@ -22,6 +23,8 @@ export interface UseComicPagesResult {
  * @returns {UseComicPagesResult} The combined state of metadata and binary page data.
  */
 export function useComicPages(comicId: string): UseComicPagesResult {
+  const { handleAuthError } = useAuthCallback();
+
   // 1. Fetch metadata from API
   const metaQuery = useQuery<ComicDTO>({
     queryKey: ['comic-metadata', comicId],
@@ -65,6 +68,8 @@ export function useComicPages(comicId: string): UseComicPagesResult {
     if (metaError?.status === 401 || metaError?.status === 403) {
       errorType = 'auth';
       isAuthError = true;
+      // Centralized error handling
+      handleAuthError(null, metaError);
     } else if (metaError?.status === 404) {
       errorType = 'metadata';
       is404 = true;

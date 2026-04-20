@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { rateLimit } from '@/lib/rate-limit';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
   try {
@@ -56,6 +57,14 @@ export async function POST(req: NextRequest) {
         resetToken: null,
         resetTokenExpiry: null,
       },
+    });
+
+    // Create system notification for security
+    await createNotification({
+      userId: user.id,
+      type: 'SYSTEM_ALERT',
+      title: 'Password Changed',
+      message: 'Your account password was recently changed. If this wasn\'t you, please contact support immediately.',
     });
 
     return NextResponse.json({ message: 'Password has been reset successfully' }, { status: 200 });

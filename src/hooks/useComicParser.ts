@@ -3,6 +3,7 @@ import { setCachedComic, getCachedComic, evictCachedComic } from '@/lib/idb';
 import { computeFileHash } from '@/lib/hash';
 import { generateThumbnail } from '@/lib/thumbnail';
 import { runLRUEviction } from '@/lib/lru';
+import { useAuthCallback } from './useAuthCallback';
 
 interface ParseProgress {
   phase: 'hashing' | 'parsing';
@@ -32,6 +33,7 @@ export function useComicParser() {
   const [isParsing, setIsParsing] = useState(false);
   const [progress, setProgress] = useState<ParseProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { handleAuthError } = useAuthCallback();
 
   const parseComic = useCallback(async (file: File) => {
     setIsParsing(true);
@@ -127,10 +129,9 @@ export function useComicParser() {
                 });
 
                 if (!response.ok) {
-                  if (response.status === 401) {
-                    window.location.href = '/login?error=SessionExpired';
-                    return;
-                  }
+                  const wasAuthError = await handleAuthError(response);
+                  if (wasAuthError) return;
+                  
                   throw new Error(`Server returned ${response.status}`);
                 }
 

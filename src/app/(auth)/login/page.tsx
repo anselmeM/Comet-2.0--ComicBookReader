@@ -121,17 +121,28 @@ function LoginForm() {
       <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 p-8 rounded-3xl shadow-2xl relative z-10">
         
         <motion.div variants={itemVariants} className="flex justify-center mb-8">
-          <div className="bg-gradient-to-br from-blue-500 to-violet-600 p-4 rounded-2xl shadow-lg shadow-blue-500/20">
-            <Rocket className="w-8 h-8 text-white" />
+          <div className="relative">
+            <div className="bg-gradient-to-br from-blue-500 to-violet-600 p-4 rounded-2xl shadow-lg shadow-blue-500/20">
+              <Rocket className="w-8 h-8 text-white" />
+            </div>
+            {email && email.includes('@') && (
+              <motion.div 
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="absolute -top-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-600 font-black text-lg border-2 border-blue-600 shadow-xl"
+              >
+                {email.split('@')[0].charAt(0).toUpperCase()}
+              </motion.div>
+            )}
           </div>
         </motion.div>
 
         <motion.div variants={itemVariants} className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-2">
-            Welcome back
+            {email && email.includes('@') ? `Welcome back, ${email.split('@')[0]}!` : 'Welcome back'}
           </h1>
           <p className="text-zinc-400 text-sm">
-            Sign in to access your Comet library
+            {email && email.includes('@') ? 'Great to see you again.' : 'Sign in to access your Comet library'}
           </p>
         </motion.div>
 

@@ -163,3 +163,38 @@ The fix ensures the middleware uses the **exact same** `auth` export from `@/aut
 **Risk Level:** Medium (affected user authentication)  
 **Fix Complexity:** Low  
 **Testing Recommended:** Full login → protected route access flow
+
+---
+
+## Update: Auth Security & Type Safety Hardening (Phase 1)
+
+**Date:** 2026-04-20  
+**Status:** ✅ COMPLETED
+
+### 1. AUTH_SECRET Runtime Validation
+Implemented fail-fast validation in `src/auth.ts`. The application now throws a descriptive error at startup if `AUTH_SECRET` is missing, empty, or only whitespace. This prevents silent authentication failures and configuration errors in production.
+
+### 2. Centralized Authentication Error Handling
+Created the `useAuthCallback` hook in `src/hooks/useAuthCallback.ts` to provide a unified way to handle 401 (Unauthorized) and 403 (Forbidden) responses.
+- **Features:** Unified notifications, automated session clearing via `signOut({ redirect: false })`, and smart redirection that preserves the user's current URL for post-login return.
+- **Integration:** Integrated into `useComicParser`, `useComicPages`, and `useLibrary` hooks.
+
+### 3. Standardized API 401 Responses
+Updated all major API endpoints to return a consistent error shape on authentication failure:
+- **Format:** `{ error: 'Unauthorized', code: 'AUTH_EXPIRED' }`
+- **Impact:** Allows the frontend to programmatically identify and respond to session expiry without relying on fragile string matching.
+
+### 4. Hardened Type Safety in Auth Callbacks
+Refactored `src/auth.config.ts` to eliminate unsafe `any` casts in the `jwt` and `session` callbacks.
+- **Implementation:** Used proper type assertions with the extended `User` interface.
+- **Result:** TypeScript now enforces the presence and types of custom user properties (`plan`, `hasCompletedOnboarding`, `defaultReadingMode`) at compile time.
+
+### 5. Security & Stability Enhancements
+- **Login Rate Limiting:** Applied the `rateLimit` utility to the `loginAction` server action to protect against brute-force attacks (10 attempts per hour per IP).
+- **Visual Feedback:** Implemented `ComicCardSkeleton` and updated `ComicLibrary` to use skeleton loading, improving the perceived performance of the library view.
+
+### Verification Status
+- ✅ `npx tsc --noEmit` passes with zero errors.
+- ✅ Consistent 401/403 handling verified across core library hooks.
+- ✅ Brute-force protection verified for login server action.
+- ✅ Runtime validation of environment variables active.

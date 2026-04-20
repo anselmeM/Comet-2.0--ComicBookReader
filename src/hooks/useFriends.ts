@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuthCallback } from './useAuthCallback';
 
 export interface Friend {
   id: string;
@@ -39,11 +40,15 @@ export interface SearchUser {
 }
 
 export function useFriends() {
+  const { handleAuthError } = useAuthCallback();
   return useQuery({
     queryKey: ['friends'],
     queryFn: async () => {
       const res = await fetch('/api/friends');
-      if (!res.ok) throw new Error('Failed to fetch friends');
+      if (!res.ok) {
+        await handleAuthError(res);
+        throw new Error('Failed to fetch friends');
+      }
       const data = await res.json();
       return data.friends as Friend[];
     },
@@ -51,23 +56,31 @@ export function useFriends() {
 }
 
 export function useFriendRequests() {
+  const { handleAuthError } = useAuthCallback();
   return useQuery({
     queryKey: ['friend-requests'],
     queryFn: async () => {
       const res = await fetch('/api/friends/requests');
-      if (!res.ok) throw new Error('Failed to fetch friend requests');
+      if (!res.ok) {
+        await handleAuthError(res);
+        throw new Error('Failed to fetch friend requests');
+      }
       return await res.json() as { incoming: FriendRequest[], outgoing: FriendRequest[] };
     },
   });
 }
 
 export function useUserSearch(query: string) {
+  const { handleAuthError } = useAuthCallback();
   return useQuery({
     queryKey: ['user-search', query],
     queryFn: async () => {
       if (!query || query.length < 2) return [];
       const res = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
-      if (!res.ok) throw new Error('Failed to search users');
+      if (!res.ok) {
+        await handleAuthError(res);
+        throw new Error('Failed to search users');
+      }
       const data = await res.json();
       return data.users as SearchUser[];
     },
@@ -77,6 +90,7 @@ export function useUserSearch(query: string) {
 
 export function useSendFriendRequest() {
   const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
   return useMutation({
     mutationFn: async (receiverId: string) => {
       const res = await fetch('/api/friends/requests', {
@@ -85,6 +99,9 @@ export function useSendFriendRequest() {
         body: JSON.stringify({ receiverId }),
       });
       if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        
         const error = await res.json();
         throw new Error(error.error || 'Failed to send friend request');
       }
@@ -99,6 +116,7 @@ export function useSendFriendRequest() {
 
 export function useHandleFriendRequest() {
   const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
   return useMutation({
     mutationFn: async ({ requestId, action }: { requestId: string, action: 'ACCEPT' | 'DECLINE' }) => {
       const res = await fetch(`/api/friends/requests/${requestId}`, {
@@ -107,6 +125,9 @@ export function useHandleFriendRequest() {
         body: JSON.stringify({ action }),
       });
       if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        
         const error = await res.json();
         throw new Error(error.error || 'Failed to handle friend request');
       }
@@ -120,14 +141,40 @@ export function useHandleFriendRequest() {
   });
 }
 
+export function useInviteFriend() {
+  const { handleAuthError } = useAuthCallback();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const res = await fetch('/api/friends/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to send invitation');
+      }
+      return await res.json();
+    },
+  });
+}
+
 export function useRemoveFriend() {
   const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
   return useMutation({
     mutationFn: async (friendId: string) => {
       const res = await fetch(`/api/friends?friendId=${friendId}`, {
         method: 'DELETE',
       });
-      if (!res.ok) throw new Error('Failed to remove friend');
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        throw new Error('Failed to remove friend');
+      }
       return await res.json();
     },
     onSuccess: () => {

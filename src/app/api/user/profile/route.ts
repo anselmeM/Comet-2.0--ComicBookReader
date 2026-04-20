@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { rateLimit } from '@/lib/rate-limit';
 
 const profileUpdateSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(50).optional(),
@@ -16,11 +17,21 @@ const profileUpdateSchema = z.object({
 export async function PUT(req: Request) {
   try {
     const session = await auth();
-    
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
         { status: 401 }
+      );
+    }
+
+    // Rate limiting (Phase 2)
+    const ip = (req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
+    const limiter = await rateLimit(`profile_${session.user.id}`, 10, 60 * 1000); // 10 updates per minute
+
+    if (limiter.isLimited) {
+      return NextResponse.json(
+        { error: 'Too many profile updates. Please wait a minute.' },
+        { status: 429, headers: limiter.headers }
       );
     }
 

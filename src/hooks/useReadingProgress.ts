@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useReaderStore } from '@/stores/readerStore';
 import { UpdateProgressPayload } from '@/types';
 import { queueSyncTask } from '@/lib/sync';
+import { useAuthCallback } from './useAuthCallback';
 
 interface UseReadingProgressOptions {
   comicId: string | null;
@@ -22,6 +23,7 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
 
   const { mutate } = useMutation({
     mutationFn: async (payload: UpdateProgressPayload) => {
@@ -38,7 +40,11 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error('Failed to update progress');
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        throw new Error('Failed to update progress');
+      }
       return res.json();
     },
     onSuccess: () => {

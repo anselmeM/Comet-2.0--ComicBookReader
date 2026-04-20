@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DashboardComic } from '@/components/molecules/DashboardComicCard';
+import { useAuthCallback } from './useAuthCallback';
 
 export interface Collection {
   id: string;
@@ -15,13 +16,17 @@ export interface Collection {
 
 export function useCollections() {
   const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
 
   // Get all collections
   const collectionsQuery = useQuery({
     queryKey: ['collections'],
     queryFn: async () => {
       const res = await fetch('/api/collections');
-      if (!res.ok) throw new Error('Failed to fetch collections');
+      if (!res.ok) {
+        await handleAuthError(res);
+        throw new Error('Failed to fetch collections');
+      }
       const data = await res.json();
       return data.collections as Collection[];
     },
@@ -33,7 +38,10 @@ export function useCollections() {
     queryFn: async () => {
       if (!id) return null;
       const res = await fetch(`/api/collections/${id}`);
-      if (!res.ok) throw new Error('Failed to fetch collection');
+      if (!res.ok) {
+        await handleAuthError(res);
+        throw new Error('Failed to fetch collection');
+      }
       const data = await res.json();
       return data.collection as Collection;
     },
@@ -49,6 +57,9 @@ export function useCollections() {
         body: JSON.stringify({ name, description }),
       });
       if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        
         const error = await res.json();
         throw new Error(error.error || 'Failed to create collection');
       }
@@ -67,7 +78,11 @@ export function useCollections() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description }),
       });
-      if (!res.ok) throw new Error('Failed to update collection');
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        throw new Error('Failed to update collection');
+      }
       return res.json();
     },
     onSuccess: (_, variables) => {
@@ -80,7 +95,11 @@ export function useCollections() {
   const deleteCollection = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/collections/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete collection');
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        throw new Error('Failed to delete collection');
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -96,7 +115,11 @@ export function useCollections() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ comicId }),
       });
-      if (!res.ok) throw new Error('Failed to add item');
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        throw new Error('Failed to add item');
+      }
       return res.json();
     },
     onSuccess: (_, variables) => {
@@ -111,7 +134,11 @@ export function useCollections() {
       const res = await fetch(`/api/collections/${collectionId}/items?comicId=${comicId}`, {
         method: 'DELETE',
       });
-      if (!res.ok) throw new Error('Failed to remove item');
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        throw new Error('Failed to remove item');
+      }
       return res.json();
     },
     onSuccess: (_, variables) => {

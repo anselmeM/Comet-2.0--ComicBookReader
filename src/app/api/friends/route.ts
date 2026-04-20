@@ -9,7 +9,10 @@ export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+        { status: 401 }
+      );
     }
 
     const friendships = await db.friendship.findMany({
@@ -67,7 +70,10 @@ export async function DELETE(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(req.url);

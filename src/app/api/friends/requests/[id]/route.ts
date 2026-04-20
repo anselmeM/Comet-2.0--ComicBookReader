@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
+import { createNotification } from '@/lib/notifications';
 
 /**
  * PUT /api/friends/requests/[id] — Accepts or declines a friend request
@@ -12,7 +13,10 @@ export async function PUT(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+        { status: 401 }
+      );
     }
 
     const { id } = await params;
@@ -24,6 +28,11 @@ export async function PUT(
 
     const request = await db.friendRequest.findUnique({
       where: { id },
+      include: {
+        receiver: {
+          select: { name: true }
+        }
+      }
     });
 
     if (!request) {
@@ -47,7 +56,7 @@ export async function PUT(
     }
 
     // ACCEPT action
-    // Use transaction to ensure both records are created/updated
+    // Use transaction to ensure all records are created/updated
     await db.$transaction([
       db.friendRequest.update({
         where: { id },
@@ -60,6 +69,15 @@ export async function PUT(
         },
       }),
     ]);
+
+    // Create notification for the sender
+    await createNotification({
+      userId: request.senderId,
+      type: 'FRIEND_REQUEST_ACCEPTED',
+      title: 'Friend Request Accepted',
+      message: `${request.receiver.name || 'A user'} accepted your friend request!`,
+      link: '/friends', // Link to friends page
+    });
 
     return NextResponse.json({ success: true, message: 'Friend request accepted' });
   } catch (error) {

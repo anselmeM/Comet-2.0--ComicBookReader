@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -22,6 +22,8 @@ model User {
   theme                  String            @default("dark")
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
+  failedAttempts         Int               @default(0)
+  lockoutUntil           DateTime?
   accounts               Account[]
   bookmarks              Bookmark[]
   library                Comic[]
@@ -32,6 +34,34 @@ model User {
   friendsOf              Friendship[]      @relation("FriendToUser")
   sentRequests           FriendRequest[]   @relation("SentRequests")
   receivedRequests       FriendRequest[]   @relation("ReceivedRequests")
+  notifications          Notification[]    @relation("UserNotifications")
+  sentInvitations        Invitation[]      @relation("SentInvitations")
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  senderId  String
+  email     String
+  status    String   @default("PENDING") // PENDING, ACCEPTED
+  createdAt DateTime @default(now())
+  sender    User     @relation("SentInvitations", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // FRIEND_REQUEST_ACCEPTED, NEW_MESSAGE, CONTENT_LIKE, CONTENT_COMMENT, NEW_CONTENT, SYSTEM_ALERT
+  title     String
+  message   String
+  link      String?  // Optional link to navigate to (e.g., friend's profile or new content)
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
 }
 
 model Friendship {
