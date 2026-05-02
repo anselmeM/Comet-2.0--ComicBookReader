@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     });
 
     const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3100'}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-    console.log(`[Password Reset] Reset URL for ${email}: ${resetUrl}`);
+    console.log(`[Password Reset] Reset token generated for ${email}`);
 
     // Set up email sending via SMTP if configured
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
