@@ -96,15 +96,13 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
   useGesture(
     {
       onDrag: ({ offset: [dx, dy], intentional, swipe }) => {
-        // Handle swipe detection (swipe: Vector2 - x: -1 for left, 1 for right)
-        if (swipe && swipe[0] !== 0 && scale.get() <= 1.1 && !isGuidedViewEnabled) {
-          // Swipe detected with sufficient velocity
+        // Handle swipe detection ONLY when not zoomed in
+        if (swipe && swipe[0] !== 0 && scale.get() < 1.05 && !isGuidedViewEnabled) {
+          console.log('Gesture: Swipe detected', swipe[0]);
           if (swipe[0] === -1) {
-            // Swipe right to left (index increases)
             if (mode === 'manga-rtl') prevPage();
             else nextPage();
           } else if (swipe[0] === 1) {
-            // Swipe left to right (index decreases)
             if (mode === 'manga-rtl') nextPage();
             else prevPage();
           }
@@ -117,14 +115,15 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
         y.set(dy);
       },
       onPinch: ({ offset: [s], memo }) => {
+        console.log('Gesture: Pinch detected', s);
         setZoomLevel(s);
         return memo;
       }
     },
     {
       target: containerRef,
-      drag: { filterTaps: true, from: () => [x.get(), y.get()], swipe: { velocity: 0.2, distance: 30 } },
-      pinch: { scaleBounds: { min: 0.5, max: 5 }, from: () => [zoomLevel, 0] }
+      drag: { filterTaps: true, from: () => [x.get(), y.get()], swipe: { velocity: 0.5, distance: 50 } },
+      pinch: { scaleBounds: { min: 0.5, max: 5 }, from: () => [scale.get(), 0] }
     }
   );
 
@@ -148,10 +147,17 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
       className="relative w-full h-full overflow-hidden bg-black touch-none cursor-grab active:cursor-grabbing"
     >
       <motion.div
-        className="w-full h-full flex items-center justify-center origin-center"
+        className="w-full h-full flex items-center justify-center origin-center relative"
         style={{ x, y, scale }}
       >
         {children}
+        
+        {/* Center Fold Gutter for dual-spread mode (T-READ-008) */}
+        {(mode === 'dual-spread' || mode === 'manga-rtl') && currentPage > 0 && (
+          <div className="absolute inset-0 pointer-events-none flex justify-center z-10">
+            <div className="w-8 h-full bg-gradient-to-r from-black/20 via-black/40 to-black/20 blur-sm opacity-50" />
+          </div>
+        )}
       </motion.div>
     </div>
   );

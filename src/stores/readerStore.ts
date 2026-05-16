@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Panel } from '@/types';
 
-export type ReaderMode = 'single-vertical' | 'dual-spread' | 'manga-rtl' | 'guided-view';
+export type ReaderMode = 'single-page' | 'single-vertical' | 'dual-spread' | 'manga-rtl' | 'guided-view';
 
 interface ReaderState {
   // Settings
@@ -12,7 +12,6 @@ interface ReaderState {
   isGuidedViewEnabled: boolean;
   guidedStep: number; // Index into pagePanels[currentPage]
   isFullscreen: boolean;
-  bookmarks: number[]; // Array of bookmarked page numbers
 
   // Current Session
   currentComicId: string | null;
@@ -32,10 +31,8 @@ interface ReaderState {
   setGuidedStep: (step: number) => void;
   setPagePanels: (pageIndex: number, panels: Panel[]) => void;
   toggleFullscreen: () => void;
-  toggleBookmark: (page: number) => void;
-  isBookmarked: (page: number) => boolean;
   
-  openComic: (comicId: string, totalPages: number, initialPage?: number) => void;
+  openComic: (comicId: string, totalPages: number, initialPage?: number, initialMode?: ReaderMode) => void;
   setPage: (pageIndex: number) => void;
   nextPage: () => void;
   prevPage: () => void;
@@ -47,13 +44,12 @@ export const useReaderStore = create<ReaderState>()(
   persist(
     (set, get) => ({
       // Default Settings
-      mode: 'single-vertical',
+      mode: 'single-page',
       zoomLevel: 1.0,
       brightness: 1.0,
       isGuidedViewEnabled: false,
       guidedStep: 0,
       isFullscreen: false,
-      bookmarks: [],
 
       // Initial Session State
       currentComicId: null,
@@ -78,19 +74,13 @@ export const useReaderStore = create<ReaderState>()(
         pagePanels: { ...state.pagePanels, [pageIndex]: panels }
       })),
       toggleFullscreen: () => set((state) => ({ isFullscreen: !state.isFullscreen })),
-      toggleBookmark: (page) => set((state) => {
-        const bookmarks = state.bookmarks.includes(page)
-          ? state.bookmarks.filter(p => p !== page)
-          : [...state.bookmarks, page].sort((a, b) => a - b);
-        return { bookmarks };
-      }),
-      isBookmarked: (page) => get().bookmarks.includes(page),
       
-      openComic: (comicId, totalPages, initialPage = 0) => {
+      openComic: (comicId, totalPages, initialPage = 0, initialMode) => {
         set({
           currentComicId: comicId,
           totalPages,
           currentPage: initialPage,
+          mode: initialMode || get().mode,
           zoomLevel: 1.0,
           guidedStep: 0,
           isMenuVisible: false,
@@ -116,7 +106,12 @@ export const useReaderStore = create<ReaderState>()(
           return;
         }
 
-        const increment = mode === 'dual-spread' || mode === 'manga-rtl' ? 2 : 1;
+        // Dual mode spread increment logic
+        const isDual = mode === 'dual-spread' || mode === 'manga-rtl';
+        let increment = 1;
+        if (isDual && currentPage > 0) {
+          increment = 2;
+        }
         
         if (currentPage + increment < totalPages) {
           set({ currentPage: currentPage + increment, guidedStep: 0 });
@@ -133,7 +128,12 @@ export const useReaderStore = create<ReaderState>()(
           return;
         }
 
-        const decrement = mode === 'dual-spread' || mode === 'manga-rtl' ? 2 : 1;
+        // Dual mode spread decrement logic
+        const isDual = mode === 'dual-spread' || mode === 'manga-rtl';
+        let decrement = 1;
+        if (isDual && currentPage > 2) {
+          decrement = 2;
+        }
         
         if (currentPage - decrement >= 0) {
           const prevPageIdx = currentPage - decrement;
@@ -147,19 +147,25 @@ export const useReaderStore = create<ReaderState>()(
           set({ currentPage: 0, guidedStep: 0 });
         }
       },
-
+      
       toggleMenu: () => set((state) => ({ isMenuVisible: !state.isMenuVisible })),
       
-      closeComic: () => set({ currentComicId: null, currentPage: 0, totalPages: 0, guidedStep: 0, pagePanels: {} }),
+      closeComic: () => set({ 
+        currentComicId: null, 
+        currentPage: 0, 
+        totalPages: 0, 
+        isMenuVisible: false,
+        pagePanels: {} 
+      }),
     }),
     {
       name: 'comet-reader-storage',
+      // Only persist persistent settings, not session state
       partialize: (state) => ({
         mode: state.mode,
         zoomLevel: state.zoomLevel,
         brightness: state.brightness,
         isGuidedViewEnabled: state.isGuidedViewEnabled,
-        bookmarks: state.bookmarks,
       }),
     }
   )

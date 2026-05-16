@@ -1,11 +1,27 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useStorage } from '@/hooks/useStorage';
 import { useReaderStore } from '@/stores/readerStore';
 import type { ReaderMode } from '@/stores/readerStore';
-import { Trash2, Smartphone, HardDrive, Monitor, BookOpen, RefreshCw, User, Camera, Loader2 } from 'lucide-react';
+import NextImage from 'next/image';
+import { 
+  Trash2, 
+  Smartphone, 
+  HardDrive, 
+  Monitor, 
+  BookOpen, 
+  RefreshCw, 
+  User, 
+  Camera, 
+  Loader2, 
+  Save, 
+  File,
+  AlignRight,
+  ChevronLeft
+} from 'lucide-react';
+import Link from 'next/link';
 
 function formatBytes(bytes: number, decimals = 2) {
   if (!+bytes) return '0 Bytes';
@@ -26,19 +42,26 @@ export function SettingsPanel() {
   // User profile state
   const { data: session, update: updateSession } = useSession();
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [name, setName] = useState(session?.user?.name || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync name when session loads
+  useEffect(() => {
+    if (session?.user?.name) {
+      setName(session.user.name);
+    }
+  }, [session?.user?.name]);
   
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Validate image type
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
       return;
     }
     
-    // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       alert('Image must be less than 2MB');
       return;
@@ -47,12 +70,10 @@ export function SettingsPanel() {
     setIsUploading(true);
     
     try {
-      // Convert to base64 data URL
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64Image = event.target?.result as string;
         
-        // Update user profile via API
         const response = await fetch('/api/user/profile', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -60,7 +81,6 @@ export function SettingsPanel() {
         });
         
         if (response.ok) {
-          // Update session to reflect new image
           await updateSession();
         } else {
           alert('Failed to update profile image');
@@ -75,6 +95,61 @@ export function SettingsPanel() {
     }
   };
 
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      
+      if (response.ok) {
+        await updateSession();
+        alert('Profile updated!');
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      alert('Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const saveReadingPreference = async (newMode: ReaderMode) => {
+    setMode(newMode);
+    
+    try {
+      await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ defaultReadingMode: newMode })
+      });
+    } catch (error) {
+      console.error('Failed to save reading preference:', error);
+    }
+  };
+
+  const saveThemePreference = async (newTheme: string) => {
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: newTheme })
+      });
+      if (response.ok) {
+        await updateSession();
+      }
+    } catch (error) {
+      console.error('Failed to save theme preference:', error);
+    }
+  };
+
   const handleClear = async () => {
     if (confirm('Are you sure you want to clear your local comic cache? You will need to re-download or re-parse comics to read them offline.')) {
       await clearCache();
@@ -83,10 +158,18 @@ export function SettingsPanel() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-12">
-      <header>
-        <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
-        <p className="text-neutral-400">Manage your reading preferences and offline storage.</p>
+    <div className="max-w-4xl mx-auto p-6 space-y-12 pb-24 text-comet-text">
+      <header className="flex items-center gap-6">
+        <Link 
+          href="/library"
+          className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl hover:bg-neutral-800 transition-all text-neutral-400 hover:text-blue-500 shadow-sm"
+        >
+          <ChevronLeft size={24} />
+        </Link>
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-1">Settings</h1>
+          <p className="text-neutral-400">Manage your reading preferences and offline storage.</p>
+        </div>
       </header>
 
       {/* User Profile Section */}
@@ -96,40 +179,69 @@ export function SettingsPanel() {
           Profile
         </h2>
 
-        <div className="flex items-center gap-6 p-6 bg-neutral-900 border border-neutral-800 rounded-2xl">
-          <div className="relative">
-            {session?.user?.image ? (
-              <img 
-                src={session.user.image} 
-                alt={session.user.name || 'User'}
-                className="w-24 h-24 rounded-full object-cover border-2 border-neutral-700"
+        <div className="p-6 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-8">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="relative">
+              {session?.user?.image ? (
+                <NextImage 
+                  src={session.user.image} 
+                  alt={name || session.user.name || 'User'}
+                  width={96}
+                  height={96}
+                  className="w-24 h-24 rounded-full object-cover border-2 border-neutral-700"
+                  unoptimized
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold border-2 border-neutral-700">
+                  {(name || session?.user?.name || 'U').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="absolute bottom-0 right-0 p-2 bg-blue-500 rounded-full text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
+                title="Change profile picture"
+              >
+                {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+              </button>
+              <input 
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
               />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold border-2 border-neutral-700">
-                {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : 'U'}
+            </div>
+            
+            <div className="flex-1 text-center sm:text-left">
+              <h3 className="text-lg font-semibold text-white">{name || session?.user?.name || 'User'}</h3>
+              <p className="text-neutral-400 text-sm">{session?.user?.email}</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleProfileUpdate} className="space-y-4 pt-4 border-t border-neutral-800">
+            <div className="space-y-2">
+              <label htmlFor="display-name" className="block text-sm font-medium text-neutral-300">Display Name</label>
+              <div className="flex gap-2">
+                <input 
+                  id="display-name"
+                  type="text" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your name"
+                />
+                <button 
+                  type="submit"
+                  disabled={isSaving || name === session?.user?.name}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                  <span>Save</span>
+                </button>
               </div>
-            )}
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="absolute bottom-0 right-0 p-2 bg-blue-500 rounded-full text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
-              title="Change profile picture"
-            >
-              {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
-            </button>
-            <input 
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-          </div>
-          
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-white">{session?.user?.name || 'User'}</h3>
-            <p className="text-neutral-400 text-sm">{session?.user?.email}</p>
-          </div>
+            </div>
+          </form>
         </div>
       </section>
 
@@ -140,21 +252,23 @@ export function SettingsPanel() {
           Reading Preferences
         </h2>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">Default Reading Mode</label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label className="block text-sm font-medium text-neutral-300 mb-3">Default Reading Mode</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {[
+                { id: 'single-page', label: 'Single Page', icon: <File size={18} /> },
                 { id: 'single-vertical', label: 'Vertical Scroll', icon: <Smartphone size={18} /> },
                 { id: 'dual-spread', label: 'Dual Spread', icon: <Monitor size={18} /> },
-                { id: 'manga-rtl', label: 'Manga (RTL)', icon: <BookOpen size={18} /> }
+                { id: 'manga-rtl', label: 'Manga (RTL)', icon: <AlignRight size={18} /> }
               ].map(item => (
                 <button
                   key={item.id}
-                  onClick={() => setMode(item.id as ReaderMode)}
+                  type="button"
+                  onClick={() => saveReadingPreference(item.id as ReaderMode)}
                   className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
                     mode === item.id 
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
+                      ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.1)]' 
                       : 'border-neutral-800 bg-neutral-900 text-neutral-400 hover:border-neutral-600 hover:text-white'
                   }`}
                 >
@@ -166,21 +280,49 @@ export function SettingsPanel() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">Screen Brightness (Filter)</label>
-            <div className="flex items-center gap-4 max-w-md">
-              <input 
-                type="range" 
-                min="0.5" 
-                max="1.5" 
-                step="0.05" 
-                value={brightness}
-                onChange={(e) => setBrightness(parseFloat(e.target.value))}
-                className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                aria-label="Screen brightness"
-              />
-              <span className="text-neutral-400 min-w-12 text-right">
-                {Math.round(brightness * 100)}%
-              </span>
+            <label className="block text-sm font-medium text-neutral-300 mb-3">Brightness Filter</label>
+            <div className="p-6 bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md">
+              <div className="flex items-center gap-4">
+                <input 
+                  type="range" 
+                  min="0.5" 
+                  max="1.5" 
+                  step="0.05" 
+                  value={brightness}
+                  onChange={(e) => setBrightness(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  aria-label="Screen brightness"
+                />
+                <span className="text-white font-mono min-w-[3rem] text-right">
+                  {Math.round(brightness * 100)}%
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 mt-4">Adjusts the brightness of the reader viewport.</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-300 mb-3">App Theme</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { id: 'dark', label: 'Dark', bg: 'bg-zinc-950', border: 'border-zinc-800' },
+                { id: 'light', label: 'Light', bg: 'bg-white', border: 'border-zinc-200' },
+                { id: 'sepia', label: 'Sepia', bg: 'bg-[#f4ecd8]', border: 'border-[#e0d6b8]' }
+              ].map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => saveThemePreference(item.id)}
+                  className={`flex items-center flex-col gap-3 p-4 rounded-xl border transition-all ${
+                    (session?.user as any)?.theme === item.id || (!session?.user && item.id === 'dark')
+                      ? 'border-blue-500 ring-2 ring-blue-500/20' 
+                      : 'border-neutral-800 bg-neutral-900'
+                  }`}
+                >
+                  <div className={`w-full h-12 rounded-lg ${item.bg} ${item.border} border`} />
+                  <span className="font-medium text-neutral-300">{item.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { useLibrary, useDeleteComic } from '@/hooks/useLibrary';
 import { useComicParser } from '@/hooks/useComicParser';
-import { ComicCard } from '@/components/molecules/ComicCard';
+import { ComicCard, ComicCardSkeleton } from '@/components/molecules/ComicCard';
 import { UploadCloud, Loader2, AlertCircle, BookOpen } from 'lucide-react';
 
 export function ComicLibrary() {
@@ -104,21 +104,18 @@ export function ComicLibrary() {
         )}
 
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 animate-pulse">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="bg-neutral-800 aspect-[2/3] rounded-2xl w-full" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
+              <ComicCardSkeleton key={i} />
             ))}
           </div>
         ) : comics && comics.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {comics.map((comic) => (
-              <ComicCard 
-                key={comic.id} 
+              <ComicCard
+                key={comic.id}
                 comic={comic}
-                onDelete={(id) => deleteComic(id)}
-                disabled={isDeleting}
-              />
-            ))}
+              />            ))}
           </div>
         ) : (
           <div className="text-center p-12 bg-neutral-900 rounded-3xl border border-neutral-800 text-neutral-500">

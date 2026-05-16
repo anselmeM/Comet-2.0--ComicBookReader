@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import crypto from 'crypto';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,6 +15,15 @@ export async function POST(req: NextRequest) {
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    }
+
+    // Rate limiting (T-AUTH-003)
+    const limiter = await rateLimit(`reset_${email}`, 3, 60 * 60 * 1000); // 3 per hour
+    if (limiter.isLimited) {
+      return NextResponse.json(
+        { error: 'Too many reset attempts. Please try again in an hour.' },
+        { status: 429, headers: limiter.headers }
+      );
     }
 
     // Validate email format
@@ -31,19 +41,20 @@ export async function POST(req: NextRequest) {
 
     // Generate a secure reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Save the token to the database
+    // Save the hashed token to the database
     await db.user.update({
       where: { id: user.id },
       data: {
-        resetToken,
+        resetToken: hashedResetToken,
         resetTokenExpiry,
       },
     });
 
     const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3100'}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-    console.log(`[Password Reset] Reset URL for ${email}: ${resetUrl}`);
+    console.log(`[Password Reset] Reset token generated for user`);
 
     // Set up email sending via SMTP if configured
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {

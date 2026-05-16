@@ -6,56 +6,32 @@
  * 
  * @module lib/lru
  */
-import { getAllCachedComics, evictCachedComic } from '@/lib/idb';
+import { getAllCachedComicsMetadata, evictCachedComic, getCacheTotalSizeBytes } from '@/lib/idb';
 
-/** Maximum storage budget in bytes. Defaults to 500MB. */
-const STORAGE_BUDGET_BYTES = 500 * 1024 * 1024;
+const STORAGE_BUDGET_BYTES = 500 * 1024 * 1024; // 500MB
 
 /**
- * Returns the current estimated IndexedDB usage in bytes.
- * Falls back to 0 if the Storage API is unavailable.
- * 
- * @returns Promise resolving to estimated usage in bytes.
- * @example
- * const usage = await getStorageUsage();
- * console.log(`Using ${(usage / 1024 / 1024).toFixed(1)} MB`);
+ * Gets the current estimated storage usage of our IndexedDB cache.
  */
-export async function getStorageUsage(): Promise<number> {
-  if (typeof navigator === 'undefined' || !navigator.storage) return 0;
-  const { usage } = await navigator.storage.estimate();
-  return usage ?? 0;
+async function getStorageUsage(): Promise<number> {
+  return await getCacheTotalSizeBytes();
 }
 
 /**
- * Returns the storage budget in bytes.
+ * Executes the LRU eviction policy.
  * 
- * @returns The configured storage budget.
- */
-export function getStorageBudget(): number {
-  return STORAGE_BUDGET_BYTES;
-}
-
-/**
- * Runs the LRU eviction policy.
- * 
- * If current storage usage exceeds the budget, evicts cached comics
- * starting from the one with the oldest `lastAccessedAt` timestamp
- * until usage is within budget.
- * 
- * Should be called after each new comic is cached.
- * 
- * @returns Promise resolving to the number of comics evicted.
- * @example
- * await setCachedComic(newEntry);
- * const evicted = await runLRUEviction();
- * if (evicted > 0) console.log(`Freed space by evicting ${evicted} comic(s)`);
+ * @returns The number of comics evicted.
  */
 export async function runLRUEviction(): Promise<number> {
   const usage = await getStorageUsage();
   if (usage <= STORAGE_BUDGET_BYTES) return 0;
 
-  // getAllCachedComics returns sorted oldest-first (see idb.ts)
-  const cached = await getAllCachedComics();
+  // getAllCachedComicsMetadata returns all comics
+  const cached = await getAllCachedComicsMetadata();
+  
+  // Sort oldest-first based on lastAccessedAt
+  cached.sort((a, b) => a.lastAccessedAt - b.lastAccessedAt);
+
   let evictionCount = 0;
   let currentUsage = usage;
 

@@ -1,0 +1,87 @@
+/**
+ * @file Sync Manager for Offline-First Data
+ * Manages a queue of failed API requests in IndexedDB and retries them
+ * when a network connection is available.
+ */
+
+import { getDB } from '@/lib/idb';
+import { SyncTask } from '@/types';
+
+/**
+ * Queues a request for background sync.
+ */
+export async function queueSyncTask(
+  url: string, 
+  method: SyncTask['method'], 
+  body: any,
+  headers: Record<string, string> = { 'Content-Type': 'application/json' }
+): Promise<void> {
+  const db = await getDB();
+  const task: SyncTask = {
+    id: crypto.randomUUID(),
+    url,
+    method,
+    body,
+    headers,
+    timestamp: Date.now(),
+    attempts: 0
+  };
+  
+  await db.put('sync_tasks', task);
+  
+  // Try to process immediately if online
+  if (navigator.onLine) {
+    processSyncQueue();
+  }
+}
+
+/**
+ * Processes all pending sync tasks in the queue.
+ */
+export async function processSyncQueue(): Promise<number> {
+  if (!navigator.onLine) return 0;
+  
+  const db = await getDB();
+  const tasks = await db.getAll('sync_tasks');
+  let successCount = 0;
+
+  for (const task of tasks) {
+    try {
+      const response = await fetch(task.url, {
+        method: task.method,
+        headers: task.headers,
+        body: task.body ? JSON.stringify(task.body) : undefined,
+      });
+
+      if (response.ok) {
+        await db.delete('sync_tasks', task.id);
+        successCount++;
+      } else {
+        // Increment attempts
+        task.attempts++;
+        if (task.attempts > 10) {
+          // Give up after 10 tries
+          await db.delete('sync_tasks', task.id);
+        } else {
+          await db.put('sync_tasks', task);
+        }
+      }
+    } catch (err) {
+      console.warn(`[SyncManager] Failed to sync task ${task.id}, will retry later.`, err);
+    }
+  }
+
+  return successCount;
+}
+
+/**
+ * Initializes the sync manager listeners.
+ */
+export function initSyncManager() {
+  if (typeof window === 'undefined') return;
+
+  window.addEventListener('online', () => {
+    console.log('[SyncManager] Online detected, processing queue...');
+    processSyncQueue();
+  });
+}

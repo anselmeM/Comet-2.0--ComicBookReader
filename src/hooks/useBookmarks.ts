@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useAuthCallback } from './useAuthCallback';
 
 export interface Bookmark {
   id: string;
@@ -26,10 +27,19 @@ interface UseBookmarksReturn {
   refreshBookmarks: () => Promise<void>;
 }
 
+interface RawBookmark {
+  id: string;
+  pageNumber: number;
+  label?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function useBookmarks({ comicId }: UseBookmarksOptions): UseBookmarksReturn {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { handleAuthError } = useAuthCallback();
 
   // Fetch bookmarks from API
   const fetchBookmarks = useCallback(async () => {
@@ -42,13 +52,15 @@ export function useBookmarks({ comicId }: UseBookmarksOptions): UseBookmarksRetu
       const response = await fetch(`/api/bookmarks?comicId=${comicId}`);
       
       if (!response.ok) {
+        const wasAuthError = await handleAuthError(response);
+        if (wasAuthError) return;
         throw new Error('Failed to fetch bookmarks');
       }
 
       const data = await response.json();
       
       // Convert date strings to Date objects
-      const parsedBookmarks = (data.bookmarks || []).map((b: any) => ({
+      const parsedBookmarks = (data.bookmarks || []).map((b: RawBookmark) => ({
         ...b,
         createdAt: new Date(b.createdAt),
         updatedAt: new Date(b.updatedAt),
@@ -85,6 +97,8 @@ export function useBookmarks({ comicId }: UseBookmarksOptions): UseBookmarksRetu
       });
 
       if (!response.ok) {
+        const wasAuthError = await handleAuthError(response);
+        if (wasAuthError) return;
         throw new Error('Failed to add bookmark');
       }
 
@@ -112,7 +126,7 @@ export function useBookmarks({ comicId }: UseBookmarksOptions): UseBookmarksRetu
       };
       setBookmarks(prev => [...prev, localBookmark].sort((a, b) => a.pageNumber - b.pageNumber));
     }
-  }, [comicId]);
+  }, [comicId, handleAuthError]);
 
   // Update bookmark label
   const updateBookmark = useCallback(async (id: string, label: string) => {
@@ -126,6 +140,8 @@ export function useBookmarks({ comicId }: UseBookmarksOptions): UseBookmarksRetu
       });
 
       if (!response.ok) {
+        const wasAuthError = await handleAuthError(response);
+        if (wasAuthError) return;
         throw new Error('Failed to update bookmark');
       }
 
@@ -140,7 +156,7 @@ export function useBookmarks({ comicId }: UseBookmarksOptions): UseBookmarksRetu
         prev.map(b => b.id === id ? { ...b, label, updatedAt: new Date() } : b)
       );
     }
-  }, [comicId]);
+  }, [comicId, handleAuthError]);
 
   // Remove a bookmark
   const removeBookmark = useCallback(async (id: string) => {
@@ -152,6 +168,8 @@ export function useBookmarks({ comicId }: UseBookmarksOptions): UseBookmarksRetu
       });
 
       if (!response.ok) {
+        const wasAuthError = await handleAuthError(response);
+        if (wasAuthError) return;
         throw new Error('Failed to delete bookmark');
       }
 
@@ -162,7 +180,7 @@ export function useBookmarks({ comicId }: UseBookmarksOptions): UseBookmarksRetu
       // Fallback: remove locally
       setBookmarks(prev => prev.filter(b => b.id !== id));
     }
-  }, [comicId]);
+  }, [comicId, handleAuthError]);
 
   // Check if a page is bookmarked
   const isBookmarked = useCallback((pageNumber: number) => {
