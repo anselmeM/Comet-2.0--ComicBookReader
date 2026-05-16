@@ -87,13 +87,10 @@ export async function POST(req: NextRequest) {
             </div>
           `,
         });
-        console.log(`[Password Reset] Email sent successfully to ${email}`);
       } catch (emailError) {
         console.error('[Password Reset] Failed to send email via SMTP:', emailError);
         // We still return 200 below so we don't leak user existence
       }
-    } else {
-      console.warn('[Password Reset] SMTP credentials not configured in environment variables. Email sending skipped.');
     }
 
     return NextResponse.json({ message: 'If an account exists, a reset link will be sent' }, { status: 200 });
