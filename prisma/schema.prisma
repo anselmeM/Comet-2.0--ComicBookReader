@@ -1,54 +1,122 @@
-// Comet — Prisma Schema
-// Run: npx prisma db push (dev) | npx prisma migrate deploy (prod)
-//
-// DATABASE CONFIGURATION:
-// - Development: Uses SQLite (file:./dev.db)
-// - Production: Use PostgreSQL (set DATABASE_URL in .env)
-//
-// To switch to PostgreSQL:
-// 1. Update your .env with DATABASE_URL for PostgreSQL
-// 2. Change provider below to "postgresql"
-// 3. Run: npx prisma db push (for new DB) or npx prisma migrate
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// Use environment variable for database URL (supports both SQLite and PostgreSQL)
 datasource db {
-  provider  = "sqlite"
-  url       = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
-// NOTE: For PostgreSQL in production, change the datasource to:
-// datasource db {
-//   provider  = "postgresql"
-//   url       = env("DATABASE_URL")
-// }
-
-// ────────────────────────────────────────────────────
-// AUTH (Auth.js v5 required models)
-// ────────────────────────────────────────────────────
-
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  password      String?
-  resetToken    String?   // Password reset token
-  resetTokenExpiry DateTime? // Password reset token expiry
-  image         String?
-  plan          String    @default("FREE")
-  hasCompletedOnboarding Boolean @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                     String            @id @default(cuid())
+  name                   String?
+  email                  String            @unique
+  emailVerified          DateTime?
+  password               String?
+  resetToken             String?
+  resetTokenExpiry       DateTime?
+  image                  String?
+  plan                   String            @default("FREE")
+  hasCompletedOnboarding Boolean           @default(false)
+  defaultReadingMode     String            @default("single-page")
+  theme                  String            @default("dark")
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  failedAttempts         Int               @default(0)
+  lockoutUntil           DateTime?
+  accounts               Account[]
+  bookmarks              Bookmark[]
+  library                Comic[]
+  progress               ReadingProgress[]
+  sessions               Session[]
+  collections            Collection[]
+  friendships            Friendship[]      @relation("UserFriends")
+  friendsOf              Friendship[]      @relation("FriendToUser")
+  sentRequests           FriendRequest[]   @relation("SentRequests")
+  receivedRequests       FriendRequest[]   @relation("ReceivedRequests")
+  notifications          Notification[]    @relation("UserNotifications")
+  sentInvitations        Invitation[]      @relation("SentInvitations")
+}
 
-  accounts  Account[]
-  sessions  Session[]
-  library   Comic[]
-  progress  ReadingProgress[]
-  bookmarks Bookmark[]
+model Invitation {
+  id        String   @id @default(cuid())
+  senderId  String
+  email     String
+  status    String   @default("PENDING") // PENDING, ACCEPTED
+  createdAt DateTime @default(now())
+  sender    User     @relation("SentInvitations", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // FRIEND_REQUEST_ACCEPTED, NEW_MESSAGE, CONTENT_LIKE, CONTENT_COMMENT, NEW_CONTENT, SYSTEM_ALERT
+  title     String
+  message   String
+  link      String?  // Optional link to navigate to (e.g., friend's profile or new content)
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  createdAt DateTime @default(now())
+  user      User     @relation("UserFriends", fields: [userId], references: [id], onDelete: Cascade)
+  friend    User     @relation("FriendToUser", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@index([userId])
+  @@index([friendId])
+}
+
+model FriendRequest {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  sender     User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+model Collection {
+  id          String           @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       CollectionItem[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model CollectionItem {
+  id           String     @id @default(cuid())
+  collectionId String
+  comicId      String
+  addedAt      DateTime   @default(now())
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  comic        Comic      @relation(fields: [comicId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, comicId])
+  @@index([collectionId])
+  @@index([comicId])
 }
 
 model Account {
@@ -63,8 +131,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([provider, providerAccountId])
   @@index([userId])
@@ -87,78 +154,63 @@ model VerificationToken {
   @@id([identifier, token])
 }
 
-
-
-// ────────────────────────────────────────────────────
-// LIBRARY
-// ────────────────────────────────────────────────────
-
 model Comic {
-  id          String    @id @default(cuid())
+  id          String           @id @default(cuid())
   userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   title       String
-  filehash    String    // SHA-256 of the file (dedup key)
+  filehash    String
   pageCount   Int
-  coverUrl    String?   // Blob ObjectURL or remote CDN URL
-  comicVineId String?   // External metadata reference
+  coverUrl    String?
+  comicVineId String?
   series      String?
   issue       Int?
   year        Int?
-  metadata    String?   // Raw ComicVine enrichment payload
-  
-  // New fields for enhanced library features
-  isFavorite  Boolean   @default(false)  // Quick access favorites
-  rating      Int       @default(0)      // 0-5 stars
-  tags        String?   // JSON array: ["Marvel", "Spider-Man"]
-
-  addedAt     DateTime  @default(now())
+  metadata    String?
+  isFavorite  Boolean          @default(false)
+  rating      Int              @default(0)
+  tags        String?
+  addedAt     DateTime         @default(now())
   lastReadAt  DateTime?
-
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   progress    ReadingProgress?
+  collections CollectionItem[]
 
-  @@unique([userId, filehash]) // Prevent duplicate uploads per user
+  @@unique([userId, filehash])
   @@index([userId])
   @@index([filehash])
-  @@index([userId, lastReadAt]) // Efficient "Continue Reading" queries
-  @@index([userId, series])     // For series grouping queries
+  @@index([userId, lastReadAt])
+  @@index([userId, series])
 }
 
 model ReadingProgress {
-  id          String     @id @default(cuid())
-  userId      String
-  comicId     String     @unique
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comic       Comic      @relation(fields: [comicId], references: [id], onDelete: Cascade)
-
-  lastPage    Int        @default(0)
-  totalPages  Int
-  zoomLevel   Float      @default(1.0)
-  readStatus  String     @default("UNREAD")
-  updatedAt   DateTime   @updatedAt
-
-  bookmarks   Bookmark[]
+  id         String     @id @default(cuid())
+  userId     String
+  comicId    String     @unique
+  lastPage   Int        @default(0)
+  totalPages Int
+  zoomLevel  Float      @default(1.0)
+  readStatus String     @default("UNREAD")
+  updatedAt  DateTime   @updatedAt
+  bookmarks  Bookmark[]
+  comic      Comic      @relation(fields: [comicId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, readStatus])
 }
 
 model Bookmark {
-  id          String          @id @default(cuid())
-  userId      String
-  comicId     String
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comic       ReadingProgress @relation(fields: [comicId], references: [comicId], onDelete: Cascade)
+  id         String          @id @default(cuid())
+  userId     String
+  comicId    String
+  pageNumber Int
+  label      String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  comic      ReadingProgress @relation(fields: [comicId], references: [comicId], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  pageNumber  Int
-  label       String?         // Optional user-defined label/notes
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-
-  @@unique([userId, comicId, pageNumber]) // One bookmark per page per comic per user
+  @@unique([userId, comicId, pageNumber])
   @@index([userId])
   @@index([comicId])
 }
-
-

@@ -5,7 +5,8 @@ import { LogIn, Rocket, KeyRound, Mail, AlertCircle, ArrowLeft } from 'lucide-re
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState, useEffect } from 'react';
-import { signIn, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { loginAction } from './actions';
 
 function LoginForm() {
   const router = useRouter();
@@ -16,16 +17,10 @@ function LoginForm() {
   const callbackUrl = searchParams.get('callbackUrl') || '/library';
   const errorParam = searchParams.get('error');
   
-  // Initialize error message from URL parameter (if present)
-  const getInitialError = (param: string | null) => {
-    if (!param) return '';
-    if (param === 'SessionExpired') return 'Your session has expired. Please sign in again to continue.';
-    return 'An error occurred during sign in. Please try again.';
-  };
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(() => getInitialError(errorParam));
+  const [errorMsg, setErrorMsg] = useState('');
 
   // Framer Motion variants
   const containerVariants = {
@@ -55,37 +50,51 @@ function LoginForm() {
     }
   }, [status, router, callbackUrl]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  // Initialize error message from URL parameter (if present)
+  useEffect(() => {
+    if (errorParam === 'SessionExpired') {
+      setErrorMsg('Your session has expired. Please sign in again to continue.');
+    } else if (errorParam === 'CredentialsSignin') {
+      setErrorMsg('Invalid email or password.');
+    } else if (errorParam) {
+      setErrorMsg('An error occurred during sign in. Please try again.');
+    }
+  }, [errorParam]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
-    
-    if (!email.trim() || !password.trim()) {
+
+    if (!email || !password) {
       setErrorMsg('Please enter both email and password.');
       setLoading(false);
       return;
     }
 
     try {
-      const result = await signIn('credentials', {
-        email: email.trim(),
-        password,
-        redirect: false,
-      });
-
+      // Use Server Action instead of client-side signIn to avoid "Failed to fetch"
+      const formData = new FormData();
+      formData.append('email', email.trim().toLowerCase());
+      formData.append('password', password);
+      formData.append('callbackUrl', callbackUrl);
+      
+      const result = await loginAction(null, formData);
+      
       if (result?.error) {
-        // Handle specific error codes
-        if (result.error === 'CredentialsSignin') {
-          setErrorMsg('Invalid email or password. Please check your credentials and try again.');
-        } else {
-          setErrorMsg('Sign in failed. Please check your credentials and try again.');
-        }
+        setErrorMsg(result.error);
         setLoading(false);
-      } else if (result?.ok) {
-        router.push(callbackUrl);
+      } else if (result?.success && result?.redirectUrl) {
+        // Use window.location.href for a full page load to ensure session is picked up
+        window.location.href = result.redirectUrl;
       }
-    } catch (err) {
-      console.error('[LoginForm] Unexpected error:', err);
+      // If success, server action will handle redirect
+    } catch (err: any) {
+      // Next.js redirect "error" should be allowed to bubble up
+      if (err.message === 'NEXT_REDIRECT') {
+        throw err;
+      }
+      console.error('[LoginForm] Sign in error:', err);
       setErrorMsg('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
@@ -112,17 +121,28 @@ function LoginForm() {
       <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 p-8 rounded-3xl shadow-2xl relative z-10">
         
         <motion.div variants={itemVariants} className="flex justify-center mb-8">
-          <div className="bg-gradient-to-br from-blue-500 to-violet-600 p-4 rounded-2xl shadow-lg shadow-blue-500/20">
-            <Rocket className="w-8 h-8 text-white" />
+          <div className="relative">
+            <div className="bg-gradient-to-br from-blue-500 to-violet-600 p-4 rounded-2xl shadow-lg shadow-blue-500/20">
+              <Rocket className="w-8 h-8 text-white" />
+            </div>
+            {email && email.includes('@') && (
+              <motion.div 
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="absolute -top-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-600 font-black text-lg border-2 border-blue-600 shadow-xl"
+              >
+                {email.split('@')[0].charAt(0).toUpperCase()}
+              </motion.div>
+            )}
           </div>
         </motion.div>
 
         <motion.div variants={itemVariants} className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-2">
-            Welcome back
+            {email && email.includes('@') ? `Welcome back, ${email.split('@')[0]}!` : 'Welcome back'}
           </h1>
           <p className="text-zinc-400 text-sm">
-            Sign in to access your Comet library
+            {email && email.includes('@') ? 'Great to see you again.' : 'Sign in to access your Comet library'}
           </p>
         </motion.div>
 
@@ -136,7 +156,7 @@ function LoginForm() {
         )}
 
         <div className="space-y-6">
-          <motion.form variants={itemVariants} onSubmit={handleLogin} className="space-y-4">
+          <motion.form variants={itemVariants} onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-zinc-500" />
@@ -168,7 +188,7 @@ function LoginForm() {
             </div>
 
             <div className="flex items-center justify-between">
-              <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+              <Link href="/forgot-password" className={`text-sm text-blue-400 hover:text-blue-300 transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}>
                 Forgot password?
               </Link>
             </div>

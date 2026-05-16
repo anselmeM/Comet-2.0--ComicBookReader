@@ -8,6 +8,9 @@ import { ReaderViewport } from './ReaderViewport';
 import { BlobImage } from '@/components/atoms/BlobImage';
 import { AnimatePresence, motion } from 'framer-motion';
 import { detectPanels } from '@/lib/guidedView';
+import { useSession } from 'next-auth/react';
+import { Panel } from '@/types';
+import { useBookmarks } from '@/hooks/useBookmarks';
 
 interface ComicReaderProps {
   comicId: string;
@@ -15,12 +18,13 @@ interface ComicReaderProps {
 
 export function ComicReader({ comicId }: ComicReaderProps) {
   const { comic, metadata, loading, error, errorType, is404 } = useComicPages(comicId);
-  
+  const { data: session } = useSession();
+
   const mode = useReaderStore((state) => state.mode);
   const currentPage = useReaderStore((state) => state.currentPage);
   const brightness = useReaderStore((state) => state.brightness);
   const zoomLevel = useReaderStore((state) => state.zoomLevel);
-  
+
   const openComic = useReaderStore((state) => state.openComic);
   const nextPage = useReaderStore((state) => state.nextPage);
   const prevPage = useReaderStore((state) => state.prevPage);
@@ -28,13 +32,13 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   const zoomOut = useReaderStore((state) => state.zoomOut);
   const resetZoom = useReaderStore((state) => state.resetZoom);
   const toggleFullscreen = useReaderStore((state) => state.toggleFullscreen);
-  const toggleBookmark = useReaderStore((state) => state.toggleBookmark);
   const setPage = useReaderStore((state) => state.setPage);
   const setPagePanels = useReaderStore((state) => state.setPagePanels);
   const pagePanels = useReaderStore((state) => state.pagePanels);
-  
-  const verticalContainerRef = useRef<HTMLDivElement>(null);
 
+  const { addBookmark, removeBookmark, getBookmarkForPage } = useBookmarks({ comicId });
+
+  const verticalContainerRef = useRef<HTMLDivElement>(null);
   // Detect panels for current and next pages
   useEffect(() => {
     if (!comic || loading) return;
@@ -46,15 +50,32 @@ export function ComicReader({ comicId }: ComicReaderProps) {
         const imageBitmap = await createImageBitmap(comic.pages[index].blob);
         const detected = await detectPanels(imageBitmap);
         
-        // Final sort based on mode
-        const sorted = [...detected].sort((a, b) => {
-          // Primary sort: Y (rows)
-          if (Math.abs(a.y - b.y) > 20) return a.y - b.y;
-          // Secondary sort: X (columns)
-          return mode === 'manga-rtl' ? b.x - a.x : a.x - b.x;
+        // Advanced sort for multi-column layouts
+        // Group panels into logical "rows" based on Y overlap
+        const sorted = [...detected].sort((a, b) => a.y - b.y);
+        const rows: Panel[][] = [];
+        
+        sorted.forEach(panel => {
+          let foundRow = false;
+          for (const row of rows) {
+            const rowY = row[0].y;
+            const rowH = row[0].height;
+            // If panel overlaps significantly with this row's vertical space
+            if (Math.abs(panel.y - rowY) < rowH / 2) {
+              row.push(panel);
+              foundRow = true;
+              break;
+            }
+          }
+          if (!foundRow) rows.push([panel]);
         });
 
-        setPagePanels(index, sorted);
+        // Sort each row horizontally based on reading mode
+        const finalPanels = rows.flatMap(row => 
+          row.sort((a, b) => mode === 'manga-rtl' ? b.x - a.x : a.x - b.x)
+        );
+
+        setPagePanels(index, finalPanels);
         imageBitmap.close();
       } catch (err) {
         console.error('Panel detection failed for page', index, err);
@@ -72,7 +93,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   }, [comic, loading, currentPage, mode, pagePanels, setPagePanels]);
 
   // Track reading progress
-  useReadingProgress(comicId);
+  useReadingProgress({ comicId });
 
   // Sync dynamic UI variables into CSS custom properties (no inline style attribute)
   useEffect(() => {
@@ -91,10 +112,12 @@ export function ComicReader({ comicId }: ComicReaderProps) {
       const currentId = useReaderStore.getState().currentComicId;
       if (currentId !== comic.comicId) {
         const initialPage = metadata?.progress?.lastPage ?? 0;
-        openComic(comic.comicId, comic.pages.length, initialPage);
+        // Cast session user to any temporarily to access custom fields
+        const initialMode = (session?.user as any)?.defaultReadingMode as any;
+        openComic(comic.comicId, comic.pages.length, initialPage, initialMode);
       }
     }
-  }, [comic, loading, openComic, metadata]);
+  }, [comic, loading, openComic, metadata, session]);
 
   // Set up IntersectionObserver for vertical scroll mode
   useEffect(() => {
@@ -133,7 +156,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
 
   // Keyboard navigation
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
       if (document.activeElement?.tagName === 'INPUT') return;
 
       switch (e.key) {
@@ -149,6 +172,18 @@ export function ComicReader({ comicId }: ComicReaderProps) {
         case 'A':
           if (mode === 'manga-rtl') nextPage();
           else prevPage();
+          break;
+        case 'Home':
+          setPage(0);
+          break;
+        case 'End':
+          if (comic) setPage(comic.pages.length - 1);
+          break;
+        case 'PageUp':
+          for (let i = 0; i < 5; i++) prevPage();
+          break;
+        case 'PageDown':
+          for (let i = 0; i < 5; i++) nextPage();
           break;
         case 'f':
         case 'F':
@@ -166,14 +201,21 @@ export function ComicReader({ comicId }: ComicReaderProps) {
           break;
         case 'b':
         case 'B':
-          if (comic) toggleBookmark(currentPage);
+          if (comic) {
+            const existing = getBookmarkForPage(currentPage);
+            if (existing) {
+              await removeBookmark(existing.id);
+            } else {
+              await addBookmark(currentPage);
+            }
+          }
           break;
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [nextPage, prevPage, mode, toggleFullscreen, zoomIn, zoomOut, resetZoom, toggleBookmark, currentPage, comic]);
+  }, [nextPage, prevPage, mode, toggleFullscreen, zoomIn, zoomOut, resetZoom, currentPage, comic, setPage, addBookmark, removeBookmark, getBookmarkForPage]);
 
   if (loading) {
     return (
@@ -186,8 +228,6 @@ export function ComicReader({ comicId }: ComicReaderProps) {
     );
   }
 
-  // Defensive check: if loading is complete but comic is null without an explicit error,
-  // this could indicate an edge case - treat as unknown error
   if (!comic && !error) {
     return (
       <div className="flex h-screen items-center justify-center bg-black p-8 text-center">
@@ -211,22 +251,18 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   if (error || !comic) {
     const errorMessage = (error as Error)?.message || '';
     
-    // Determine appropriate error message based on error type
     let title = 'Extraction Error';
     let message = errorMessage || 'Failed to initialize comic stream.';
     
     if (errorType === 'cache') {
       title = 'Comic Not Available';
-      message = 'The comic could not be loaded from the local storage. Please try importing the file again or check if the comic file has been moved, renamed, or deleted from its original location.';
+      message = 'The comic could not be loaded from the local storage. Please try importing the file again.';
     } else if (errorType === 'auth') {
       title = 'Authentication Required';
-      message = 'You need to be logged in to view this comic. Please sign in to continue.';
+      message = 'You need to be logged in to view this comic.';
     } else if (is404) {
       title = 'Comic Not Found';
-      message = 'This comic may have been removed from your library. Please check the library or try re-importing the comic.';
-    } else if (errorType === 'metadata') {
-      title = 'Comic Not Available';
-      message = 'There was a problem loading the comic metadata. Please try again or re-import the comic.';
+      message = 'This comic may have been removed from your library.';
     }
     
     return (
@@ -250,6 +286,15 @@ export function ComicReader({ comicId }: ComicReaderProps) {
 
   // Dual spread / Paged logic
   const getPagesToRender = () => {
+    if (mode === 'single-page' || mode === 'guided-view') {
+      return [{ page: comic.pages[currentPage], index: currentPage }];
+    }
+
+    const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isSmallScreen) {
+      return [{ page: comic.pages[currentPage], index: currentPage }];
+    }
+
     if (currentPage === 0) {
       return [{ page: comic.pages[0], index: 0 }];
     }

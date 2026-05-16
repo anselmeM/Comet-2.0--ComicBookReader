@@ -10,7 +10,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import { useState, type ReactNode } from 'react';
 import { NotificationProvider } from '@/components/atoms/Toast';
-import { FavoritesProvider } from '@/hooks/useFavorites';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -36,9 +35,7 @@ export function Providers({ children }: ProvidersProps) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <NotificationProvider>
-          <FavoritesProvider>
-            {children}
-          </FavoritesProvider>
+          {children}
         </NotificationProvider>
       </QueryClientProvider>
     </SessionProvider>

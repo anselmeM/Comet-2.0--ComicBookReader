@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ── Comet Design Tokens ──────────────────────────────────────────────────── */
-:root {
+:root, .theme-dark {
   /* Brand palette — deep space dark */
   --color-bg:          #0a0a0f;   /* Near-black, page background */
   --color-surface:     #12121a;   /* Card backgrounds */
@@ -14,7 +14,31 @@
   --color-success:     #4caf82;   /* Success / completed */
   --color-warning:     #f5a623;   /* Warning */
   --color-error:       #e05c5c;   /* Destructive / error */
+}
 
+.theme-light {
+  --color-bg:          #ffffff;
+  --color-surface:     #f4f4f5;
+  --color-surface-2:   #e4e4e7;
+  --color-border:      #d4d4d8;
+  --color-text:        #18181b;
+  --color-text-muted:  #71717a;
+  --color-accent:      #3b82f6;
+  --color-accent-hover:#2563eb;
+}
+
+.theme-sepia {
+  --color-bg:          #f4ecd8;
+  --color-surface:     #e8dfc4;
+  --color-surface-2:   #dfd3b0;
+  --color-border:      #d2c4a0;
+  --color-text:        #433422;
+  --color-text-muted:  #7b6a58;
+  --color-accent:      #926239;
+  --color-accent-hover:#7d512d;
+}
+
+:root {
   /* Spacing scale */
   --radius-sm:  4px;
   --radius-md:  8px;
@@ -47,6 +71,7 @@ body {
   min-height: 100dvh;
   /* Prevent layout shift from scrollbar appearance */
   overflow-y: scroll;
+  transition: background-color 300ms, color 300ms;
 }
 
 /* ── Tailwind Utilities ───────────────────────────────────────────────────── */

@@ -11,9 +11,11 @@ export async function GET(
 ) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
+      { status: 401 }
+    );
   }
-
   const { id } = await params;
 
   const comic = await db.comic.findFirst({

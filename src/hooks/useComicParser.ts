@@ -1,7 +1,12 @@
 import { useState, useCallback } from 'react';
-import { setCachedComic } from '@/lib/idb';
+import { setCachedComic, getCachedComic, evictCachedComic } from '@/lib/idb';
+import { computeFileHash } from '@/lib/hash';
+import { generateThumbnail } from '@/lib/thumbnail';
+import { runLRUEviction } from '@/lib/lru';
+import { useAuthCallback } from './useAuthCallback';
 
 interface ParseProgress {
+  phase: 'hashing' | 'parsing';
   page: number;
   total: number;
 }
@@ -21,211 +26,156 @@ function getWasmBinary(): Promise<ArrayBuffer> {
   return wasmBinaryPromise;
 }
 
-async function getFileHash(file: File): Promise<string> {
-  // Rather than hashing a massive 100MB file, we create a composite hash 
-  // from name, size, lastModified, and maybe the first 1KB of data.
-  // This is much faster and practically collision-free for this use case.
-  const slice = file.slice(0, 1024);
-  const buffer = await slice.arrayBuffer();
-  
-  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  return `${file.name}-${file.size}-${hex}`;
-}
-
-async function compressCoverImage(blob: Blob, maxDim = 300): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(blob);
-    
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const canvas = document.createElement('canvas');
-      
-      let width = img.width;
-      let height = img.height;
-      
-      if (width > maxDim || height > maxDim) {
-        if (width > height) {
-          height = Math.round((height * maxDim) / width);
-          width = maxDim;
-        } else {
-          width = Math.round((width * maxDim) / height);
-          height = maxDim;
-        }
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        resolve('');
-        return;
-      }
-      
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      // Compress to JPEG at 0.5 quality for a good balance of size vs quality
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-      
-      // If the result is somehow still massive (> 70KB in base64), it's probably too detailed
-      if (dataUrl.length > 70000) {
-        console.warn('[compressCoverImage] Compressed image still large:', dataUrl.length);
-        resolve(canvas.toDataURL('image/jpeg', 0.3));
-      } else {
-        resolve(dataUrl);
-      }
-    };
-    
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      console.warn('[compressCoverImage] Failed to load image for compression');
-      resolve(''); 
-    };
-    
-    img.src = url;
-  });
-}
+const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
+const ALLOWED_EXTENSIONS = ['.cbz', '.cbr', '.zip'];
 
 export function useComicParser() {
   const [isParsing, setIsParsing] = useState(false);
   const [progress, setProgress] = useState<ParseProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { handleAuthError } = useAuthCallback();
 
   const parseComic = useCallback(async (file: File) => {
     setIsParsing(true);
     setError(null);
-    setProgress({ page: 0, total: 100 }); // indeterminate max at first
 
-    return new Promise<string>(async (resolve, reject) => {
-      try {
-        const filehash = await getFileHash(file);
-        // If the user already uploaded this, they will have essentially 
-        // a new comic ID per upload locally but deduped on the server.
-        // Wait, the API upserts via filehash. So our comicId can be the filehash locally!
-        const localComicId = filehash; 
-
-        const worker = new Worker(new URL('../workers/comicParser.worker.ts', import.meta.url), { type: 'module' });
-        
-        worker.onmessage = async (e) => {
-          const { type, page, total, pages, error: workerErr } = e.data;
-          
-          if (type === 'PROGRESS') {
-            setProgress({ page, total });
-          } else if (type === 'DONE') {
-            setIsParsing(false);
-            setProgress(null);
-            worker.terminate();
-
-            // Setup cover image (compressed)
-            let coverUrl: string | null = null;
-            if (pages.length > 0) {
-              const firstPage = pages[0];
-              coverUrl = await compressCoverImage(firstPage.blob, 400);
-              if (!coverUrl) coverUrl = null;
-            }
-
-            // Save to IDB
-            await setCachedComic({
-              comicId: localComicId,
-              pages,
-              coverUrl: pages.length > 0 ? URL.createObjectURL(pages[0].blob) : '',
-              cachedAt: Date.now(),
-              sizeBytes: pages.reduce((acc: number, p: { blob: Blob }) => acc + p.blob.size, 0),
-              lastAccessedAt: Date.now()
-            });
-
-            // Inform server
-            // 5. Add to server-side library (Postgres)
-            const payload = {
-              title: file.name.replace(/\.(cbz|cbr)$/i, ''),
-              filehash,
-              pageCount: pages.length,
-              coverUrl,
-            };
-
-            const payloadSize = JSON.stringify(payload).length;
-            console.log(`[useComicParser] Sending payload to /api/library (${(payloadSize / 1024).toFixed(2)} KB)`);
-
-            const response = await fetch('/api/library', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-            });
-
-            if (!response.ok) {
-              let errorMsg = 'Failed to save to library';
-              let errorData: unknown = null;
-              
-              try {
-                const text = await response.text();
-                try {
-                  const parsed = JSON.parse(text) as { error?: string, message?: string, details?: string };
-                  errorData = parsed;
-                  errorMsg = parsed.error || parsed.message || errorMsg;
-                  if (parsed.details) {
-                    errorMsg += `: ${parsed.details}`;
-                  }
-                } catch {
-                  errorMsg = `Server returned ${response.status}: ${text || response.statusText}`;
-                }
-                
-                console.error('[useComicParser] Server error detailed:', {
-                  status: response.status,
-                  statusText: response.statusText,
-                  errorData: errorData as Record<string, unknown>,
-                  rawText: text.substring(0, 1000) // Log first 1KB of raw response
-                });
-              } catch (e) {
-                console.error('[useComicParser] Critical error reading response:', e);
-              }
-
-              // Stale JWT / account not found — redirect to login so the user can re-authenticate
-              if (response.status === 401) {
-                window.location.href = '/login?error=SessionExpired';
-                return;
-              }
-              
-              reject(new Error(errorMsg));
-              return;
-            }
-
-            const data = await response.json();
-            const serverComicId: string = data.id;
-            console.log('[useComicParser] Successfully saved to library:', serverComicId);
-
-            // Re-key the IDB entry from the local filehash key to the server-assigned comic ID.
-            // The reader navigates to /reader/[serverComicId], so we need IDB to be keyed by it.
-            const { getCachedComic: getIdb, setCachedComic: setIdb, evictCachedComic } = await import('@/lib/idb');
-            const localEntry = await getIdb(localComicId);
-            if (localEntry) {
-              await setIdb({ ...localEntry, comicId: serverComicId });
-              await evictCachedComic(localComicId);
-            }
-
-            resolve(serverComicId); // return the server-assigned ID so library navigation works
-          } else if (type === 'ERROR') {
-            setIsParsing(false);
-            setError(workerErr);
-            worker.terminate();
-            reject(new Error(workerErr));
-          }
-        };
-
-        // Fetch the WASM binary and send to the worker
-        const wasmBinary = await getWasmBinary();
-        
-        worker.postMessage({ type: 'PARSE', file, comicId: localComicId, wasmBinary });
-
-      } catch (err: unknown) {
-        setIsParsing(false);
-        setError(err instanceof Error ? err.message : 'Unknown parsing error');
-        reject(err);
+    try {
+      // 1. File size validation
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error(`File exceeds the maximum limit of 1GB.`);
       }
-    });
+
+      // 2. Extension validation
+      const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+      if (!ALLOWED_EXTENSIONS.includes(extension)) {
+        throw new Error(`Invalid file type. Allowed types: .cbz, .cbr, .zip`);
+      }
+
+      // 3. Magic bytes validation
+      const headerSlice = file.slice(0, 4);
+      const headerBuffer = await headerSlice.arrayBuffer();
+      const headerView = new Uint8Array(headerBuffer);
+      
+      const isZip = headerView[0] === 0x50 && headerView[1] === 0x4b && headerView[2] === 0x03 && headerView[3] === 0x04;
+      const isRar = headerView[0] === 0x52 && headerView[1] === 0x61 && headerView[2] === 0x72 && headerView[3] === 0x21;
+
+      if (!isZip && !isRar) {
+        throw new Error(`File is corrupt or not a valid comic archive.`);
+      }
+
+      // 4. Compute full file hash (T-LIB-002)
+      setProgress({ phase: 'hashing', page: 0, total: 100 });
+      const filehash = await computeFileHash(file, (p) => {
+        setProgress({ phase: 'hashing', page: Math.round(p * 100), total: 100 });
+      });
+
+      const localComicId = filehash;
+
+      // 5. Start Worker for parsing (T-LIB-003 extraction phase)
+      setProgress({ phase: 'parsing', page: 0, total: 100 });
+      
+      return new Promise<string>(async (resolve, reject) => {
+        try {
+          const worker = new Worker(new URL('../workers/comicParser.worker.ts', import.meta.url), { type: 'module' });
+          
+          worker.onmessage = async (e) => {
+            const { type, page, total, pages, error: workerErr } = e.data;
+            
+            if (type === 'PROGRESS') {
+              setProgress({ phase: 'parsing', page, total });
+            } else if (type === 'DONE') {
+              worker.terminate();
+
+              try {
+                // Setup cover image (compressed) - (T-LIB-003)
+                let coverUrl: string | null = null;
+                if (pages.length > 0) {
+                  // Try extracting first page, fallback to next pages if corrupt
+                  for (let i = 0; i < Math.min(5, pages.length); i++) {
+                    try {
+                      coverUrl = await generateThumbnail(pages[i].blob, 400, 0.8);
+                      if (coverUrl) break;
+                    } catch (thumbErr) {
+                      console.warn(`[useComicParser] Failed to generate thumbnail for page ${i}, trying next...`, thumbErr);
+                    }
+                  }
+                }
+
+                // Save to IDB
+                await setCachedComic({
+                  comicId: localComicId,
+                  pages,
+                  coverUrl: pages.length > 0 ? URL.createObjectURL(pages[0].blob) : '',
+                  cachedAt: Date.now(),
+                  sizeBytes: pages.reduce((acc: number, p: { blob: Blob }) => acc + p.blob.size, 0),
+                  lastAccessedAt: Date.now()
+                });
+
+                // Run LRU eviction to ensure we stay within storage budget
+                await runLRUEviction();
+
+                // Inform server
+                const payload = {
+                  title: file.name.replace(/\.(cbz|cbr|zip)$/i, ''),
+                  filehash,
+                  pageCount: pages.length,
+                  coverUrl,
+                };
+
+                const response = await fetch('/api/library', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                  const wasAuthError = await handleAuthError(response);
+                  if (wasAuthError) return;
+                  
+                  throw new Error(`Server returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                const serverComicId: string = data.id;
+
+                // Re-key IDB entry
+                const localEntry = await getCachedComic(localComicId);
+                if (localEntry) {
+                  await setCachedComic({ ...localEntry, comicId: serverComicId });
+                  await evictCachedComic(localComicId);
+                }
+
+                setIsParsing(false);
+                setProgress(null);
+                resolve(serverComicId);
+              } catch (doneErr) {
+                setIsParsing(false);
+                setProgress(null);
+                reject(doneErr);
+              }
+            } else if (type === 'ERROR') {
+              worker.terminate();
+              setIsParsing(false);
+              setProgress(null);
+              setError(workerErr);
+              reject(new Error(workerErr));
+            }
+          };
+
+          const wasmBinary = await getWasmBinary();
+          worker.postMessage({ type: 'PARSE', file, comicId: localComicId, wasmBinary });
+        } catch (workerSetupErr) {
+          reject(workerSetupErr);
+        }
+      });
+
+    } catch (err: unknown) {
+      setIsParsing(false);
+      setProgress(null);
+      const errorMsg = err instanceof Error ? err.message : 'Unknown parsing error';
+      setError(errorMsg);
+      throw err;
+    }
   }, []);
 
   return { parseComic, isParsing, progress, error };

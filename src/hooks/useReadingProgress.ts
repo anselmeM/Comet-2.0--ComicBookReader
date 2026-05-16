@@ -4,50 +4,64 @@ import { useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useReaderStore } from '@/stores/readerStore';
 import { UpdateProgressPayload } from '@/types';
+import { queueSyncTask } from '@/lib/sync';
+import { useAuthCallback } from './useAuthCallback';
+
+interface UseReadingProgressOptions {
+  comicId: string | null;
+}
 
 /**
- * Hook to automatically persist reading progress to the server.
- * Uses TanStack Query mutations and debounces updates to avoid excessive API calls.
- * 
- * @param comicId - The unique ID of the comic.
+ * Hook to automatically track and sync reading progress to the server.
+ * Includes offline sync queueing support.
  */
-export function useReadingProgress(comicId: string) {
-  const queryClient = useQueryClient();
+export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
   const currentPage = useReaderStore((state) => state.currentPage);
   const totalPages = useReaderStore((state) => state.totalPages);
   const zoomLevel = useReaderStore((state) => state.zoomLevel);
-  
+  const lastSavedPage = useRef<number>(-1);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSavedPage = useRef<number | null>(null);
+
+  const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
 
   const { mutate } = useMutation({
     mutationFn: async (payload: UpdateProgressPayload) => {
-      const response = await fetch(`/api/comics/${comicId}/progress`, {
+      // If offline, queue for background sync (T-PWA-004)
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        console.log('[Sync] Offline: Queueing progress update');
+        await queueSyncTask(`/api/comics/${comicId}/progress`, 'PUT', payload);
+        return { queued: true };
+      }
+
+      const res = await fetch(`/api/comics/${comicId}/progress`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save reading progress');
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        throw new Error('Failed to update progress');
       }
-
-      return response.json();
+      return res.json();
     },
     onSuccess: () => {
-      // Invalidate metadata to reflect new progress in library/other views
-      queryClient.invalidateQueries({ queryKey: ['comic-metadata', comicId] });
+      // Invalidate related queries to keep UI in sync
       queryClient.invalidateQueries({ queryKey: ['library'] });
+      if (comicId) {
+        queryClient.invalidateQueries({ queryKey: ['comic', comicId] });
+      }
     },
   });
 
+  // Automatically sync progress with a 2-second debounce
   useEffect(() => {
-    // Don't save if we haven't loaded total pages yet or if page hasn't changed
-    if (totalPages === 0 || lastSavedPage.current === currentPage) return;
+    if (!comicId || currentPage === lastSavedPage.current || totalPages === 0) {
+      return;
+    }
 
-    // Debounce to 2 seconds
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(() => {

@@ -1,27 +1,30 @@
-/**
- * @file useEnrichment Hook
- * Triggers the ComicVine enrichment API and handles loading/error states.
- */
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { EnrichmentData } from '@/types';
+import { useAuthCallback } from './useAuthCallback';
 
-export function useEnrichment(comicId: string) {
+/**
+ * Hook to trigger metadata enrichment for a comic from ComicVine.
+ */
+export function useEnrichment() {
   const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
 
   return useMutation({
-    mutationFn: async (): Promise<EnrichmentData> => {
-      const response = await fetch(`/api/comics/${comicId}/enrich`);
+    mutationFn: async (comicId: string) => {
+      const res = await fetch(`/api/comics/${comicId}/enrich`);
       
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to enrich comic');
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to enrich comic');
       }
-
-      return response.json();
+      
+      return res.json() as Promise<EnrichmentData>;
     },
-    onSuccess: () => {
-      // Invalidate the library to show updated metadata/covers
+    onSuccess: (_, comicId) => {
+      // Invalidate library and specific comic queries to show new metadata
       queryClient.invalidateQueries({ queryKey: ['library'] });
       queryClient.invalidateQueries({ queryKey: ['comic', comicId] });
     },

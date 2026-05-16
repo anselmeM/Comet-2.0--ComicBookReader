@@ -1,59 +1,71 @@
-import { useState, useEffect } from 'react';
-import { getStoredComicsSize, clearAllParsedComics } from '@/lib/idb';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { getCacheTotalSizeBytes, clearAllParsedComics } from '@/lib/idb';
 
 interface StorageInfo {
   usage: number;
   quota: number;
   idbCustomUsage: number;
   loading: boolean;
-  error: string | null;
 }
 
+/**
+ * Hook to monitor PWA storage quotas and local IndexedDB usage.
+ */
 export function useStorage() {
   const [info, setInfo] = useState<StorageInfo>({
     usage: 0,
     quota: 0,
     idbCustomUsage: 0,
     loading: true,
-    error: null,
   });
 
-  const fetchStorage = async () => {
-    setInfo(prev => ({ ...prev, loading: true, error: null }));
-    try {
-      let usage = 0;
-      let quota = 0;
+  const isMounted = useRef(false);
 
-      if (navigator.storage && navigator.storage.estimate) {
-        const estimate = await navigator.storage.estimate();
-        usage = estimate.usage || 0;
-        quota = estimate.quota || 0;
+  const refresh = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.estimate) {
+      try {
+        const { usage, quota } = await navigator.storage.estimate();
+        const idbSize = await getCacheTotalSizeBytes();
+        
+        if (isMounted.current) {
+          setInfo({
+            usage: usage || 0,
+            quota: quota || 0,
+            idbCustomUsage: idbSize,
+            loading: false,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch storage info:', err);
+        if (isMounted.current) {
+          setInfo(prev => ({ ...prev, loading: false }));
+        }
       }
-
-      // We might have a separate DB measure for exactly what's taking up space,
-      // but 'usage' gives us the browser's view. We'll grab IDB custom usage anyway.
-      const idbCustomUsage = await getStoredComicsSize();
-
-      setInfo({ usage, quota, idbCustomUsage, loading: false, error: null });
-    } catch (e: unknown) {
-      setInfo(prev => ({ ...prev, loading: false, error: e instanceof Error ? e.message : 'Storage error' }));
     }
-  };
-
-  useEffect(() => {
-    fetchStorage();
   }, []);
 
+  useEffect(() => {
+    isMounted.current = true;
+    
+    // Defer to next tick to avoid "set state in effect" warning if synchronous
+    const timeout = setTimeout(() => {
+      refresh();
+    }, 0);
+
+    return () => { 
+      isMounted.current = false; 
+      clearTimeout(timeout);
+    };
+  }, [refresh]);
+
   const clearCache = async () => {
-    try {
-      await clearAllParsedComics();
-      await fetchStorage();
-      return true;
-    } catch (e) {
-      console.error(e);
-      return false;
-    }
+    await clearAllParsedComics();
+    await refresh();
   };
 
-  return { info, clearCache, refresh: fetchStorage };
+  return {
+    info,
+    clearCache,
+    refresh,
+  };
 }

@@ -7,6 +7,8 @@ declare module "next-auth" {
       id: string;
       plan: string;
       hasCompletedOnboarding: boolean;
+      defaultReadingMode: string;
+      theme: string;
       name?: string | null;
       image?: string | null;
     } & DefaultSession["user"];
@@ -15,9 +17,9 @@ declare module "next-auth" {
   interface User extends DefaultUser {
     plan?: string;
     hasCompletedOnboarding?: boolean;
+    defaultReadingMode?: string;
+    theme?: string;
     password?: string | null;
-    name?: string | null;
-    image?: string | null;
   }
 }
 
@@ -26,7 +28,7 @@ declare module "next-auth/jwt" {
     userId?: string;
     plan?: string;
     hasCompletedOnboarding?: boolean;
-    name?: string | null;
-    image?: string | null;
+    defaultReadingMode?: string;
+    theme?: string;
   }
 }

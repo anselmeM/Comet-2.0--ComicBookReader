@@ -1,18 +1,130 @@
 import type { NextConfig } from 'next';
+import withPWAInit from '@ducanh2912/next-pwa';
 
-const cspHeader = `
-    default-src 'self' https:;
-    script-src 'self' 'unsafe-eval' 'unsafe-inline';
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    font-src 'self' data: https://fonts.gstatic.com;
-    img-src 'self' blob: data: https:;
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    frame-ancestors 'none';
-    worker-src 'self' blob:;
-    connect-src 'self' http://localhost:* https://localhost:* https://comicvine.gamespot.com https://*.aws.neon.tech https://*.supabase.co;
-`;
+const withPWA = withPWAInit({
+  dest: 'public',
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === 'development',
+  workboxOptions: {
+    disableDevLogs: true,
+    runtimeCaching: [
+      {
+        urlPattern: /\/offline\.html$/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'offline-page',
+        },
+      },
+      {
+        urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-fonts',
+          expiration: {
+            maxEntries: 4,
+            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'static-font-assets',
+          expiration: {
+            maxEntries: 4,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'static-image-assets',
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /\/_next\/image\?url=.+/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'next-image',
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:js)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'static-js-assets',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:css|less)$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'static-style-assets',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /\/_next\/data\/.+\/.+\.json$/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'next-data',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+        },
+      },
+      {
+        urlPattern: /\/api\/auth\/.*$/i,
+        handler: 'NetworkOnly',
+      },
+      {
+        urlPattern: /\/api\/.*$/i,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'api-cache',
+          expiration: {
+            maxEntries: 16,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+          networkTimeoutSeconds: 10, // fall back to cache if no response in 10s
+        },
+      },
+      {
+        urlPattern: /.*/i,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'others',
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+          networkTimeoutSeconds: 10,
+        },
+      },
+    ],
+  },
+});
 
 const nextConfig: NextConfig = {
   // Production optimizations
@@ -20,14 +132,11 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
 
-  // Output configuration removed for Render/PaaS compatibility
-  // (Using default Next.js build output properly handles static files)
-
   // Disable Turbopack for production builds (causes MIME type issues)
   // Only enable in development
-  turbopack: process.env.NODE_ENV === 'development' ? {
+  turbopack: {
     root: process.cwd(),
-  } : undefined,
+  } ,
 
   // Image optimization
   images: {
@@ -35,6 +144,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'comicvine.gamespot.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
       },
     ],
     // Increase cache duration for optimized images
@@ -47,35 +160,44 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', 'framer-motion', '@tanstack/react-query'],
   },
 
+  // Security Headers
   async headers() {
     return [
       {
         source: '/(.*)',
         headers: [
           {
-            key: 'Content-Security-Policy',
-            value: cspHeader.replace(/\n/g, ''),
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload'
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
           },
           {
             key: 'X-Frame-Options',
-            value: 'DENY',
+            value: 'SAMEORIGIN'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
           },
           {
             key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
+            value: 'origin-when-cross-origin'
           },
           {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-        ],
-      },
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()'
+          }
+        ]
+      }
     ];
   },
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);
