@@ -2,20 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import crypto from 'crypto';
 import { rateLimit } from '@/lib/rate-limit';
+import { z } from 'zod';
+
+const resetSchema = z.object({
+  email: z.string().email('Invalid email format'),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    let email: string;
-    try {
-      const body = await req.json();
-      email = body.email;
-    } catch {
-      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const body = await req.json();
+    const result = resetSchema.safeParse(body);
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 });
     }
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
-    }
+    const { email: rawEmail } = result.data;
+    const email = rawEmail.toLowerCase().trim();
 
     // Rate limiting (T-AUTH-003)
     const limiter = await rateLimit(`reset_${email}`, 3, 60 * 60 * 1000); // 3 per hour
@@ -24,12 +27,6 @@ export async function POST(req: NextRequest) {
         { error: 'Too many reset attempts. Please try again in an hour.' },
         { status: 429, headers: limiter.headers }
       );
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
     const user = await db.user.findUnique({ where: { email } });

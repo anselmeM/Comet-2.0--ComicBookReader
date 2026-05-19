@@ -4,17 +4,18 @@ import { DashboardComic, DashboardComicCard } from '@/components/molecules/Dashb
 import { CircularProgress } from '@/components/molecules/CircularProgress';
 import { DndContext, closestCenter, SensorDescriptor, SensorOptions } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
-import { FavouriteHero, TopRatedComic } from '../mockData';
+import { FavouriteHero, TopRatedComic } from '@/lib/__mocks__/dashboard';
 import Image from 'next/image';
 import { useEnrichment } from '@/hooks/useEnrichment';
 import Link from 'next/link';
+import { PremiumModal } from '@/components/atoms/PremiumModal';
 
 interface DashboardViewProps {
   comics: DashboardComic[];
   topRatedComics: TopRatedComic[];
   favouriteHeroes: FavouriteHero[];
-  isFavorite: (id: string) => boolean;
-  toggleFavorite: (id: string) => void;
+  toggleFavorite: (id: string, currentStatus: boolean) => void;
+  onRestoreFromCloud?: (id: string, title: string) => Promise<void>;
   setActiveView: (view: string) => void;
   isEditMode: boolean;
   setIsEditMode: (mode: boolean) => void;
@@ -35,8 +36,8 @@ export const DashboardView = ({
   comics,
   topRatedComics,
   favouriteHeroes,
-  isFavorite,
   toggleFavorite,
+  onRestoreFromCloud,
   setActiveView,
   isEditMode,
   setIsEditMode,
@@ -48,6 +49,7 @@ export const DashboardView = ({
   sensors
 }: DashboardViewProps) => {
   const enrichment = useEnrichment();
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = React.useState(false);
 
   // Logic for Dynamic Hero: Find the most read series
   const seriesStats = useMemo(() => {
@@ -70,8 +72,8 @@ export const DashboardView = ({
   
   const featuredComic = dynamicFeaturedComic;
   const continueComic = comics.find(c => (c.progress?.lastPage ?? 0) > 0) || comics[1] || comics[0];
-  const isFeaturedFav = featuredComic ? isFavorite(featuredComic.id) : false;
-  const isContinueFav = continueComic ? isFavorite(continueComic.id) : false;
+  const isFeaturedFav = !!featuredComic?.isFavorite;
+  const isContinueFav = !!continueComic?.isFavorite;
 
   const handleEnrichFeatured = async () => {
     if (!featuredComic) return;
@@ -79,8 +81,12 @@ export const DashboardView = ({
       triggerNotification(`Enriching "${featuredComic.title}"...`, 'info');
       await enrichment.mutateAsync(featuredComic.id);
       triggerNotification(`Metadata updated for "${featuredComic.title}"!`, 'success');
-    } catch {
-      triggerNotification(`Failed to enrich "${featuredComic.title}"`, 'error');
+    } catch (err: any) {
+      if (err.message?.includes('Premium feature') || err.message?.includes('PREMIUM_REQUIRED')) {
+        setIsPremiumModalOpen(true);
+      } else {
+        triggerNotification(`Failed to enrich "${featuredComic.title}"`, 'error');
+      }
     }
   };
 
@@ -112,7 +118,7 @@ export const DashboardView = ({
                 {enrichment.isPending ? <Loader2 size={24} className="animate-spin text-white" /> : <Sparkles size={24} className="text-white" />}
               </button>
               <button 
-                onClick={() => toggleFavorite(featuredComic.id)}
+                onClick={() => toggleFavorite(featuredComic.id, isFeaturedFav)}
                 className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 hover:bg-white/20 transition-all group/fav"
                 aria-label={isFeaturedFav ? "Remove from favorites" : "Add to favorites"}
               >
@@ -145,7 +151,7 @@ export const DashboardView = ({
         <section className="lg:col-span-4 bg-[#0F172A] rounded-[2.5rem] p-10 text-white flex flex-col justify-between shadow-2xl relative overflow-hidden group">
           {continueComic && (
             <button 
-              onClick={() => toggleFavorite(continueComic.id)}
+              onClick={() => toggleFavorite(continueComic.id, isContinueFav)}
               className="absolute top-8 right-8 z-20 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all"
               aria-label={isContinueFav ? "Remove from favorites" : "Add to favorites"}
             >
@@ -225,7 +231,7 @@ export const DashboardView = ({
             <div key={comic.id} className="group flex flex-col gap-4">
               <div className="aspect-[2/3] rounded-2xl overflow-hidden shadow-lg border border-neutral-100 relative group-hover:shadow-2xl transition-all">
                 <Image 
-                  src={comic.coverUrl} 
+                  src={comic.coverUrl || "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?w=400&q=80"} 
                   alt={comic.title} 
                   fill
                   sizes="(max-width: 768px) 50vw, (max-width: 1200px) 20vw, 15vw"
@@ -266,7 +272,8 @@ export const DashboardView = ({
                {comics.map(comic => (
                  <DashboardComicCard 
                    key={comic.id} comic={comic} onNotification={triggerNotification}
-                   isFav={isFavorite(comic.id)} onToggleFav={() => toggleFavorite(comic.id)}
+                   onRestoreFromCloud={onRestoreFromCloud}
+                   isFav={comic.isFavorite} onToggleFav={() => toggleFavorite(comic.id, !!comic.isFavorite)}
                    isEditMode={isEditMode} isSelected={selectedIds.includes(comic.id)} 
                    onToggleSelect={id => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
                  />
@@ -275,6 +282,12 @@ export const DashboardView = ({
            </SortableContext>
         </DndContext>
       </section>
+
+      <PremiumModal 
+        isOpen={isPremiumModalOpen} 
+        onClose={() => setIsPremiumModalOpen(false)} 
+        featureName="Automatic Metadata Enrichment"
+      />
     </div>
   );
 };

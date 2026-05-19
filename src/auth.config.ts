@@ -49,6 +49,7 @@ export const authConfig: NextAuthConfig = {
           userId: u.id,
           email: u.email,
           plan: u.plan ?? 'FREE',
+          role: u.role ?? 'USER',
           hasCompletedOnboarding: u.hasCompletedOnboarding ?? false,
           name: u.name ?? null,
           defaultReadingMode: u.defaultReadingMode ?? 'single-page',
@@ -85,6 +86,7 @@ export const authConfig: NextAuthConfig = {
       if (token && session.user) {
         session.user.id = (token.userId as string) || (token.sub as string) || '';
         session.user.plan = (token.plan as string) || 'FREE';
+        session.user.role = (token.role as string) || 'USER';
         session.user.hasCompletedOnboarding = !!token.hasCompletedOnboarding;
         session.user.name = (token.name as string) ?? null;
         session.user.email = (token.email as string) || '';

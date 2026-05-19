@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useReaderStore } from '@/stores/readerStore';
 import { UpdateProgressPayload } from '@/types';
@@ -13,7 +13,7 @@ interface UseReadingProgressOptions {
 
 /**
  * Hook to automatically track and sync reading progress to the server.
- * Includes offline sync queueing support.
+ * Includes offline sync queueing support and active reading time tracking.
  */
 export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
   const currentPage = useReaderStore((state) => state.currentPage);
@@ -21,9 +21,21 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
   const zoomLevel = useReaderStore((state) => state.zoomLevel);
   const lastSavedPage = useRef<number>(-1);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Time tracking state
+  const [secondsSpent, setSecondsSpent] = useState(0);
+  const lastSyncTimeRef = useRef<number | null>(null);
+  const isActiveRef = useRef<boolean>(true);
 
   const queryClient = useQueryClient();
   const { handleAuthError } = useAuthCallback();
+
+  // Initialize sync time
+  useEffect(() => {
+    if (!lastSyncTimeRef.current) {
+      lastSyncTimeRef.current = Date.now();
+    }
+  }, []);
 
   const { mutate } = useMutation({
     mutationFn: async (payload: UpdateProgressPayload) => {
@@ -53,12 +65,48 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
       if (comicId) {
         queryClient.invalidateQueries({ queryKey: ['comic', comicId] });
       }
+      // Reset local time tracker after successful sync
+      setSecondsSpent(0);
+      lastSyncTimeRef.current = Date.now();
     },
   });
 
-  // Automatically sync progress with a 2-second debounce
+  // 1. Active Reading Timer
   useEffect(() => {
-    if (!comicId || currentPage === lastSavedPage.current || totalPages === 0) {
+    if (!comicId) return;
+
+    const interval = setInterval(() => {
+      if (isActiveRef.current && document.visibilityState === 'visible') {
+        setSecondsSpent((s) => s + 1);
+      }
+    }, 1000);
+
+    const handleVisibilityChange = () => {
+      isActiveRef.current = document.visibilityState === 'visible';
+    };
+
+    const handleBlur = () => { isActiveRef.current = false; };
+    const handleFocus = () => { isActiveRef.current = true; };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [comicId]);
+
+  // 2. Automatically sync progress with a 2-second debounce
+  useEffect(() => {
+    // If page hasn't changed, we still might want to sync time if enough has passed (e.g. 30s)
+    const pageChanged = currentPage !== lastSavedPage.current;
+    const significantTimePassed = secondsSpent >= 30;
+
+    if (!comicId || totalPages === 0 || (!pageChanged && !significantTimePassed)) {
       return;
     }
 
@@ -69,6 +117,7 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
         lastPage: currentPage,
         totalPages,
         zoomLevel,
+        timeDelta: secondsSpent,
       });
       lastSavedPage.current = currentPage;
     }, 2000);
@@ -76,5 +125,5 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [comicId, currentPage, totalPages, zoomLevel, mutate]);
+  }, [comicId, currentPage, totalPages, zoomLevel, secondsSpent, mutate]);
 }

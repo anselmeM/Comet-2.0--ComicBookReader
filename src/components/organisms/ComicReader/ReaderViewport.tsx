@@ -98,7 +98,6 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
       onDrag: ({ offset: [dx, dy], intentional, swipe }) => {
         // Handle swipe detection ONLY when not zoomed in
         if (swipe && swipe[0] !== 0 && scale.get() < 1.05 && !isGuidedViewEnabled) {
-          console.log('Gesture: Swipe detected', swipe[0]);
           if (swipe[0] === -1) {
             if (mode === 'manga-rtl') prevPage();
             else nextPage();
@@ -115,7 +114,6 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
         y.set(dy);
       },
       onPinch: ({ offset: [s], memo }) => {
-        console.log('Gesture: Pinch detected', s);
         setZoomLevel(s);
         return memo;
       }

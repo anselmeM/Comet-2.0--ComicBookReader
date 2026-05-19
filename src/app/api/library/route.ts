@@ -9,7 +9,7 @@ import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { getCache, setCache, invalidateCache, genCacheKey } from '@/lib/cache';
 import { Prisma } from '@prisma/client';
-import { PaginatedLibraryResponseDTO } from '@/types';
+import { PaginatedLibraryResponseDTO } from '@/types/schemas';
 
 /**
  * GET /api/library — Returns the authenticated user's comic library
@@ -39,7 +39,7 @@ export async function GET(_req: Request) {
     const cacheKey = genCacheKey(session.user.id, 'library', { 
       page, limit, search, series, sortBy, yearStart, yearEnd, readStatus 
     });
-    const cachedData = getCache<PaginatedLibraryResponseDTO>(cacheKey);
+    const cachedData = await getCache<PaginatedLibraryResponseDTO>(cacheKey);
     if (cachedData) {
       return NextResponse.json(cachedData, { 
         status: 200, 
@@ -54,8 +54,8 @@ export async function GET(_req: Request) {
     
     if (search) {
       where.OR = [
-        { title: { contains: search } },
-        { series: { contains: search } },
+        { title: { contains: search, mode: 'insensitive' as any } },
+        { series: { contains: search, mode: 'insensitive' as any } },
       ];
     }
     
@@ -88,6 +88,8 @@ export async function GET(_req: Request) {
     if (sortBy === 'year_asc') orderBy = { year: 'asc' };
     if (sortBy === 'pages_desc') orderBy = { pageCount: 'desc' };
     if (sortBy === 'pages_asc') orderBy = { pageCount: 'asc' };
+    if (sortBy === 'rating_desc') orderBy = { rating: 'desc' };
+    if (sortBy === 'rating_asc') orderBy = { rating: 'asc' };
 
     // Get total count for pagination info
     const total = await db.comic.count({ where });
@@ -111,7 +113,7 @@ export async function GET(_req: Request) {
     };
 
     // Store in Cache for 5 minutes (T-INF-004)
-    setCache(cacheKey, response, 5 * 60);
+    await setCache(cacheKey, response, 5 * 60);
 
     return NextResponse.json(response, { 
       status: 200, 
@@ -137,7 +139,7 @@ export async function POST(_req: Request) {
     }
 
     // Invalidate library cache for this user (T-INF-004)
-    invalidateCache(`u:${session.user.id}:library`, true);
+    await invalidateCache(`u:${session.user.id}:library`, true);
 
     const body = await _req.json();
     const { title, filehash, pageCount, coverUrl } = body;

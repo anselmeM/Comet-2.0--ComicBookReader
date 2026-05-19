@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<best_practices>
+  <general_principles>
+    <principle priority="high">
+      <name>Completeness</name>
+      <description>Every artifact must be complete and self-contained</description>
+      <rationale>Incomplete artifacts lead to misunderstood requirements and costly rework</rationale>
+      <example>
+        <scenario>When documenting an API endpoint</scenario>
+        <good>Include full request/response schemas, error codes, authentication requirements, and example calls</good>
+        <bad>List only the endpoint path without request/response structure</bad>
+      </example>
+    </principle>
+
+    <principle priority="high">
+      <name>Traceability</name>
+      <description>Every design element must trace back to a requirement</description>
+      <rationale>Ensures all code serves a purpose and makes impact assessment easier</rationale>
+      <example>
+        <scenario>Database field added</scenario>
+        <good>[Req-7.2] Stores user preference for theme selection</good>
+        <bad>Added theme field because it seemed useful</bad>
+      </example>
+    </principle>
+
+    <principle priority="high">
+      <name>Testability</name>
+      <description>Every task must produce verifiable, testable output</description>
+      <rationale>Untestable tasks cannot be confidently completed</rationale>
+      <example>
+        <scenario>Task definition</scenario>
+        <good>Create validation that rejects usernames shorter than 3 characters</good>
+        <bad>Make username validation better</bad>
+      </example>
+    </principle>
+
+    <principle priority="medium">
+      <name>Atomic Tasks</name>
+      <description>Each task should be small enough to complete in one sitting</description>
+      <rationale>Large tasks are harder to estimate, review, and debug</rationale>
+      <threshold>If a task would take more than 4 hours, split it</threshold>
+    </principle>
+
+    <principle priority="medium">
+      <name>Dependency Clarity</name>
+      <description>Task order must reflect true dependencies</description>
+      <rationale>Working on dependent tasks before their prerequisites causes rework</rationale>
+    </principle>
+  </general_principles>
+
+  <documentation_standards>
+    <convention category="formatting">
+      <rule>Use markdown headings to create clear hierarchy</rule>
+      <rule>Use bullet points for lists, numbered lists for sequences</rule>
+      <rule>Use code blocks with language tags for examples</rule>
+      <rule>Use tables for comparing options, schemas, or structured data</rule>
+    </convention>
+
+    <convention category="naming">
+      <rule>Be descriptive but concise</rule>
+      <rule>Use consistent terminology throughout</rule>
+      <rule>Define acronyms on first use</rule>
+    </convention>
+
+    <convention category="cross_references">
+      <rule>Link requirements to design elements using [Req-X] tags</rule>
+      <rule>Link design elements to tasks using [Dsn-X] tags</rule>
+      <rule>Use relative links for file references</rule>
+    </convention>
+  </documentation_standards>
+
+  <artifact_quality_checklist>
+    <category name="requirements.md">
+      <item>Problem statement clearly articulated</item>
+      <item>All user roles identified</item>
+      <item>User stories follow consistent format</item>
+      <item>Acceptance criteria are measurable</item>
+      <item>Edge cases cover known scenarios</item>
+      <item>Security constraints documented</item>
+      <item>Dependencies listed with known risks</item>
+    </category>
+
+    <category name="design.md">
+      <item>Architecture overview provided</item>
+      <item>Data flow is traceable end-to-end</item>
+      <item>Database schemas are complete and normalized</item>
+      <item>API contracts include all error scenarios</item>
+      <item>Component hierarchy reflects actual structure</item>
+      <item>Every element links to a requirement</item>
+    </category>
+
+    <category name="tasks.md">
+      <item>Tasks are in correct dependency order</item>
+      <item>Each task is actionable with clear completion criteria</item>
+      <item>Tasks are appropriately sized</item>
+      <item>Testing tasks are included</item>
+      <item>No tasks are orphaned (all have purpose)</item>
+    </category>
+  </artifact_quality_checklist>
+
+  <common_pitfalls>
+    <pitfall>
+      <description>Writing code before artifact approval</description>
+      <why_problematic>Bypasses the quality gate and invites scope creep</why_problematic>
+      <correct_approach>Strictly adhere to the halt-and-approve workflow</correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <description>Vague acceptance criteria</description>
+      <why_problematic>Leads to scope disputes and missed expectations</why_problematic>
+      <correct_approach>Use SMART criteria: Specific, Measurable, Achievable, Relevant, Time-bound</correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <description>Skipping edge cases</description>
+      <why_problematic>Production systems fail onUnhandled edge cases</why_problematic>
+      <correct_approach>Deliberately brainstorm and document edge cases</correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <description>Tasks without completion criteria</description>
+      <why_problematic>Unclear when task is done, leads to infinite polish</why_problematic>
+      <correct_approach>Define concrete, testable completion criteria for each task</correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <description>Inconsistent terminology</description>
+      <why_problematic>Makes artifacts harder to read and maintain</why_problematic>
+      <correct_approach>Maintain a glossary and use search-and-replace when correcting terms</correct_approach>
+    </pitfall>
+  </common_pitfalls>
+</best_practices>

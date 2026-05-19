@@ -1,0 +1,83 @@
+<decision_guidance>
+  <principles>
+    <principle>Do not include runtime implementation details (no function names, command names, UI entry points, or execution syntax)</principle>
+    <principle>Make implementation decisions autonomously; do not seek confirmation on every line</principle>
+    <principle>Follow design.md as the source of truth for API contracts and data schemas</principle>
+    <principle>Prefer the smallest change that satisfies the task requirement</principle>
+    <principle>Fix your own errors before asking for help</principle>
+  </principles>
+
+  <decision_rules>
+    <rule name="implementation_approach">
+      <when>Task is ambiguous or has multiple valid implementation paths</when>
+      <then>Choose the approach that best matches existing project patterns and design.md contracts. Do not ask for clarification unless the choice would fundamentally change the system's behavior.</then>
+    </rule>
+
+    <rule name="verification_failure">
+      <when>Verification commands fail after implementation</when>
+      <then>Analyze the error output, fix the root cause, re-run verification. Repeat until passing. Only ask for help if the error is clearly design-related and not implementation fixable.</then>
+    </rule>
+
+    <rule name="design_ambiguity">
+      <when>Implementation reveals ambiguity or gap in design.md</when>
+      <then>Do not guess. Stop and ask the user to clarify the design before proceeding.</then>
+    </rule>
+
+    <rule name="new_dependency">
+      <when>Task requires adding a new dependency not in package.json</when>
+      <then>Ask the user for approval before adding external dependencies.</then>
+    </rule>
+
+    <rule name="scope_creep">
+      <when>Task implementation suggests additional related changes would be beneficial</when>
+      <then>Complete only the task as specified. Do not expand scope. Note the observation for follow-up.</then>
+    </rule>
+  </decision_rules>
+
+  <boundaries>
+    <boundary type="do_not_modify">
+      <items>
+        <item>tasks.md structure or ordering</item>
+        <item>design.md or requirements.md unless asked</item>
+        <item>Core architecture decisions outside task scope</item>
+      </items>
+    </boundary>
+
+    <boundary type="ask_before">
+      <items>
+        <item>Adding new external dependencies</item>
+        <item>Deleting files not replaced by task implementation</item>
+        <item>Changes affecting authentication, authorization, or security</item>
+        <item>Database schema changes beyond task scope</item>
+      </items>
+    </boundary>
+
+    <boundary type="autonomous">
+      <items>
+        <item>All implementation decisions within task scope</item>
+        <item>Error fixing and verification loop iteration</item>
+        <item>Marking tasks complete in tasks.md</item>
+        <item>Writing walkthrough.md entries</item>
+      </items>
+    </boundary>
+  </boundaries>
+
+  <handoff_rules>
+    <handoff type="execution_complete">
+      <condition>All items in tasks.md marked [x]</condition>
+      <action>Stop all coding immediately. Output the exact QA handoff message and await mode switch.</action>
+      <note>Do not attempt to review, refactor, or improve completed work. The Kiro/Antigravity audit is the designated review mechanism.</note>
+    </handoff>
+
+    <handoff type="design_required">
+      <condition>Implementation reveals missing or contradictory design specification</condition>
+      <action>Stop implementation. Ask user to clarify or update design.md. Resume after design is confirmed.</action>
+    </handoff>
+  </handoff_rules>
+
+  <validation>
+    <rule>After marking a task complete, verify the [x] marker is correctly placed and the file is saved</rule>
+    <rule>After writing walkthrough.md entry, verify the entry captures all required information</rule>
+    <rule>Before QA handoff, confirm every task has [x] and no pending tasks remain</rule>
+  </validation>
+</decision_guidance>

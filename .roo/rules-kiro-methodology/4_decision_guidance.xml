@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<decision_guidance>
+  <principles>
+    <principle>Do not include runtime implementation details (no function names, command names, UI entry points, or execution syntax)</principle>
+    <principle>Prefer the smallest change that satisfies the request</principle>
+    <principle>Prefer a single source of truth; avoid duplicated rules across files</principle>
+    <principle>Ask a clarifying question only when critical ambiguity remains</principle>
+  </principles>
+
+  <boundaries>
+    <rule>Define clear responsibilities and explicit handoff points to other modes</rule>
+  </boundaries>
+
+  <approval_gates>
+    <gate name="requirements_gate">
+      <description>Business logic and scope approval</description>
+      <questions>
+        <question>Does the problem statement clearly articulate the issue?</question>
+        <question>Are all user roles and stories captured?</question>
+        <question>Are acceptance criteria testable and complete?</question>
+        <question>Are edge cases and security constraints documented?</question>
+      </questions>
+      <blocker>If any question cannot be answered affirmatively, halt and clarify before proceeding.</blocker>
+    </gate>
+
+    <gate name="design_gate">
+      <description>Technical approach approval</description>
+      <questions>
+        <question>Does the data flow cover the complete lifecycle?</question>
+        <question>Are database schemas complete and normalized?</question>
+        <question>Are API contracts explicit with all error scenarios?</question>
+        <question>Does the component hierarchy match the implementation structure?</question>
+        <question>Can every design element be traced to a requirement?</question>
+      </questions>
+      <blocker>If any element cannot be traced to a requirement, either add a requirement or remove the design element.</blocker>
+    </gate>
+
+    <gate name="tasks_gate">
+      <description>Implementation plan approval</description>
+      <questions>
+        <question>Are tasks in correct dependency order?</question>
+        <question>Is each task independently testable?</question>
+        <question>Are tasks appropriately sized (no task exceeds 4 hours)?</question>
+        <question>Are testing tasks included in the sequence?</question>
+      </questions>
+      <blocker>If tasks are not properly sequenced or sized, restructure before proceeding.</blocker>
+    </gate>
+
+    <gate name="final_approval">
+      <description>Master approval before code execution</description>
+      <questions>
+        <question>Have all three artifacts been generated?</question>
+        <question>Are all three artifacts consistent with each other?</question>
+        <question>Has the user explicitly approved all three artifacts?</question>
+      </questions>
+      <blocker>Do NOT write any executable code until all three artifacts are approved.</blocker>
+    </gate>
+  </approval_gates>
+
+  <stop_conditions>
+    <condition>
+      <description>Request is too vague to plan</description>
+      <action>Ask clarifying questions about scope, users, and goals before generating artifacts</action>
+    </condition>
+
+    <condition>
+      <description>Request conflicts with existing requirements</description>
+      <action>Identify the conflict and ask how to resolve (new version vs. amendment vs. rollback)</action>
+    </condition>
+
+    <condition>
+      <description>Request requires technology not in scope</description>
+      <action>Note as dependency/open question and proceed if acceptable, or escalate</action>
+    </condition>
+
+    <condition>
+      <description>Request is scope creep on existing approved feature</description>
+      <action>Return to requirements.md, propose amendment, and re-approve before expanding design</action>
+    </condition>
+  </stop_conditions>
+
+  <handoff_rules>
+    <mode name="code">
+      <trigger>After user approval of all three artifacts</trigger>
+      <handoff_procedure>
+        - Hand off tasks.md as the execution checklist
+        - Reference requirements.md for acceptance criteria
+        - Reference design.md for implementation details
+        - Confirm task sequence with user
+      </handoff_procedure>
+    </mode>
+
+    <mode name="ask">
+      <trigger>User needs explanation of technical approach before committing to planning</trigger>
+      <handoff_procedure>
+        - Provide explanation without generating artifacts
+        - If user decides to proceed, return to Kiro Methodology
+      </handoff_procedure>
+    </mode>
+
+    <mode name="debug">
+      <trigger>User wants to plan a fix for a bug, not a new feature</trigger>
+      <handoff_procedure>
+        - Still generate artifacts but with focus on root cause analysis and fix validation
+        - Reduce scope to the specific bug fix
+      </handoff_procedure>
+    </mode>
+  </handoff_rules>
+
+  <validation>
+    <rule>After changes, scan for contradictions and update examples to match</rule>
+  </validation>
+
+  <scope_creep_guardrails>
+    <rule name="artifact_gate">
+      Nothing goes into implementation that is not in requirements.md
+    </rule>
+    <rule name="design_gate">
+      Nothing is built that is not in design.md
+    </rule>
+    <rule name="approval_gate">
+      No implementation proceeds without explicit user sign-off on all three artifacts
+    </rule>
+    <rule name="amendment_process">
+      Any scope change requires returning to requirements.md, getting re-approval, and updating design.md and tasks.md accordingly
+    </rule>
+  </scope_creep_guardrails>
+</decision_guidance>

@@ -1,51 +1,92 @@
 /**
- * @file Basic In-Memory Rate Limiter for Auth Routes
+ * @file Rate Limiter using Upstash Ratelimit
+ * Falls back to in-memory store if Redis is not configured.
  */
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
+// Initialize Redis client
+let redis: Redis | null = null;
+let ratelimit: Ratelimit | null = null;
+
+try {
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    redis = Redis.fromEnv();
+    ratelimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(10, '60 s'), // Default, can be overridden per call
+      analytics: true,
+      prefix: 'comet:ratelimit',
+    });
+  }
+} catch (err) {
+  console.warn('[RateLimit] Failed to initialize Upstash Ratelimit:', err);
+}
+
+// In-memory fallback
 interface RateLimitRecord {
   count: number;
   resetAt: number;
 }
-
-const store = new Map<string, RateLimitRecord>();
+const memoryStore = new Map<string, RateLimitRecord>();
 
 /**
  * Checks if a request should be rate-limited.
  * 
  * @param key Unique key to limit (e.g. IP address or email)
  * @param limit Maximum number of requests allowed
- * @param windowMs Time window in milliseconds
+ * @param windowMs Time window in milliseconds (used for fallback only)
  * @returns Object with limit status and headers
  */
 export async function rateLimit(key: string, limit: number, windowMs: number) {
-  const now = Date.now();
-  let record = store.get(key);
+  const identifier = `${key}:${limit}:${windowMs}`;
 
-  // Cleanup expired record
+  if (ratelimit) {
+    try {
+      const { success, remaining, reset, limit: actualLimit } = await ratelimit.limit(identifier);
+      
+      return {
+        isLimited: !success,
+        remaining,
+        reset,
+        headers: {
+          'X-RateLimit-Limit': actualLimit.toString(),
+          'X-RateLimit-Remaining': remaining.toString(),
+          'X-RateLimit-Reset': reset.toString(),
+        },
+      };
+    } catch (err) {
+      console.error(`[RateLimit] Redis error for key ${key}:`, err);
+    }
+  }
+
+  // Fallback to memory
+  const now = Date.now();
+  let record = memoryStore.get(identifier);
+
   if (record && now > record.resetAt) {
-    store.delete(key);
+    memoryStore.delete(identifier);
     record = undefined;
   }
 
   if (!record) {
-    store.set(key, {
+    record = {
       count: 1,
       resetAt: now + windowMs,
-    });
+    };
+    memoryStore.set(identifier, record);
   } else {
     record.count++;
-    store.set(key, record);
   }
 
-  // Prevent memory leak by capping the map size
-  if (store.size > 5000) {
-    const oldestKey = store.keys().next().value;
-    if (oldestKey) store.delete(oldestKey);
+  // Prevent memory leak - more aggressive cleanup
+  if (memoryStore.size > 2000) {
+    const keysToDelete = Array.from(memoryStore.keys()).slice(0, 500);
+    keysToDelete.forEach(k => memoryStore.delete(k));
   }
 
-  const currentRecord = store.get(key)!;
-  const current = currentRecord.count;
-  const reset = currentRecord.resetAt;
+  const current = record.count;
+  const reset = record.resetAt;
   const remaining = Math.max(0, limit - current);
   const isLimited = current > limit;
 

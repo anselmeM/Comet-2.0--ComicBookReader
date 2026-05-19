@@ -3,18 +3,29 @@
  */
 import NextAuth from 'next-auth';
 import { authConfig } from './auth.config';
+import { NextResponse } from 'next/server';
 
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
+  const plan = req.auth?.user?.plan || 'FREE';
 
-  const isPublicRoute = ['/', '/login', '/register', '/forgot-password', '/reset-password'].includes(nextUrl.pathname);
+  const isPublicRoute = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/pricing'].includes(nextUrl.pathname);
   const isPublicApiRoute = nextUrl.pathname.startsWith('/api/auth');
+  const isStorageApiRoute = nextUrl.pathname.startsWith('/api/storage');
 
   if (isPublicApiRoute) {
     return;
+  }
+
+  // Restrict Storage APIs to PREMIUM users
+  if (isStorageApiRoute && plan !== 'PREMIUM') {
+    return NextResponse.json(
+      { error: 'Premium subscription required' },
+      { status: 403 }
+    );
   }
 
   if (isPublicRoute) {

@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronLeft, Users } from 'lucide-react';
 import Image from 'next/image';
 
-import { FavouriteHero } from '../mockData';
+import { FavouriteHero } from '@/lib/__mocks__/dashboard';
 
 interface FavouriteHeroesViewProps {
   favouriteHeroes: FavouriteHero[];

@@ -4,6 +4,8 @@ import { computeFileHash } from '@/lib/hash';
 import { generateThumbnail } from '@/lib/thumbnail';
 import { runLRUEviction } from '@/lib/lru';
 import { useAuthCallback } from './useAuthCallback';
+import { useCloudSync } from './useCloudSync';
+import { useSession } from 'next-auth/react';
 
 interface ParseProgress {
   phase: 'hashing' | 'parsing';
@@ -34,8 +36,10 @@ export function useComicParser() {
   const [progress, setProgress] = useState<ParseProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { handleAuthError } = useAuthCallback();
+  const { uploadToCloud } = useCloudSync();
+  const { data: session } = useSession();
 
-  const parseComic = useCallback(async (file: File) => {
+  const parseComic = useCallback(async (file: File, options: { skipServerPOST?: boolean; existingComicId?: string } = {}) => {
     setIsParsing(true);
     setError(null);
 
@@ -114,35 +118,49 @@ export function useComicParser() {
                 // Run LRU eviction to ensure we stay within storage budget
                 await runLRUEviction();
 
-                // Inform server
-                const payload = {
-                  title: file.name.replace(/\.(cbz|cbr|zip)$/i, ''),
-                  filehash,
-                  pageCount: pages.length,
-                  coverUrl,
-                };
+                // Inform server (unless skipping, e.g. when restoring from cloud)
+                let serverComicId = options.existingComicId;
+                const sizeBytes = pages.reduce((acc: number, p: { blob: Blob }) => acc + p.blob.size, 0);
 
-                const response = await fetch('/api/library', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(payload),
-                });
+                if (!options.skipServerPOST) {
+                  const payload = {
+                    title: file.name.replace(/\.(cbz|cbr|zip)$/i, ''),
+                    filehash,
+                    sizeBytes,
+                    pageCount: pages.length,
+                    coverUrl,
+                  };
 
-                if (!response.ok) {
-                  const wasAuthError = await handleAuthError(response);
-                  if (wasAuthError) return;
-                  
-                  throw new Error(`Server returned ${response.status}`);
+                  const response = await fetch('/api/library', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                  });
+
+                  if (!response.ok) {
+                    const wasAuthError = await handleAuthError(response);
+                    if (wasAuthError) return;
+                    
+                    throw new Error(`Server returned ${response.status}`);
+                  }
+
+                  const data = await response.json();
+                  serverComicId = data.id;
                 }
 
-                const data = await response.json();
-                const serverComicId: string = data.id;
+                if (!serverComicId) throw new Error('No comic ID available');
 
                 // Re-key IDB entry
                 const localEntry = await getCachedComic(localComicId);
                 if (localEntry) {
                   await setCachedComic({ ...localEntry, comicId: serverComicId });
                   await evictCachedComic(localComicId);
+                }
+
+                // Cloud Sync for Premium Users (only if it was a new upload)
+                if (!options.skipServerPOST && session?.user?.plan === 'PREMIUM') {
+                  // We don't await this to keep the UI snappy
+                  uploadToCloud(serverComicId, file);
                 }
 
                 setIsParsing(false);

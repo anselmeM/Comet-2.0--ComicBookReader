@@ -6,6 +6,8 @@ import { DashboardComic } from '@/components/molecules/DashboardComicCard';
 import { UploadCloud, Loader2, Library } from 'lucide-react';
 import { useComicParser } from '@/hooks/useComicParser';
 import { useLibrary, useDeleteComic } from '@/hooks/useLibrary';
+import { useCloudSync } from '@/hooks/useCloudSync';
+import { getAllCachedComicsMetadata } from '@/lib/idb';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ComicDTO } from '@/types';
@@ -13,6 +15,7 @@ import { ComicDTO } from '@/types';
 export default function LibraryPage() {
   const router = useRouter();
   const { parseComic, isParsing, progress } = useComicParser();
+  const { downloadFromCloud, isSyncing: isCloudDownloading } = useCloudSync();
   
   // State for pagination, search and sort
   const [currentPage, setCurrentPage] = useState(1);
@@ -23,6 +26,7 @@ export default function LibraryPage() {
   const [yearStart, setYearStart] = useState<number | null>(null);
   const [yearEnd, setYearEnd] = useState<number | null>(null);
   const [readStatus, setReadStatus] = useState('all');
+  const [localComicIds, setLocalComicIds] = useState<Set<string>>(new Set());
   
   const { data: libraryData, isLoading, error, refetch } = useLibrary({ 
     page: currentPage, 
@@ -46,8 +50,17 @@ export default function LibraryPage() {
     }
   };
   
-  const { status: sessionStatus } = useSession();
+  const { status: sessionStatus, data: session } = useSession();
   const [isDragging, setIsDragging] = useState(false);
+
+  // Check local storage availability
+  React.useEffect(() => {
+    const checkLocal = async () => {
+      const cached = await getAllCachedComicsMetadata();
+      setLocalComicIds(new Set(cached.map(c => c.comicId)));
+    };
+    checkLocal();
+  }, [libraryData]);
 
   // Transform real comics from API to DashboardComic format
   const dashboardComics: DashboardComic[] = useMemo(() => {
@@ -60,12 +73,16 @@ export default function LibraryPage() {
       pageCount: comic.pageCount,
       year: comic.year || undefined,
       issue: comic.issue || undefined,
+      rating: comic.rating || undefined,
+      isFavorite: comic.isFavorite,
+      syncStatus: comic.syncStatus,
+      isLocallyAvailable: localComicIds.has(comic.id),
       progress: comic.progress ? {
         lastPage: comic.progress.lastPage,
         totalPages: comic.progress.totalPages,
       } : undefined,
     }));
-  }, [libraryData?.data]);
+  }, [libraryData?.data, localComicIds]);
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
@@ -98,6 +115,20 @@ export default function LibraryPage() {
     const file = e.target.files?.[0];
     if (file) handleFileUpload(file);
     e.target.value = '';
+  };
+
+  const handleRestoreFromCloud = async (comicId: string, title: string) => {
+    try {
+      const file = await downloadFromCloud(comicId, title);
+      if (file) {
+        await parseComic(file, { skipServerPOST: true, existingComicId: comicId });
+        // Refresh local availability
+        const cached = await getAllCachedComicsMetadata();
+        setLocalComicIds(new Set(cached.map(c => c.comicId)));
+      }
+    } catch (e) {
+      console.error('Restore failed:', e);
+    }
   };
 
   if (sessionStatus === 'loading' || (isLoading && !libraryData)) {
@@ -142,7 +173,9 @@ export default function LibraryPage() {
         <div className="fixed inset-0 bg-black/80 z-[200] flex items-center justify-center">
           <div className="bg-neutral-900 p-8 rounded-3xl text-center border border-neutral-800">
             <Loader2 size={48} className="text-blue-500 animate-spin mx-auto mb-4" />
-            <p className="text-white font-medium">Parsing {progress ? `${progress.page} / ${progress.total}` : 'Comic'}...</p>
+            <p className="text-white font-medium">
+              {isCloudDownloading ? 'Downloading from Cloud...' : `Parsing ${progress ? `${progress.page} / ${progress.total}` : 'Comic'}...`}
+            </p>
           </div>
         </div>
       )}
@@ -150,6 +183,7 @@ export default function LibraryPage() {
       <DashboardLayout 
         comics={dashboardComics}
         onFileSelect={handleFileUpload}
+        onRestoreFromCloud={handleRestoreFromCloud}
         onComicUpload={() => refetch()}
         pagination={libraryData?.pagination}
         onPageChange={setCurrentPage}

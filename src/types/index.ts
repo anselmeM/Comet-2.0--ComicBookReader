@@ -45,6 +45,11 @@ export interface ComicDTO {
   year: number | null;
   addedAt: string; // ISO datetime string
   lastReadAt: string | null;
+  isFavorite: boolean;
+  rating: number;
+  tags: string[] | null;
+  storageKey: string | null;
+  syncStatus: 'LOCAL' | 'PENDING' | 'SYNCED' | 'ERROR';
   progress: ReadingProgressDTO | null;
 }
 
@@ -70,6 +75,7 @@ export interface UpdateProgressPayload {
   totalPages: number;
   zoomLevel?: number;
   readStatus?: 'UNREAD' | 'READING' | 'COMPLETED';
+  timeDelta?: number; // Time spent reading in seconds since last sync
 }
 
 // ────────────────────────────────────────────────────

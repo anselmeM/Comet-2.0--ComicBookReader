@@ -1,0 +1,126 @@
+<complete_examples>
+  <example name="basic_task_implementation">
+    <scenario>
+      A task in tasks.md reads: "- [ ] Implement user profile API endpoint to update display name"
+      design.md specifies the API contract with method signature, request/response schemas, and error handling requirements.
+    </scenario>
+
+    <workflow>
+      <step number="1">
+        <description>Read tasks.md and identify the task</description>
+        <approach>Parse tasks.md, find the first [ ] item</approach>
+        <expected_outcome>Task identified: "Implement user profile API endpoint to update display name"</expected_outcome>
+      </step>
+
+      <step number="2">
+        <description>Read design.md for API contract</description>
+        <approach>Locate the user profile API specification in design.md</approach>
+        <expected_outcome>API contract understood: PATCH /api/user/profile, request body { displayName: string }, response { success: boolean, user: User }, error 400 if invalid</expected_outcome>
+      </step>
+
+      <step number="3">
+        <description>Implement the endpoint</description>
+        <approach>Create or modify the route handler in src/app/api/user/profile/route.ts</approach>
+        <expected_outcome>Code written matching the design.md contract</expected_outcome>
+      </step>
+
+      <step number="4">
+        <description>Run self-verification</description>
+        <approach>Execute npm run build and npm test</approach>
+        <expected_outcome>Build passes, tests pass</expected_outcome>
+      </step>
+
+      <step number="5">
+        <description>Handle failure if any</description>
+        <approach>If npm run build fails, analyze error, fix, re-run</approach>
+        <expected_outcome>Fix the issue without asking user</expected_outcome>
+      </step>
+
+      <step number="6">
+        <description>Mark task complete</description>
+        <approach>Update tasks.md, change [ ] to [x]</approach>
+        <expected_outcome>Task marked complete</expected_outcome>
+      </step>
+
+      <step number="7">
+        <description>Continue to next task</description>
+        <approach>Return to step 1 of workflow</approach>
+        <expected_outcome>Next task identified or QA handoff triggered</expected_outcome>
+      </step>
+    </workflow>
+  </example>
+
+  <example name="verification_failure_recovery">
+    <scenario>
+      npm run build fails with a TypeScript error in the newly implemented file.
+    </scenario>
+
+    <workflow>
+      <step number="1">
+        <description>Identify the error</description>
+        <approach>Read the error output - "Type error: Property 'displayName' does not exist on type 'User'"</approach>
+        <expected_outcome>Root cause: User type in types/index.ts missing displayName property</expected_outcome>
+      </step>
+
+      <step number="2">
+        <description>Fix the type definition</description>
+      <approach>Add displayName?: string to the User interface in types/index.ts</approach>
+        <expected_outcome>Type updated</expected_outcome>
+      </step>
+
+      <step number="3">
+        <description>Re-run verification</description>
+        <approach>Run npm run build again</approach>
+        <expected_outcome>Build passes</expected_outcome>
+      </step>
+
+      <step number="4">
+        <description>Run full verification</description>
+        <approach>Run npm test</approach>
+        <expected_outcome>Tests pass</expected_outcome>
+      </step>
+
+      <step number="5">
+        <description>Continue</description>
+        <approach>Mark task [x] and proceed to next task</approach>
+        <expected_outcome>Loop continues</expected_outcome>
+      </step>
+    </workflow>
+
+    <key_takeaways>
+      <takeaway>Fix root cause, not symptoms - the error was a missing type property, not the endpoint code</takeaway>
+      <takeaway>Self-sufficient recovery - no user intervention needed</takeaway>
+    </key_takeaways>
+  </example>
+
+  <example name="qa_handoff_trigger">
+    <scenario>
+      Last remaining task in tasks.md has been marked [x]. All items are now complete.
+    </scenario>
+
+    <workflow>
+      <step number="1">
+        <description>Verify all tasks complete</description>
+        <approach>Read tasks.md, confirm every item shows [x]</approach>
+        <expected_outcome>All tasks verified complete</expected_outcome>
+      </step>
+
+      <step number="2">
+        <description>Stop coding</description>
+        <approach>Do not attempt to review, refactor, or improve any completed work</approach>
+        <expected_outcome>Code execution halted</expected_outcome>
+      </step>
+
+      <step number="3">
+        <description>Output QA handoff message</description>
+        <approach>Print exactly: "🛑 EXECUTION COMPLETE. All tasks in tasks.md are finished. Please switch Roo Code to Reviewer Mode and prompt me to begin the Kiro/Antigravity audit."</approach>
+        <expected_outcome>Message delivered, awaiting mode switch</expected_outcome>
+      </step>
+    </workflow>
+
+    <key_takeaways>
+      <takeaway>No additional text before or after the handoff message</takeaway>
+      <takeaway>Do not self-audit - defer to the Kiro/Antigravity audit</takeaway>
+    </key_takeaways>
+  </example>
+</complete_examples>

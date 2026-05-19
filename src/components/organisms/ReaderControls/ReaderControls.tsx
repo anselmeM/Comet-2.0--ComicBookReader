@@ -6,8 +6,10 @@ import { useReaderStore } from '@/stores/readerStore';
 import { useParams } from 'next/navigation';
 import { useLibrary } from '@/hooks/useLibrary';
 import { useBookmarks } from '@/hooks/useBookmarks';
+import { useSession } from 'next-auth/react';
 import { BookmarkPanel } from '@/components/organisms/BookmarkPanel';
-import { Settings, Sun, Columns, File, Maximize, AlignRight, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Maximize2, Minimize2, Bookmark, Home, List } from 'lucide-react';
+import { PremiumModal } from '@/components/atoms/PremiumModal';
+import { Settings, Sun, Columns, File, Maximize, AlignRight, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Maximize2, Minimize2, Bookmark, Home, List, Sparkles } from 'lucide-react';
 
 // Extended types for vendor-prefixed fullscreen APIs
 interface ExtendedDocument extends Document {
@@ -41,6 +43,9 @@ export function ReaderControls({ type }: ReaderControlsProps) {
   
   const [showBookmarkPanel, setShowBookmarkPanel] = useState(false);
   const [fullscreenError, setFullscreenError] = useState<string | null>(null);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+
+  const { data: session } = useSession();
 
   const mode = useReaderStore((state) => state.mode);
   const setMode = useReaderStore((state) => state.setMode);
@@ -157,11 +162,11 @@ export function ReaderControls({ type }: ReaderControlsProps) {
     };
   }, [isFullscreen, toggleFullscreen]);
 
-  if (type === 'top') {
-    const bookmarked = comicId ? isBookmarked(currentPage) : false;
-    
-    return (
-      <>
+  const bookmarked = comicId ? isBookmarked(currentPage) : false;
+
+  return (
+    <>
+      {type === 'top' ? (
         <div className="flex items-center justify-between w-full h-14 bg-neutral-900/90 backdrop-blur-md rounded-2xl px-4 text-white pointer-events-auto shadow-lg border border-neutral-800">
           <div className="flex items-center gap-1">
             <Link href="/library" className="flex items-center gap-2 hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-neutral-800">
@@ -173,25 +178,11 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             {comic ? comic.title : 'Loading...'}
           </div>
           <div className="flex items-center gap-1">
-            {/* Bookmark Button - Combined List and Toggle */}
             <button
               type="button"
-              onClick={() => {
-                if (bookmarks.length > 0) {
-                  // Show bookmark list
-                  setShowBookmarkPanel(true);
-                } else {
-                  // Add bookmark for current page
-                  handleBookmarkToggle();
-                }
-              }}
-              className={`p-2 rounded-lg transition-colors relative ${
-                bookmarked 
-                  ? 'text-yellow-500 hover:text-yellow-400' 
-                  : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-              }`}
+              onClick={() => bookmarks.length > 0 ? setShowBookmarkPanel(true) : handleBookmarkToggle()}
+              className={`p-2 rounded-lg transition-colors relative ${bookmarked ? 'text-yellow-500 hover:text-yellow-400' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
               title={bookmarked ? `Page ${currentPage + 1} bookmarked - Click for list` : `Add bookmark for page ${currentPage + 1}`}
-              aria-label={bookmarked ? 'View bookmarks' : 'Add bookmark'}
             >
               <Bookmark size={20} fill={bookmarked ? "currentColor" : "none"} />
               {bookmarks.length > 0 && (
@@ -200,17 +191,11 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                 </span>
               )}
             </button>
-            {/* Fullscreen Toggle */}
             <button
               type="button"
               onClick={handleFullscreen}
-              className={`p-2 rounded-lg transition-colors ${
-                fullscreenError 
-                  ? 'text-red-400 hover:text-red-300' 
-                  : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-              }`}
+              className={`p-2 rounded-lg transition-colors ${fullscreenError ? 'text-red-400 hover:text-red-300' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
               title={isFullscreen ? 'Exit Fullscreen (F)' : fullscreenError || 'Fullscreen (F)'}
-              aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             >
               {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </button>
@@ -219,172 +204,73 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             </Link>
           </div>
         </div>
+      ) : (
+        <div className="flex flex-col gap-4 w-full bg-neutral-900/90 backdrop-blur-md p-4 rounded-3xl text-white pointer-events-auto border border-neutral-800 shadow-xl mb-4 max-w-2xl mx-auto">
+          {/* ProgressBar (Scrubber) */}
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => prevPage()} disabled={currentPage === 0} className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all disabled:opacity-30">
+              <ChevronLeft size={20} />
+            </button>
+            <span className="text-xs text-neutral-400 font-mono min-w-[40px] text-center">{currentPage + 1}</span>
+            <input
+              type="range"
+              min={0}
+              max={Math.max(0, totalPages - 1)}
+              value={currentPage}
+              onChange={(e) => setPage(parseInt(e.target.value, 10))}
+              className="flex-1 h-2 bg-neutral-700 rounded-full appearance-none outline-none accent-blue-500"
+            />
+            <span className="text-xs text-neutral-400 font-mono min-w-[40px] text-center">{totalPages}</span>
+            <button type="button" onClick={() => nextPage()} disabled={currentPage >= totalPages - 1} className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all disabled:opacity-30">
+              <ChevronRight size={20} />
+            </button>
+          </div>
+          
+          {/* Controls Row */}
+          <div className="flex items-center justify-between mt-2 flex-wrap gap-4">
+            <div className="flex items-center gap-1 bg-neutral-800 p-1 rounded-xl">
+              <ModeButton active={mode === 'single-page'} onClick={() => setMode('single-page')} icon={<File size={18} />} label="Single" />
+              <ModeButton active={mode === 'single-vertical'} onClick={() => setMode('single-vertical')} icon={<List size={18} />} label="Vertical" />
+              <ModeButton active={mode === 'dual-spread'} onClick={() => setMode('dual-spread')} icon={<Columns size={18} />} label="Spread" />
+              <ModeButton active={mode === 'manga-rtl'} onClick={() => setMode('manga-rtl')} icon={<AlignRight size={18} />} label="Manga" />
+              <ModeButton 
+                active={isGuidedViewEnabled} 
+                onClick={() => {
+                  if (session?.user?.plan !== 'PREMIUM') {
+                    setIsPremiumModalOpen(true);
+                    return;
+                  }
+                  toggleGuidedView();
+                }}
+                icon={<Sparkles size={18} className={session?.user?.plan !== 'PREMIUM' ? 'text-comet-accent' : ''} />} 
+                label="Guided" 
+              />
+            </div>
 
-        {/* Bookmark Panel Modal */}
-        {showBookmarkPanel && comicId && (
-          <BookmarkPanel 
-            comicId={comicId} 
-            onClose={() => setShowBookmarkPanel(false)} 
-          />
-        )}
-      </>
-    );
-  }
+            <div className="flex items-center gap-1 bg-neutral-800 p-1 rounded-xl">
+              <button type="button" onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))} className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg"><ZoomOut size={18} /></button>
+              <button type="button" onClick={() => resetZoom()} className="p-1 text-xs font-mono w-10 text-center text-neutral-400 hover:text-white hover:bg-neutral-700 rounded">{Math.round(zoomLevel * 100)}%</button>
+              <button type="button" onClick={() => setZoomLevel(Math.min(5, zoomLevel + 0.25))} className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg"><ZoomIn size={18} /></button>
+            </div>
 
-  // BOTTOM bar
-  return (
-    <div className="flex flex-col gap-4 w-full bg-neutral-900/90 backdrop-blur-md p-4 rounded-3xl text-white pointer-events-auto border border-neutral-800 shadow-xl mb-4 max-w-2xl mx-auto">
-      
-      {/* ProgressBar (Scrubber) */}
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            console.log('Action: prevPage');
-            prevPage();
-          }}
-          disabled={currentPage === 0}
-          className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Previous Page"
-          aria-label="Previous Page"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <span className="text-xs text-neutral-400 font-mono min-w-[40px] text-center">{currentPage + 1}</span>
-        <input
-          type="range"
-          min={0}
-          max={Math.max(0, totalPages - 1)}
-          value={currentPage}
-          onChange={(e) => {
-            const page = parseInt(e.target.value, 10);
-            console.log('Action: setPage', page);
-            setPage(page);
-          }}
-          className="flex-1 h-2 bg-neutral-700 rounded-full appearance-none outline-none accent-blue-500"
-          aria-label="Page navigation"
-        />
-        <span className="text-xs text-neutral-400 font-mono min-w-[40px] text-center">{totalPages}</span>
-        <button
-          type="button"
-          onClick={() => {
-            console.log('Action: nextPage');
-            nextPage();
-          }}
-          disabled={currentPage >= totalPages - 1}
-          className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Next Page"
-          aria-label="Next Page"
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
-      
-      {/* Controls Row */}
-      <div className="flex items-center justify-between mt-2 flex-wrap gap-4">
-        
-        {/* Reading Modes */}
-        <div className="flex items-center gap-1 bg-neutral-800 p-1 rounded-xl">
-          <ModeButton 
-            active={mode === 'single-page'} 
-            onClick={() => {
-              console.log('Action: setMode single-page');
-              setMode('single-page');
-            }}
-            icon={<File size={18} />} 
-            label="Single" 
-          />
-          <ModeButton 
-            active={mode === 'single-vertical'} 
-            onClick={() => {
-              console.log('Action: setMode single-vertical');
-              setMode('single-vertical');
-            }}
-            icon={<List size={18} />} 
-            label="Vertical" 
-          />
-          <ModeButton 
-            active={mode === 'dual-spread'} 
-            onClick={() => {
-              console.log('Action: setMode dual-spread');
-              setMode('dual-spread');
-            }}
-            icon={<Columns size={18} />} 
-            label="Spread" 
-          />
-          <ModeButton 
-            active={mode === 'manga-rtl'} 
-            onClick={() => {
-              console.log('Action: setMode manga-rtl');
-              setMode('manga-rtl');
-            }}
-            icon={<AlignRight size={18} />} 
-            label="Manga" 
-          />
-          <ModeButton 
-            active={isGuidedViewEnabled} 
-            onClick={() => {
-              console.log('Action: toggleGuidedView');
-              toggleGuidedView();
-            }}
-            icon={<Maximize size={18} />} 
-            label="Guided" 
-          />
+            <div className="flex items-center gap-2 flex-1 max-w-[120px]">
+              <Sun size={16} className="text-neutral-400" />
+              <input type="range" min={0.1} max={1.5} step={0.1} value={brightness} onChange={(e) => setBrightness(parseFloat(e.target.value))} className="w-full h-1 bg-neutral-700 rounded-full appearance-none accent-yellow-500 cursor-pointer" />
+            </div>
+          </div>
         </div>
+      )}
 
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-1 bg-neutral-800 p-1 rounded-xl">
-          <button 
-            type="button"
-            onClick={() => {
-              console.log('Action: zoomOut, current zoom:', zoomLevel);
-              setZoomLevel(Math.max(0.5, zoomLevel - 0.25));
-            }}
-            className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all"
-            title="Zoom Out (-)"
-          >
-            <ZoomOut size={18} />
-          </button>
-          <button 
-            type="button"
-            onClick={() => {
-              console.log('Action: resetZoom');
-              resetZoom();
-            }}
-            className="p-1 text-xs font-mono w-10 text-center text-neutral-400 hover:text-white hover:bg-neutral-700 rounded transition-all"
-            title="Reset Zoom (0)"
-          >
-            {Math.round(zoomLevel * 100)}%
-          </button>
-          <button 
-            type="button"
-            onClick={() => {
-              console.log('Action: zoomIn, current zoom:', zoomLevel);
-              setZoomLevel(Math.min(5, zoomLevel + 0.25));
-            }}
-            className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all"
-            title="Zoom In (+)"
-          >
-            <ZoomIn size={18} />
-          </button>
-        </div>
+      {showBookmarkPanel && comicId && (
+        <BookmarkPanel comicId={comicId} onClose={() => setShowBookmarkPanel(false)} />
+      )}
 
-        {/* Brightness slider */}
-        <div className="flex items-center gap-2 flex-1 max-w-[120px]">
-          <Sun size={16} className="text-neutral-400" />
-          <input
-            type="range"
-            min={0.1}
-            max={1.5}
-            step={0.1}
-            value={brightness}
-            onChange={(e) => setBrightness(parseFloat(e.target.value))}
-            className="w-full h-1 bg-neutral-700 rounded-full appearance-none accent-yellow-500 cursor-pointer"
-            aria-label="Brightness control"
-          />
-        </div>
-      </div>
-    </div>
+      <PremiumModal 
+        isOpen={isPremiumModalOpen} 
+        onClose={() => setIsPremiumModalOpen(false)} 
+        featureName="Guided View"
+      />
+    </>
   );
 }
 
@@ -393,9 +279,7 @@ function ModeButton({ active, onClick, icon, label }: { active: boolean, onClick
     <button
       type="button"
       onClick={onClick}
-      className={`p-2 rounded-lg flex items-center justify-center transition-all ${
-        active ? 'bg-blue-600 text-white shadow-md' : 'text-neutral-400 hover:text-white hover:bg-neutral-700'
-      }`}
+      className={`p-2 rounded-lg flex items-center justify-center transition-all ${active ? 'bg-blue-600 text-white shadow-md' : 'text-neutral-400 hover:text-white hover:bg-neutral-700'}`}
       title={label}
     >
       {icon}

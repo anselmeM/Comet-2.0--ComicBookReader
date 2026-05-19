@@ -97,7 +97,7 @@ export default function Home() {
           className="flex items-center gap-3 cursor-pointer"
         >
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-comet-accent shadow-[0_0_20px_rgba(124,106,247,0.4)]">
-            <Rocket className="text-white" size={20} />
+            <Rocket className="text-white" size={20} aria-hidden="true" />
           </div>
           <span className="text-xl font-bold tracking-tight">Comet</span>
         </motion.div>
@@ -109,6 +109,18 @@ export default function Home() {
             <>
               {/* Desktop: Inline navigation */}
               <div className="hidden sm:flex items-center gap-8">
+                <Link
+                  href="/pricing"
+                  className="group relative text-sm font-semibold text-white hover:text-comet-accent transition-colors"
+                >
+                  Pricing
+                  {!isReduced && (
+                    <motion.span 
+                      className="absolute -bottom-1 left-0 h-0.5 w-0 bg-comet-accent transition-all group-hover:w-full"
+                      layoutId="nav-underline-pricing"
+                    />
+                  )}
+                </Link>
                 <Link
                   href="/login"
                   className="group relative text-sm font-semibold text-white hover:text-comet-accent transition-colors"
@@ -151,6 +163,13 @@ export default function Home() {
                       className="absolute right-0 top-12 w-48 bg-comet-surface/95 backdrop-blur-xl border border-comet-border rounded-2xl p-4 shadow-xl z-50"
                     >
                       <Link
+                        href="/pricing"
+                        className="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-white hover:bg-comet-accent transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Pricing
+                      </Link>
+                      <Link
                         href="/login"
                         className="block w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-white hover:bg-comet-accent transition-colors"
                         onClick={() => setMobileMenuOpen(false)}
@@ -177,7 +196,7 @@ export default function Home() {
               >
                 <span className="hidden sm:inline">Open Library</span>
                 <span className="sm:hidden">Library</span>
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                <ArrowRight size={16} aria-hidden="true" className="transition-transform group-hover:translate-x-1" />
               </Link>
             </motion.div>
           )}
@@ -200,7 +219,7 @@ export default function Home() {
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-comet-accent/30 bg-comet-accent/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-comet-accent uppercase"
           >
-            <Zap size={14} />
+            <Zap size={14} aria-hidden="true" />
             The Speed of Light Comic Reader
           </motion.div>
           
@@ -265,23 +284,24 @@ export default function Home() {
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
             <FeatureCard 
-              icon={<Zap />}
+              icon={<Zap aria-hidden="true" />}
               title="60 FPS Performance"
               description="Decompression and rendering handled by Web Workers to keep the main thread fluid at all times."
               reducedMotion={isReduced}
             />
             <FeatureCard 
-              icon={<CloudOff />}
+              icon={<CloudOff aria-hidden="true" />}
               title="Offline First"
               description="Full PWA support means your library is accessible even when you're deep in space or underground."
               reducedMotion={isReduced}
             />
             <FeatureCard 
-              icon={<Shield />}
+              icon={<Shield aria-hidden="true" />}
               title="Local & Private"
               description="Your comics stay on your device. Metadata enrichment happens client-side. No cloud uploads needed."
               reducedMotion={isReduced}
             />
+
           </motion.div>
         </section>
 
@@ -295,7 +315,7 @@ export default function Home() {
               variants={animatedFadeIn}
             >
               <div className="inline-flex items-center gap-2 text-comet-accent font-bold uppercase tracking-widest text-xs mb-6">
-                <Target size={16} />
+                <Target size={16} aria-hidden="true" />
                 The Next Dimension
               </div>
               <h2 className="text-4xl md:text-6xl font-black mb-8 italic tracking-tighter">
@@ -377,11 +397,11 @@ export default function Home() {
               </p>
               <div className="flex flex-wrap justify-center gap-6">
                 <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10">
-                  <Users size={20} />
+                  <Users size={20} aria-hidden="true" />
                   <span className="font-bold">Friends List</span>
                 </div>
                 <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10">
-                  <MessageSquare size={20} />
+                  <MessageSquare size={20} aria-hidden="true" />
                   <span className="font-bold">Community Feed</span>
                 </div>
               </div>
@@ -418,12 +438,13 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
            <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-comet-accent/20 border border-comet-accent/30">
-                <Rocket className="text-comet-accent" size={16} />
+                <Rocket className="text-comet-accent" size={16} aria-hidden="true" />
               </div>
               <span className="text-lg font-bold text-white">Comet</span>
             </div>
             <p>&copy; 2026 Comet — The Speed of Light Comic Reader.</p>
             <div className="flex items-center gap-6">
+              <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
               <Link href="/login" className="hover:text-white transition-colors">Log in</Link>
               <Link href="/register" className="hover:text-white transition-colors">Sign up</Link>
             </div>

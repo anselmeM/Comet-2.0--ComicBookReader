@@ -13,9 +13,12 @@ import {
   Users, 
   Mail, 
   Send, 
-  Sparkles 
+  Sparkles,
+  Zap,
+  BookOpen
 } from 'lucide-react';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 import { 
   useFriends, 
   useFriendRequests, 
@@ -25,16 +28,17 @@ import {
   useRemoveFriend,
   useInviteFriend
 } from '@/hooks/useFriends';
+import { useFeed, FeedActivity } from '@/hooks/useFeed';
 import { useNotification } from '@/components/atoms/Toast';
 
 interface FriendsViewProps {
   setActiveView: (view: string) => void;
 }
 
-type Tab = 'list' | 'pending' | 'discover';
+type Tab = 'list' | 'pending' | 'discover' | 'feed';
 
 export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
-  const [activeTab, setActiveTab] = useState<Tab>('list');
+  const [activeTab, setActiveTab] = useState<Tab>('feed');
   const [searchQuery, setSearchQuery] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
@@ -44,6 +48,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
   const { data: friends, isLoading: isLoadingFriends } = useFriends();
   const { data: requests, isLoading: isLoadingRequests } = useFriendRequests();
   const { data: searchResults, isLoading: isSearching } = useUserSearch(searchQuery);
+  const { data: feed, isLoading: isLoadingFeed } = useFeed();
 
   const sendRequest = useSendFriendRequest();
   const handleRequest = useHandleFriendRequest();
@@ -106,6 +111,17 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
 
   const pendingCount = (requests?.incoming.length || 0) + (requests?.outgoing.length || 0);
 
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return date.toLocaleDateString();
+  };
+
   return (
     <div className="space-y-12 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -123,6 +139,12 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
         </div>
         
         <div className="flex items-center gap-2 bg-neutral-100 p-1.5 rounded-2xl w-full md:w-auto overflow-x-auto">
+          <button 
+            onClick={() => setActiveTab('feed')}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'feed' ? 'bg-white text-blue-600 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}
+          >
+            Feed
+          </button>
           <button 
             onClick={() => setActiveTab('list')}
             className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}
@@ -151,6 +173,85 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         <div className="lg:col-span-12 space-y-12">
+          
+          {activeTab === 'feed' && (
+            <div className="max-w-4xl mx-auto w-full space-y-8">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-black text-neutral-800 tracking-tight flex items-center gap-3 uppercase tracking-widest">
+                  <Zap size={20} className="text-blue-500" />
+                  Live Community Feed
+                </h3>
+                {isLoadingFeed && <Loader2 size={16} className="text-blue-500 animate-spin" />}
+              </div>
+
+              <div className="space-y-4">
+                {feed && feed.length > 0 ? (
+                  feed.map((activity: FeedActivity) => (
+                    <motion.div 
+                      key={activity.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm flex items-center gap-6 group hover:border-blue-200 transition-all"
+                    >
+                      <div className="relative shrink-0">
+                        <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-inner bg-neutral-100">
+                          {activity.userImage ? (
+                            <Image src={activity.userImage} alt={activity.userName} fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-neutral-400 font-bold">
+                              {activity.userName[0].toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-lg flex items-center justify-center border-2 border-white shadow-sm ${activity.type === 'FINISHED' ? 'bg-green-500' : 'bg-blue-500'}`}>
+                          {activity.type === 'FINISHED' ? <Check size={12} className="text-white" /> : <BookOpen size={12} className="text-white" />}
+                        </div>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-neutral-900 font-medium">
+                          <span className="font-black tracking-tight">{activity.userName}</span>
+                          {activity.type === 'FINISHED' ? ' finished ' : ' is reading '}
+                          <span className="text-blue-600 font-bold italic tracking-tight">{activity.comicTitle}</span>
+                        </p>
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
+                          {activity.series && `${activity.series} `}
+                          {activity.issue && `#${activity.issue} • `}
+                          {formatTimestamp(activity.timestamp)}
+                        </p>
+                      </div>
+
+                      <div className="shrink-0 w-16 h-20 rounded-xl overflow-hidden shadow-sm bg-neutral-50 relative group-hover:scale-105 transition-all">
+                        {activity.comicCover ? (
+                          <Image src={activity.comicCover} alt={activity.comicTitle} fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-neutral-200">
+                            <BookOpen size={20} />
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))
+                ) : !isLoadingFeed ? (
+                  <div className="text-center py-20 bg-neutral-50 rounded-[2.5rem] border border-dashed border-neutral-200">
+                    <Zap size={48} className="text-neutral-100 mx-auto mb-4" />
+                    <p className="text-neutral-400 font-bold italic">The community is quiet right now...</p>
+                  </div>
+                ) : (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm flex items-center gap-6 animate-pulse">
+                      <div className="w-14 h-14 rounded-2xl bg-neutral-100" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-neutral-100 rounded-lg w-2/3" />
+                        <div className="h-2 bg-neutral-50 rounded-lg w-1/4" />
+                      </div>
+                      <div className="w-16 h-20 rounded-xl bg-neutral-100" />
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
           
           {activeTab === 'discover' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto w-full">

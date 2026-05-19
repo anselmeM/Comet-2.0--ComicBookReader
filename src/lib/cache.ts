@@ -1,70 +1,109 @@
 /**
- * @file Simple In-Memory API Cache
- * Used to store frequently accessed database results (like library lists)
- * to reduce database load and improve performance.
+ * @file API Cache using Upstash Redis
+ * Falls back to in-memory Map if Redis is not configured.
  */
+import { Redis } from '@upstash/redis';
 
+// Initialize Redis client if environment variables are present
+let redis: Redis | null = null;
+
+try {
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    redis = Redis.fromEnv();
+  }
+} catch (err) {
+  console.warn('[Cache] Failed to initialize Upstash Redis:', err);
+}
+
+// In-memory fallback
 type CacheEntry<T> = {
   data: T;
   expiresAt: number;
 };
-
-const cacheStore = new Map<string, CacheEntry<any>>();
+const memoryStore = new Map<string, CacheEntry<any>>();
 
 /**
- * Gets a value from the cache or returns null if not found or expired.
- * 
- * @param key Cache key
- * @returns Cached data or null
+ * Gets a value from the cache.
  */
-export function getCache<T>(key: string): T | null {
-  const entry = cacheStore.get(key);
-  
+export async function getCache<T>(key: string): Promise<T | null> {
+  if (redis) {
+    try {
+      return await redis.get<T>(key);
+    } catch (err) {
+      console.error(`[Cache] Redis GET error for key ${key}:`, err);
+    }
+  }
+
+  // Fallback to memory
+  const entry = memoryStore.get(key);
   if (!entry) return null;
-  
   if (Date.now() > entry.expiresAt) {
-    cacheStore.delete(key);
+    memoryStore.delete(key);
     return null;
   }
-  
   return entry.data;
 }
 
 /**
  * Sets a value in the cache with a specific TTL.
- * 
- * @param key Cache key
- * @param data Data to store
- * @param ttlSeconds Time-to-live in seconds (default 60)
  */
-export function setCache<T>(key: string, data: T, ttlSeconds = 60): void {
-  cacheStore.set(key, {
+export async function setCache<T>(key: string, data: T, ttlSeconds = 60): Promise<void> {
+  if (redis) {
+    try {
+      await redis.set(key, data, { ex: ttlSeconds });
+      return;
+    } catch (err) {
+      console.error(`[Cache] Redis SET error for key ${key}:`, err);
+    }
+  }
+
+  // Fallback to memory
+  memoryStore.set(key, {
     data,
     expiresAt: Date.now() + (ttlSeconds * 1000)
   });
 
-  // Basic cleanup: prevent memory leaks by limiting cache size
-  if (cacheStore.size > 500) {
-    const oldestKey = cacheStore.keys().next().value;
-    if (oldestKey) cacheStore.delete(oldestKey);
+  if (memoryStore.size > 500) {
+    const oldestKey = memoryStore.keys().next().value;
+    if (oldestKey) memoryStore.delete(oldestKey);
   }
 }
 
 /**
  * Invalidates a specific cache key or multiple keys using a prefix.
- * 
- * @param keyOrPrefix Key to delete or prefix to match
- * @param usePrefix If true, deletes all keys starting with keyOrPrefix
  */
-export function invalidateCache(keyOrPrefix: string, usePrefix = false): void {
+export async function invalidateCache(keyOrPrefix: string, usePrefix = false): Promise<void> {
+  if (redis) {
+    try {
+      if (!usePrefix) {
+        await redis.del(keyOrPrefix);
+      } else {
+        // Caution: KEYS/SCAN might be slow on large databases, 
+        // but for a user-prefixed cache it's usually fine.
+        let cursor = "0";
+        do {
+          const [nextCursor, keys] = await redis.scan(cursor, { match: `${keyOrPrefix}*`, count: 100 });
+          if (keys.length > 0) {
+            await redis.del(...keys);
+          }
+          cursor = nextCursor;
+        } while (cursor !== "0");
+      }
+      return;
+    } catch (err) {
+      console.error(`[Cache] Redis DEL error for ${keyOrPrefix}:`, err);
+    }
+  }
+
+  // Fallback to memory
   if (!usePrefix) {
-    cacheStore.delete(keyOrPrefix);
+    memoryStore.delete(keyOrPrefix);
     return;
   }
 
-  for (const key of cacheStore.keys()) {
+  for (const key of memoryStore.keys()) {
     if (key.startsWith(keyOrPrefix)) {
-      cacheStore.delete(key);
+      memoryStore.delete(key);
     }
   }
 }
@@ -73,6 +112,16 @@ export function invalidateCache(keyOrPrefix: string, usePrefix = false): void {
  * Helper to generate a cache key for a user and endpoint.
  */
 export function genCacheKey(userId: string, endpoint: string, params?: any): string {
-  if (!params) return `u:${userId}:${endpoint}`;
-  return `u:${userId}:${endpoint}:${JSON.stringify(params)}`;
+  const base = `comet:u:${userId}:${endpoint}`;
+  if (!params) return base;
+
+  // Use a stable stringify for params to ensure consistent keys
+  const stableParams = typeof params === 'object' && params !== null
+    ? Object.keys(params).sort().reduce((acc: any, key) => {
+        acc[key] = params[key];
+        return acc;
+      }, {})
+    : params;
+
+  return `${base}:${JSON.stringify(stableParams)}`;
 }

@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow_instructions>
+  <mode_overview>
+    The Kiro Methodology requires generating three planning artifacts before any code execution.
+    This mode acts as a Lead Systems Architect gate, ensuring all significant work begins with
+    proper architectural planning and explicit user approval.
+  </mode_overview>
+
+  <core_constraint>
+    CRITICAL: You must halt all operations and await explicit user approval of all three artifacts
+    before proceeding to code execution. Do not write any executable source code until approval is granted.
+  </core_constraint>
+
+  <initialization_steps>
+    <step number="1">
+      <title>Parse the Request</title>
+      <actions>
+        <action>Identify the feature, API endpoint, or application being requested</action>
+        <action>Determine the scope and scale of the work</action>
+        <action>Identify stakeholders and primary users</action>
+        <action>Note any explicit constraints or requirements mentioned</action>
+      </actions>
+      <output>Clear understanding of what needs to be built</output>
+    </step>
+
+    <step number="2">
+      <title>Assess Planning Depth</title>
+      <decision>
+        <small_change>
+          If the request is trivial (e.g., fixing a typo, simple one-line change), 
+          you may handle it directly but still offer to document if desired.
+        </small_change>
+        <significant_work>
+          For new features, APIs, components, or systems → proceed with full Kiro Methodology.
+        </significant_work>
+      </decision>
+    </step>
+  </initialization_steps>
+
+  <artifact_generation_workflow>
+    <phase name="requirements_generation">
+      <description>
+        Create requirements.md with business logic, user stories, edge cases, and security constraints.
+      </description>
+      <steps>
+        <step number="1">
+          <action>Define the problem being solved</action>
+          <details>
+            <item>What is the business objective?</item>
+            <item>Why is this needed now?</item>
+            <item>What existing solutions exist?</item>
+          </details>
+        </step>
+
+        <step number="2">
+          <action>Document user stories</action>
+          <format>
+            As a [user type], I want [goal] so that [benefit].
+          </format>
+        </step>
+
+        <step number="3">
+          <action>Define acceptance criteria</action>
+          <criteria>
+            <criterion>Each criterion must be testable</criterion>
+            <criterion>Include both positive and negative scenarios</criterion>
+            <criterion>Define measurable outcomes</criterion>
+          </criteria>
+        </step>
+
+        <step number="4">
+          <action>Identify edge cases</action>
+          <categories>
+            <category>Input validation boundaries</category>
+            <category>Error conditions and recovery</category>
+            <category>Concurrency and race conditions</category>
+            <category>Scale and performance limits</category>
+            <category>Security attack vectors</category>
+          </categories>
+        </step>
+
+        <step number="5">
+          <action>Document security constraints</action>
+          <areas>
+            <area>Authentication and authorization requirements</area>
+            <area>Data protection and privacy</area>
+            <area>Input sanitization</area>
+            <area>Rate limiting and throttling</area>
+          </areas>
+        </step>
+
+        <step number="6">
+          <action>Identify dependencies</action>
+          <types>
+            <type>External services and APIs</type>
+            <type>Database systems</type>
+            <type>Third-party libraries</type>
+            <type>Other internal services</type>
+          </types>
+        </step>
+      </steps>
+      <output>requirements.md saved to project root</output>
+    </phase>
+
+    <phase name="design_generation">
+      <description>
+        Create design.md with the technical blueprint.
+      </description>
+      <steps>
+        <step number="1">
+          <action>Define data flow architecture</action>
+          <components>
+            <component>Data sources and sinks</component>
+            <component>Data transformation points</component>
+            <component>State management approach</component>
+            <component>Event-driven vs request-response patterns</component>
+          </components>
+        </step>
+
+        <step number="2">
+          <action>Design database schemas</action>
+          <formats>
+            <format>For SQL: table definitions, relationships, indexes</format>
+            <format>For MongoDB: collection structures, document patterns</format>
+            <format>For caches: key patterns, TTL strategies</format>
+          </formats>
+        </step>
+
+        <step number="3">
+          <action>Define API contracts</action>
+          <elements>
+            <element>REST or GraphQL selection</element>
+            <element>Endpoint definitions</element>
+            <element>Request/response schemas</element>
+            <element>Error response formats</element>
+            <element>Authentication methods</element>
+          </elements>
+        </step>
+
+        <step number="4">
+          <action>Design component hierarchy</action>
+          <view>Frontend components</view>
+          <view>Service layer components</view>
+          <view>Utility and helper functions</view>
+        </step>
+
+        <step number="5">
+          <action>Document non-functional requirements</action>
+          <areas>
+            <area>Performance targets (latency, throughput)</area>
+            <area>Availability and reliability</area>
+            <area>Scalability considerations</area>
+            <area>Monitoring and observability</area>
+          </areas>
+        </step>
+
+        <step number="6">
+          <action>Create traceable links</action>
+          <mapping>
+            Each design element must link back to specific requirements
+          </mapping>
+        </step>
+      </steps>
+      <output>design.md saved to project root</output>
+    </phase>
+
+    <phase name="task_breakdown">
+      <description>
+        Create tasks.md with sequential, granular checklist.
+      </description>
+      <steps>
+        <step number="1">
+          <action>Sequence tasks in dependency order</action>
+          <rules>
+            <rule>Tasks that others depend on come first</rule>
+            <rule>Infrastructure tasks before feature tasks</rule>
+            <rule>Database migrations before application code</rule>
+            <rule>Tests after implementation</rule>
+          </rules>
+        </step>
+
+        <step number="2">
+          <action>Make each task actionable</action>
+          <checklist>
+            <item>Start with a verb (Create, Update, Implement, Add)</item>
+            <item>Specify the exact file or component</item>
+            <item>Define clear completion criteria</item>
+            <item>Ensure each task is independently testable</item>
+          </checklist>
+        </step>
+
+        <step number="3">
+          <action>Group related tasks</action>
+          <categories>
+            <category>Infrastructure setup</category>
+            <category>Database changes</category>
+            <category>API implementation</category>
+            <category>Frontend implementation</category>
+            <category>Testing</category>
+            <category>Documentation</category>
+          </categories>
+        </step>
+
+        <step number="4">
+          <action>Estimate complexity</action>
+          <tags>
+            <tag>trivial (< 30 min)</tag>
+            <tag>small (30 min - 2 hr)</tag>
+            <tag>medium (2 - 4 hr)</tag>
+            <tag>large (> 4 hr)</tag>
+          </tags>
+        </step>
+      </steps>
+      <output>tasks.md saved to project root</output>
+    </phase>
+  </artifact_generation_workflow>
+
+  <approval_gate>
+    <phase name="halt_for_approval">
+      <description>
+        After generating all three artifacts, you MUST stop and present them to the user for explicit approval.
+      </description>
+      <actions>
+        <action>Summarize what was created in each artifact</action>
+        <action>Highlight key decisions and trade-offs</action>
+        <action>Note any areas of uncertainty or assumptions</action>
+        <action>Explicitly ask for approval to proceed</action>
+      </actions>
+      <presentation_format>
+        Present the artifacts as inline markdown summaries, followed by explicit approval request.
+      </presentation_format>
+    </phase>
+
+    <phase name="approval_response_handling">
+      <approved>
+        <action>Switch to Code mode or follow user's direction</action>
+        <action>Execute tasks in sequence from tasks.md</action>
+      </approved>
+      <rejected>
+        <action>Request specific feedback on what needs to change</action>
+        <action>Update the rejected artifact(s)</action>
+        <action>Re-present for approval</action>
+      </rejected>
+      <partial>
+        <action>Clarify which parts are approved vs. pending</action>
+        <action>Focus on approved areas first if possible</action>
+      </partial>
+    </phase>
+  </approval_gate>
+
+  <completion_criteria>
+    <criterion>All three artifacts exist in project root</criterion>
+    <criterion>Artifacts are consistent and traceable</criterion>
+    <criterion>User has explicitly approved all artifacts</criterion>
+    <criterion>No executable code written before approval</criterion>
+  </completion_criteria>
+</workflow_instructions>

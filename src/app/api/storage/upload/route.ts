@@ -1,0 +1,98 @@
+import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { db } from '@/lib/db';
+import { s3, BUCKET_NAME } from '@/lib/storage';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+/**
+ * POST /api/storage/upload — Generates a pre-signed URL for comic upload.
+ * Requires: PREMIUM plan.
+ */
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 1. Verify PREMIUM plan
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { plan: true },
+    });
+
+    if (user?.plan !== 'PREMIUM') {
+      return NextResponse.json({ error: 'Upgrade to Premium to enable Cloud Sync' }, { status: 403 });
+    }
+
+    const { comicId, contentType, fileName } = await req.json();
+
+    if (!comicId || !contentType) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // 2. Verify comic ownership
+    const comic = await db.comic.findFirst({
+      where: { id: comicId, userId: session.user.id },
+    });
+
+    if (!comic) {
+      return NextResponse.json({ error: 'Comic not found' }, { status: 404 });
+    }
+
+    // 3. Generate storage key: user-id/comic-id/filename
+    const key = `${session.user.id}/${comicId}/${fileName || 'comic.cbz'}`;
+
+    // 4. Generate pre-signed PUT URL
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+
+    // 5. Update comic status to PENDING
+    await db.comic.update({
+      where: { id: comicId },
+      data: { 
+        storageKey: key,
+        syncStatus: 'PENDING'
+      },
+    });
+
+    return NextResponse.json({ url, key });
+  } catch (error) {
+    console.error('[STORAGE_UPLOAD_ERROR]', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/**
+ * PATCH /api/storage/upload — Marks an upload as completed.
+ */
+export async function PATCH(req: Request) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { comicId, status } = await req.json(); // status: 'SYNCED' or 'ERROR'
+
+    if (!comicId || !status) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    await db.comic.update({
+      where: { id: comicId, userId: session.user.id },
+      data: { syncStatus: status },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[STORAGE_UPLOAD_PATCH_ERROR]', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

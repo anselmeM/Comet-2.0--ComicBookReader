@@ -6,6 +6,7 @@ declare module "next-auth" {
     user: {
       id: string;
       plan: string;
+      role: string;
       hasCompletedOnboarding: boolean;
       defaultReadingMode: string;
       theme: string;
@@ -16,6 +17,7 @@ declare module "next-auth" {
 
   interface User extends DefaultUser {
     plan?: string;
+    role?: string;
     hasCompletedOnboarding?: boolean;
     defaultReadingMode?: string;
     theme?: string;
@@ -27,6 +29,7 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     userId?: string;
     plan?: string;
+    role?: string;
     hasCompletedOnboarding?: boolean;
     defaultReadingMode?: string;
     theme?: string;

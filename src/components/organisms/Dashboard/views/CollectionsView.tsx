@@ -8,8 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface CollectionsViewProps {
   comics: DashboardComic[];
-  isFavorite: (id: string) => boolean;
-  toggleFavorite: (id: string) => void;
+  toggleFavorite: (id: string, currentStatus: boolean) => void;
+  onRestoreFromCloud?: (id: string, title: string) => Promise<void>;
   setActiveView: (view: string) => void;
   isEditMode: boolean;
   setIsEditMode: (mode: boolean) => void;
@@ -28,8 +28,8 @@ interface CollectionsViewProps {
 
 export const CollectionsView = ({
   comics,
-  isFavorite,
   toggleFavorite,
+  onRestoreFromCloud,
   setActiveView,
   isEditMode,
   setIsEditMode,
@@ -55,7 +55,12 @@ export const CollectionsView = ({
 
   const activeComics = useMemo(() => {
     if (!selectedCollectionId) return comics;
-    return currentCollectionData?.comics || [];
+    const collectionComics = currentCollectionData?.comics || [];
+    // Ensure the comics have the required fields for DashboardComic
+    return collectionComics.map(c => ({
+      ...c,
+      author: c.author || (c as any).series || undefined,
+    })) as DashboardComic[];
   }, [selectedCollectionId, currentCollectionData, comics]);
 
   const handleCreateCollection = async (e: React.FormEvent) => {
@@ -198,7 +203,8 @@ export const CollectionsView = ({
                 {activeComics.map(comic => (
                   <DashboardComicCard 
                     key={comic.id} comic={comic} onNotification={triggerNotification}
-                    isFav={isFavorite(comic.id)} onToggleFav={() => toggleFavorite(comic.id)}
+                    onRestoreFromCloud={onRestoreFromCloud}
+                    isFav={comic.isFavorite} onToggleFav={() => toggleFavorite(comic.id, !!comic.isFavorite)}
                     isEditMode={isEditMode} isSelected={selectedIds.includes(comic.id)} 
                     onToggleSelect={id => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
                   />

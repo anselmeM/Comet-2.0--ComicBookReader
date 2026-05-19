@@ -18,8 +18,8 @@ export interface FavouriteHero {
 export interface TopRatedComic {
   id: string;
   title: string;
-  author: string;
-  coverUrl: string;
+  author?: string | null;
+  coverUrl?: string | null;
 }
 
 export const navItems: NavItem[] = [

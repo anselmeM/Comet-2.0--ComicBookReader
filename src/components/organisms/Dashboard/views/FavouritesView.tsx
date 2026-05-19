@@ -6,8 +6,8 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 
 interface FavouritesViewProps {
   comics: DashboardComic[];
-  isFavorite: (id: string) => boolean;
-  toggleFavorite: (id: string) => void;
+  toggleFavorite: (id: string, currentStatus: boolean) => void;
+  onRestoreFromCloud?: (id: string, title: string) => Promise<void>;
   setActiveView: (view: string) => void;
   isEditMode: boolean;
   selectedIds: string[];
@@ -18,8 +18,8 @@ interface FavouritesViewProps {
 
 export const FavouritesView = ({
   comics,
-  isFavorite,
   toggleFavorite,
+  onRestoreFromCloud,
   setActiveView,
   isEditMode,
   selectedIds,
@@ -28,8 +28,8 @@ export const FavouritesView = ({
   sensors
 }: FavouritesViewProps) => {
   const favouritedComics = useMemo(() => 
-    comics.filter(c => isFavorite(c.id)),
-  [comics, isFavorite]);
+    comics.filter(c => !!c.isFavorite),
+  [comics]);
   
   return (
     <div className="space-y-12 animate-in fade-in duration-500 pb-20">
@@ -55,7 +55,8 @@ export const FavouritesView = ({
               {favouritedComics.map(comic => (
                 <DashboardComicCard 
                   key={comic.id} comic={comic} onNotification={triggerNotification}
-                  isFav={true} onToggleFav={() => toggleFavorite(comic.id)}
+                  onRestoreFromCloud={onRestoreFromCloud}
+                  isFav={true} onToggleFav={() => toggleFavorite(comic.id, true)}
                   isEditMode={isEditMode} isSelected={selectedIds.includes(comic.id)} 
                   onToggleSelect={id => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])}
                 />

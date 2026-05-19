@@ -1,82 +1,42 @@
 'use client';
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-
-interface FavoritesState {
-  favorites: string[];
-  isFavorite: (comicId: string) => boolean;
-  toggleFavorite: (comicId: string) => void;
-  addFavorite: (comicId: string) => void;
-  removeFavorite: (comicId: string) => void;
-  clearFavorites: () => void;
-}
-
-export const useFavoritesStore = create<FavoritesState>()(
-  persist(
-    (set, get) => ({
-      favorites: [],
-
-      isFavorite: (comicId: string) => {
-        return get().favorites.includes(comicId);
-      },
-
-      toggleFavorite: (comicId: string) => {
-        set((state) => {
-          const isFav = state.favorites.includes(comicId);
-          const newFavorites = isFav
-            ? state.favorites.filter((id) => id !== comicId)
-            : [...state.favorites, comicId];
-          return { favorites: newFavorites };
-        });
-      },
-
-      addFavorite: (comicId: string) => {
-        set((state) => {
-          if (!state.favorites.includes(comicId)) {
-            return { favorites: [...state.favorites, comicId] };
-          }
-          return state;
-        });
-      },
-
-      removeFavorite: (comicId: string) => {
-        set((state) => ({
-          favorites: state.favorites.filter((id) => id !== comicId),
-        }));
-      },
-
-      clearFavorites: () => {
-        set({ favorites: [] });
-      },
-    }),
-    {
-      name: 'comet-favorites-storage',
-      storage: createJSONStorage(() => localStorage),
-    }
-  )
-);
+import { useUpdateComic } from './useLibrary';
+import { useNotification } from '@/components/atoms/Toast';
 
 /**
- * Backward compatibility hook to match the previous FavoritesContext API
- * while using the new Zustand store.
+ * Hook to manage comic favorites with server synchronization.
+ * Uses the useUpdateComic mutation to persist changes to the DB.
  */
 export function useFavorites() {
-  const { 
-    favorites, 
-    isFavorite, 
-    toggleFavorite, 
-    addFavorite, 
-    removeFavorite, 
-    clearFavorites 
-  } = useFavoritesStore();
+  const updateComic = useUpdateComic();
+  const { triggerNotification } = useNotification();
+
+  const toggleFavorite = async (comicId: string, currentStatus: boolean) => {
+    try {
+      await updateComic.mutateAsync({
+        id: comicId,
+        data: { isFavorite: !currentStatus },
+      });
+      
+      triggerNotification(
+        !currentStatus ? 'Added to favorites' : 'Removed from favorites',
+        'success'
+      );
+    } catch (error) {
+      triggerNotification('Failed to update favorite status', 'error');
+      console.error(error);
+    }
+  };
+
+  // Helper to check if a comic is favorite (mostly for components that don't have the comic object)
+  // In most cases, components should use comic.isFavorite directly.
+  const isFavorite = (comic: { isFavorite?: boolean }) => {
+    return !!comic.isFavorite;
+  };
 
   return {
-    favorites,
-    isFavorite,
     toggleFavorite,
-    addFavorite,
-    removeFavorite,
-    clearFavorites,
+    isFavorite,
+    isUpdating: updateComic.isPending,
   };
 }

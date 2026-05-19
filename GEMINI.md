@@ -228,6 +228,10 @@ AUTH_GOOGLE_ID=                # Google OAuth Client ID
 AUTH_GOOGLE_SECRET=            # Google OAuth Client Secret
 COMICVINE_API_KEY=             # ComicVine API key
 NEXT_PUBLIC_APP_URL=           # e.g. http://localhost:3000
+
+# Infrastructure Scaling (Phase 5)
+UPSTASH_REDIS_REST_URL=        # Upstash Redis REST URL
+UPSTASH_REDIS_REST_TOKEN=      # Upstash Redis REST Token
 ```
 
 ---

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<complete_examples>
+  <example name="simple_api_endpoint">
+    <scenario>
+      User asks to create a user profile API endpoint that returns user information
+    </scenario>
+
+    <user_request>
+      Create an API endpoint to get user profiles
+    </user_request>
+
+    <workflow>
+      <step number="1">
+        <description>Parse and clarify the request</description>
+        <approach>
+          Identified: GET endpoint for user profiles
+          Need to clarify: authentication requirements, which fields to return, 
+          whether this is for self or others viewing
+        </approach>
+        <output>Scoped request for user profile retrieval</output>
+      </step>
+
+      <step number="2">
+        <description>Generate requirements.md</description>
+        <approach>
+          Created user story: As a client, I want to retrieve user profiles so that I can display user information
+          Defined acceptance criteria with testable conditions
+          Identified edge cases: non-existent user, private profiles, deleted users
+          Documented security: authentication required, data exposure minimized
+        </approach>
+        <output>requirements.md with business logic</output>
+      </step>
+
+      <step number="3">
+        <description>Generate design.md</description>
+        <approach>
+          Designed data flow: client -> API -> auth check -> DB query -> transform -> response
+          Defined database schema for User collection
+          Created API contract: GET /api/users/:id with response schema
+          Documented error codes: 401, 403, 404, 500
+        </approach>
+        <output>design.md with technical blueprint</output>
+      </step>
+
+      <step number="4">
+        <description>Generate tasks.md</description>
+        <approach>
+          Created sequential tasks:
+          1. Add database query function
+          2. Create API route handler
+          3. Add authentication middleware
+          4. Implement response transformation
+          5. Add unit tests
+          6. Add integration tests
+        </approach>
+        <output>tasks.md with sequential checklist</output>
+      </step>
+
+      <step number="5">
+        <description>Present for approval</description>
+        <approach>
+          Presented all three artifacts inline
+          Highlighted key decisions: field selection, error handling approach
+          Asked explicitly: "Do you approve these artifacts? Reply yes to proceed or specify changes needed."
+        </approach>
+        <output>Halted, awaiting user approval</output>
+      </step>
+    </workflow>
+
+    <completion>
+      If user approves: Switch to Code mode and execute tasks in sequence
+      If user rejects: Update rejected artifacts and re-present
+    </completion>
+
+    <key_takeaways>
+      <takeaway>Always halt after artifacts, never proceed without approval</takeaway>
+      <takeaway>Make acceptance criteria testable, not vague</takeaway>
+    </key_takeaways>
+  </example>
+
+  <example name="feature_with_frontend_and_backend">
+    <scenario>
+      User asks for a bookmarking feature that allows users to save their reading position
+    </scenario>
+
+    <user_request>
+      Add bookmarking so users can save and restore their reading position in comics
+    </user_request>
+
+    <workflow>
+      <step number="1">
+        <description>Clarify scope</description>
+        <approach>
+          Questions asked: Should bookmarks be per-device or synced? 
+          What's the maximum bookmarks per user?
+          Should there be bookmark sharing? Are bookmarks manual or auto-saved?
+        </approach>
+        <output>User clarified: auto-save, cloud-synced, per-user limit of 100</output>
+      </step>
+
+      <step number="2">
+        <description>Generate requirements.md</description>
+        <approach>
+          Created user stories:
+          - As a reader, I want my position auto-saved so I can continue later
+          - As a reader, I want to see my bookmarks across devices
+          Defined acceptance criteria for auto-save frequency, sync behavior
+          Edge cases: offline changes, conflict resolution, limit enforcement
+          Security: users can only access their own bookmarks
+        </approach>
+        <output>requirements.md</output>
+      </step>
+
+      <step number="3">
+        <description>Generate design.md</description>
+        <approach>
+          Backend:
+          - Database: Bookmark collection with userId, comicId, position, timestamps
+          - API: POST /api/bookmarks, GET /api/bookmarks, DELETE /api/bookmarks/:id
+          - Sync logic: last-write-wins with timestamp
+          
+          Frontend:
+          - useBookmarks hook
+          - BookmarkPanel component
+          - SyncManager for offline handling
+          
+          Data flow: reader position -> auto-save debounced -> API call -> 
+          sync service -> other devices
+        </approach>
+        <output>design.md</output>
+      </step>
+
+      <step number="4">
+        <description>Generate tasks.md</description>
+        <approach>
+          Phase 1: Database schema (T-1.1 Create Bookmark model)
+          Phase 2: Backend API (T-2.1 Create bookmarks API, T-2.2 Add sync logic)
+          Phase 3: Frontend (T-3.1 useBookmarks hook, T-3.2 BookmarkPanel)
+          Phase 4: Integration (T-4.1 Connect to reader, T-4.2 Sync testing)
+        </approach>
+        <output>tasks.md</output>
+      </step>
+
+      <step number="5">
+        <description>Present for approval</description>
+        <output>All three artifacts ready for review</output>
+      </step>
+    </workflow>
+
+    <completion>
+      User approved → proceed with implementation
+    </completion>
+
+    <key_takeaways>
+      <takeaway>Breaking into phases helps manage complexity</takeaway>
+      <takeaway>Sync and offline handling add significant complexity - document edge cases</takeaway>
+    </key_takeaways>
+  </example>
+
+  <example name="rejected_artifacts">
+    <scenario>
+      User reviews artifacts and requests changes before approval
+    </scenario>
+
+    <user_request>
+      [Previous request for bookmarking feature]
+    </user_request>
+
+    <workflow>
+      <step number="1">
+        <description>Initial artifacts presented</description>
+        <output>requirements.md, design.md, tasks.md shown to user</output>
+      </step>
+
+      <step number="2">
+        <description>User provides feedback</description>
+        <feedback>
+          "The sync approach with last-write-wins will cause data loss. 
+          I want a merge strategy instead."
+        </feedback>
+        <output>User rejected design.md sync approach</output>
+      </step>
+
+      <step number="3">
+        <description>Update design.md</description>
+        <approach>
+          Changed sync logic from last-write-wins to operational transformation
+          Updated conflict resolution strategy
+          Revised database schema to include version vectors
+          Updated API contracts for merge endpoints
+        </approach>
+        <output>Revised design.md</output>
+      </step>
+
+      <step number="4">
+        <description>Update tasks.md</description>
+        <approach>
+          Added tasks for merge logic implementation
+          Added tasks for version vector management
+          Increased complexity estimates
+        </approach>
+        <output>Revised tasks.md</output>
+      </step>
+
+      <step number="5">
+        <description>Re-present for approval</description>
+        <output>Updated artifacts ready for re-review</output>
+      </step>
+    </workflow>
+
+    <completion>
+      User approved revised artifacts → proceed with implementation
+    </completion>
+
+    <key_takeaways>
+      <takeaway>User rejection is part of the process, not a failure</takeaway>
+      <takeaway>Feedback improves artifact quality</takeaway>
+    </key_takeaways>
+  </example>
+</complete_examples>

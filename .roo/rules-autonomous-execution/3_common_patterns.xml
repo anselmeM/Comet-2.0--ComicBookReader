@@ -1,0 +1,79 @@
+<common_patterns>
+  <pattern name="task_processing_loop">
+    <description>Standard pattern for processing a task from tasks.md</description>
+    <workflow>
+      <step>Read tasks.md and identify first incomplete task</step>
+      <step>Read design.md for relevant API contracts</step>
+      <step>Implement the task</step>
+      <step>Run verification commands</step>
+      <step>If failed: analyze error, fix, re-verify</step>
+      <step>If passed: mark [x], write walkthrough.md if major milestone</step>
+      <step>Return to step 1</step>
+    </workflow>
+  </pattern>
+
+  <pattern name="verification_loop">
+    <description>Self-verification loop for implementation tasks</description>
+    <flow>
+      <command>npm run build</command>
+      <on_fail>Analyze error, fix code, re-run build</on_fail>
+      <on_pass>Run npm test</on_pass>
+    </flow>
+    <flow>
+      <command>npm test</command>
+      <on_fail>Analyze test failures, fix implementation, re-run tests</on_fail>
+      <on_pass>Task is complete</on_pass>
+    </flow>
+    <note>Repeat until all verification passes. Do not ask for user intervention.</note>
+  </pattern>
+
+  <pattern name="milestone_documentation">
+    <description>Pattern for documenting completed milestones in walkthrough.md</description>
+    <structure>
+      <section name="overview">
+        Brief description of what was completed
+      </section>
+      <section name="files_changed">
+        List of specific files created or modified
+      </section>
+      <section name="verification">
+        Commands run and their results
+      </section>
+      <section name="notes">
+        Any caveats, known issues, or follow-up items
+      </section>
+    </structure>
+    <trigger>Complete a major module or feature (not for trivial changes)</trigger>
+  </pattern>
+
+  <pattern name="qa_handoff">
+    <description>Final handoff when all tasks are complete</description>
+    <condition>Every item in tasks.md has [x]</condition>
+    <action>Stop coding immediately</action>
+    <output>🛑 EXECUTION COMPLETE. All tasks in tasks.md are finished. Please switch Roo Code to Reviewer Mode and prompt me to begin the Kiro/Antigravity audit.</output>
+    <note>Do not add additional text or attempt to audit your own work</note>
+  </pattern>
+
+  <pattern name="error_recovery">
+    <description>Pattern for handling verification failures</description>
+    <steps>
+      <step>Read the error output completely</step>
+      <step>Identify the root cause (not just symptoms)</step>
+      <step>Fix the underlying issue</step>
+      <step>Re-run verification</step>
+      <step>If still failing, repeat from step 1</step>
+    </steps>
+    <escape>Ask the user only if the error is clearly in design.md, not in your implementation</escape>
+  </pattern>
+
+  <pattern name="design_alignment_check">
+    <description>Verifying implementation matches design.md contracts</description>
+    <checks>
+      <check name="api_endpoints">Method signatures match, HTTP verbs correct</check>
+      <check name="data_schemas">Types match schema definitions</check>
+      <check name="data_flow">Data passes through expected transformations</check>
+      <check name="error_handling">Error cases handled as specified</check>
+    </checks>
+    <note>Do not proceed with verification until design alignment is confirmed</note>
+  </pattern>
+</common_patterns>

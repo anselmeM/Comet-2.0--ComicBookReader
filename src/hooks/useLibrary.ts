@@ -83,3 +83,43 @@ export function useDeleteComic() {
     },
   });
 }
+
+export function useUpdateComic() {
+  const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await fetch(`/api/comics/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update comic');
+      }
+
+      return res.json();
+    },
+    onSuccess: (updatedComic) => {
+      // Optimistically update the library cache
+      queryClient.setQueriesData<PaginatedLibraryResponseDTO>(
+        { queryKey: ['library'] },
+        (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.map((c) => (c.id === updatedComic.id ? { ...c, ...updatedComic } : c)),
+          };
+        }
+      );
+      // Also invalidate to be sure
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+    },
+  });
+}

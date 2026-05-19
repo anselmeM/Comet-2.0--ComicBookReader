@@ -1,0 +1,108 @@
+<best_practices>
+  <general_principles>
+    <principle priority="high">
+      <name>Autonomous Decision Making</name>
+      <description>When implementing tasks, make implementation decisions yourself. Do not ask for confirmation on every line of code - trust your understanding of the design and project patterns.</description>
+      <rationale>The purpose of this mode is to execute autonomously without interruption. Excessive questioning defeats the purpose.</rationale>
+    </principle>
+
+    <principle priority="high">
+      <name>Self-Sufficiency</name>
+      <description>Fix your own errors. When tests fail or build breaks, analyze the output and fix the root cause without involving the user.</description>
+      <rationale>Self-verification is a core component of this methodology. You must be capable of the full loop: implement → verify → fix → verify.</rationale>
+    </principle>
+
+    <principle priority="high">
+      <name>Design Alignment</name>
+      <description>Before implementing, read the relevant sections of design.md to understand API contracts and schemas. Your implementation must match these contracts exactly.</description>
+      <rationale>Consistency with design.md ensures the entire system remains coherent as tasks are completed.</rationale>
+    </principle>
+
+    <principle priority="medium">
+      <name>Minimal Blast Radius</name>
+      <description>When implementing a task, prefer the smallest change that satisfies the requirement. Avoid refactoring unrelated code.</description>
+      <rationale>Each task should be traceable and reviewable. Large, sweeping changes make auditing difficult.</rationale>
+    </principle>
+
+    <principle priority="medium">
+      <name>Verification before Marking Complete</name>
+      <description>Never mark a task as [x] until verification commands have passed. A task is only complete when tests pass, not when code is written.</description>
+      <rationale>Verification provides confidence that the implementation is correct and no regressions were introduced.</rationale>
+    </principle>
+  </general_principles>
+
+  <code_conventions>
+    <convention category="naming">
+      <rule>Follow existing conventions in the codebase</rule>
+      <reference>Check nearby files for patterns before creating new files or functions</reference>
+    </convention>
+
+    <convention category="structure">
+      <rule>Keep related functionality together</rule>
+      <reference>Follow the existing folder structure and module organization</reference>
+    </convention>
+
+    <convention category="typescript">
+      <rule>Use strict TypeScript patterns</rule>
+      <reference>Run type checking (npx tsc --noEmit) to ensure type safety</reference>
+    </convention>
+  </code_conventions>
+
+  <verification_hierarchy>
+    <level name="minimum">
+      <commands>npm run build</commands>
+      <description>Required for any code change. Ensures the project compiles.</description>
+    </level>
+    <level name="standard">
+      <commands>npm test && npm run build</commands>
+      <description>Standard verification for implementation tasks. Runs unit tests and build.</description>
+    </level>
+    <level name="comprehensive">
+      <commands>npm run lint && npx tsc --noEmit && npm test && npm run build</commands>
+      <description>Used when making architectural changes or modifying core infrastructure.</description>
+    </level>
+  </verification_hierarchy>
+
+  <common_pitfalls>
+    <pitfall>
+      <description>Marking a task complete before verification passes</description>
+      <why_problematic>Leads to broken builds and failing tests that are discovered later, making debugging harder</why_problematic>
+      <correct_approach>Always run verification commands and wait for them to pass before marking [x]</correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <description>Asking for confirmation on every decision</description>
+      <why_problematic>Defeats the purpose of autonomous execution; turns the mode into a guided walkthrough</why_problematic>
+      <correct_approach>Make the decision based on project patterns and design.md contracts; only ask if genuinely stuck</correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <description>Skipping walkthrough.md for major modules</description>
+      <why_problematic>Loses important context about what changed, why, and how it was verified</why_problematic>
+      <correct_approach>Generate or append to walkthrough.md after completing any task that significantly alters functionality</correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <description>Modifying tasks.md without approval</description>
+      <why_problematic>Changes the scope of work unilaterally and may conflict with user expectations</why_problematic>
+      <correct_approach>Only mark tasks as complete or add [DONE] notes; do not add, remove, or reorder tasks</correct_approach>
+    </pitfall>
+  </common_pitfalls>
+
+  <quality_checklist>
+    <category name="before_marking_complete">
+      <item>All verification commands pass</item>
+      <item>Code compiles without errors</item>
+      <item>Tests pass (if applicable)</item>
+      <item>Implementation matches design.md contracts</item>
+      <item>No unintended side effects in related code</item>
+    </category>
+
+    <category name="milestone_documentation">
+      <item>Changes described clearly</item>
+      <item>Files altered listed</item>
+      <item>Verification steps and results documented</item>
+      <item>Any caveats or known issues noted</item>
+    </category>
+  </quality_checklist>
+</best_practices>

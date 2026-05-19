@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<artifact_formats>
+  <overview>
+    Templates and structure for each of the three Kiro Methodology artifacts.
+    These templates ensure consistency and completeness across all planning documents.
+  </overview>
+
+  <artifact name="requirements.md">
+    <template>
+# Requirements: [Feature Name]
+
+## Problem Statement
+[One paragraph explaining the problem being solved]
+
+## Goals
+- [Primary goal 1]
+- [Primary goal 2]
+- [Non-goals: things this feature will NOT address]
+
+## User Stories
+
+### [US-1] [Story Title]
+**As a:** [User role]
+**I want:** [Goal]
+**So that:** [Benefit]
+
+**Acceptance Criteria:**
+- [ ] [Criterion 1 - must be testable]
+- [ ] [Criterion 2]
+
+**Related Requirements:** [Req-X references]
+
+---
+
+### [US-2] [Story Title]
+...
+
+## Functional Requirements
+
+### [FR-1] [Requirement Title]
+**Description:** [What the system must do]
+**Priority:** [Critical | High | Medium | Low]
+**Related Stories:** [US-X]
+
+**Specification:**
+- [Detailed specification]
+
+**Edge Cases:**
+- [EC-1] [Edge case description]
+- [EC-2] [Edge case description]
+
+## Non-Functional Requirements
+
+### Security
+- [Security requirement 1]
+- [Security requirement 2]
+
+### Performance
+- [Performance requirement 1]
+- [Performance requirement 2]
+
+### Privacy
+- [Privacy requirement 1]
+
+## Data Handling
+- [Data requirement 1]
+- [Data requirement 2]
+
+## Dependencies
+| Dependency | Version | Risk | Mitigation |
+|------------|---------|------|------------|
+| [Service/API] | [Version] | [Risk] | [Mitigation] |
+| [Library] | [Version] | [Risk] | [Mitigation] |
+
+## Open Questions
+- [ ] [Question 1]
+- [ ] [Question 2]
+
+## Acceptance Sign-off
+- [ ] All user stories have acceptance criteria
+- [ ] All edge cases identified
+- [ ] Security constraints documented
+- [ ] Dependencies assessed
+    </template>
+  </artifact>
+
+  <artifact name="design.md">
+    <template>
+# Design: [Feature Name]
+
+## Architecture Overview
+[High-level description of the architecture]
+
+## Data Flow
+
+```
+[Source] --> [Process 1] --> [Process 2] --> [Destination]
+     |            |              |
+     v            v              v
+[Validation]  [Transform]    [Persist/Output]
+```
+
+### State Management
+- **Client State:** [How client manages state]
+- **Server State:** [How server manages state]
+- **Shared State:** [How state is synchronized]
+
+## Database Schema
+
+### [Collection/Table: EntityName]
+
+| Field | Type | Constraints | Description | Source |
+|-------|------|-------------|-------------|--------|
+| id | UUID | PK | Unique identifier | Auto |
+| [field] | [type] | [constraints] | [description] | [Req-X] |
+
+**Indexes:**
+- [index name] ON [fields] - [reason]
+
+**Relationships:**
+- [Entity] 1:N [Entity] - [description]
+- [Entity] N:M [Entity] - [description]
+
+## API Contracts
+
+### [Endpoint: POST /api/resource]
+
+**Description:** [What this endpoint does]
+
+**Authentication:** [Auth method]
+
+**Request:**
+```json
+{
+  "field": "type" // description [Req-X]
+}
+```
+
+**Response (200):**
+```json
+{
+  "field": "type" // description
+}
+```
+
+**Error Responses:**
+| Code | Condition | Body |
+|------|-----------|------|
+| 400 | Validation failure | `{ "error": "message" }` |
+| 401 | Unauthenticated | `{ "error": "Unauthorized" }` |
+| 422 | Business rule violation | `{ "error": "message", "code": "ERROR_CODE" }` |
+
+### [Endpoint: GET /api/resource/:id]
+...
+
+## Component Hierarchy
+
+### Frontend
+
+```
+src/components/
+├── [ComponentGroup]/
+│   ├── [ComponentA].tsx    // [Description] [Req-X]
+│   └── [ComponentB].tsx    // [Description] [Req-X]
+```
+
+### Backend
+
+```
+src/
+├── app/api/
+│   └── [resource]/
+│       ├── route.ts        // [Description] [Req-X]
+│       └── [id]/
+│           └── route.ts    // [Description] [Req-X]
+├── services/
+│   └── [Service].ts        // [Description] [Req-X]
+└── lib/
+    └── [util].ts           // [Description] [Req-X]
+```
+
+## Technical Decisions
+
+| Decision | Option Chosen | Alternatives Considered | Rationale |
+|----------|---------------|------------------------|-----------|
+| [Topic] | [Choice] | [A], [B] | [Reason] |
+
+## Monitoring & Observability
+
+### Metrics
+- [Metric 1]: [Description]
+- [Metric 2]: [Description]
+
+### Logging
+- [Log event 1]
+- [Log event 2]
+
+### Alerts
+- [Alert condition 1]
+- [Alert condition 2]
+
+## Security Considerations
+
+- [Security consideration 1]
+- [Security consideration 2]
+
+## Design Sign-off
+- [ ] All requirements have design elements
+- [ ] All API contracts defined
+- [ ] Database schema normalized
+- [ ] Security reviewed
+    </template>
+  </artifact>
+
+  <artifact name="tasks.md">
+    <template>
+# Implementation Tasks: [Feature Name]
+
+**Reference:** requirements.md [Req-X], design.md [Dsn-X]
+
+## Phase 1: Infrastructure Setup
+
+- [ ] **[T-1.1]** [Task description] [Complexity: small]
+  - **Files:** [file paths]
+  - **Completion:** [Testable completion criteria]
+  - **Depends on:** None
+
+- [ ] **[T-1.2]** [Task description] [Complexity: medium]
+  - **Files:** [file paths]
+  - **Completion:** [Testable completion criteria]
+  - **Depends on:** T-1.1
+
+## Phase 2: Backend Implementation
+
+- [ ] **[T-2.1]** [Task description] [Complexity: medium]
+  - **Files:** [file paths]
+  - **Completion:** [Testable completion criteria]
+  - **Depends on:** T-1.2
+
+- [ ] **[T-2.2]** [Task description] [Complexity: small]
+  - **Files:** [file paths]
+  - **Completion:** [Testable completion criteria]
+  - **Depends on:** T-2.1
+
+## Phase 3: Frontend Implementation
+
+- [ ] **[T-3.1]** [Task description] [Complexity: medium]
+  - **Files:** [file paths]
+  - **Completion:** [Testable completion criteria]
+  - **Depends on:** T-2.1
+
+## Phase 4: Testing
+
+- [ ] **[T-4.1]** [Task description] [Complexity: small]
+  - **Files:** [test file paths]
+  - **Completion:** [Testable completion criteria]
+  - **Depends on:** T-3.1
+
+## Phase 5: Documentation & Deployment
+
+- [ ] **[T-5.1]** [Task description] [Complexity: trivial]
+  - **Files:** [doc paths]
+  - **Completion:** [Testable completion criteria]
+  - **Depends on:** T-4.1
+
+---
+
+**Total Tasks:** [N]
+**Estimated Total Time:** [X-Y hours]
+
+**Dependency Graph:**
+```
+T-1.1 --> T-1.2 --> T-2.1 --> T-2.2
+                 |                |
+                 v                v
+                 T-3.1 --> T-4.1 --> T-5.1
+```
+
+**Task Sign-off:**
+- [ ] All tasks have completion criteria
+- [ ] All dependencies are valid
+- [ ] Testing tasks included
+- [ ] No circular dependencies
+    </template>
+  </artifact>
+</artifact_formats>

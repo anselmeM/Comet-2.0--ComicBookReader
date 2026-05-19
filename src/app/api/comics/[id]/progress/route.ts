@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
-import type { UpdateProgressPayload } from '@/types';
+import { UpdateProgressRequestSchema } from '@/types/schemas';
 
 /**
  * GET /api/comics/[id]/progress — Fetches reading progress for a comic
@@ -53,8 +53,7 @@ export async function GET(
 
 /**
  * PUT /api/comics/[id]/progress — Updates reading progress for a comic.
- * Upserts the ReadingProgress record (creates on first read, updates thereafter).
- * Called from the reader on every page turn, debounced 2s client-side.
+ * Upserts the ReadingProgress record and updates User stats (streaks, time).
  */
 export async function PUT(
   req: Request,
@@ -68,30 +67,60 @@ export async function PUT(
     );
   }
   const { id: comicId } = await params;
-  const body = (await req.json()) as UpdateProgressPayload;
-
-  if (typeof body.lastPage !== 'number' || typeof body.totalPages !== 'number') {
-    return NextResponse.json(
-      { error: 'Missing required fields: lastPage, totalPages' },
-      { status: 400 },
-    );
-  }
 
   try {
-    // Verify ownership before updating
-    const comic = await db.comic.findUnique({
-      where: { id: comicId },
-    });
+    const json = await req.json();
+    const result = UpdateProgressRequestSchema.safeParse(json);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: result.error.format() },
+        { status: 400 },
+      );
+    }
+
+    const body = result.data;
+
+    // Additional validation: lastPage cannot exceed totalPages - 1
+    if (body.lastPage >= body.totalPages && body.totalPages > 0) {
+      return NextResponse.json(
+        { error: 'lastPage cannot be greater than or equal to totalPages' },
+        { status: 400 },
+      );
+    }
+
+    // 1. Verify ownership and fetch user for streak logic
+    const [comic, user] = await Promise.all([
+      db.comic.findUnique({ where: { id: comicId } }),
+      db.user.findUnique({ where: { id: session.user.id } })
+    ]);
     
-    if (!comic) {
-      return NextResponse.json({ error: 'Comic not found' }, { status: 404 });
+    if (!comic || !user) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     if (comic.userId !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Determine read status automatically if not provided
+    // 2. Sanity check for timeDelta: Ensure it's not logically impossible
+    // Fetch current progress to check last update time
+    const currentProgress = await db.readingProgress.findUnique({
+      where: { comicId }
+    });
+
+    let validatedTimeDelta = body.timeDelta || 0;
+    if (currentProgress?.lastReadAt && validatedTimeDelta > 0) {
+      const msSinceLastUpdate = Date.now() - new Date(currentProgress.lastReadAt).getTime();
+      const secondsSinceLastUpdate = Math.ceil(msSinceLastUpdate / 1000) + 30; // 30s buffer for clock drift/network
+      
+      if (validatedTimeDelta > secondsSinceLastUpdate) {
+        console.warn(`[API] Suspicious timeDelta from user ${session.user.id}: ${validatedTimeDelta}s reported, but only ${secondsSinceLastUpdate}s elapsed. Capping.`);
+        validatedTimeDelta = secondsSinceLastUpdate;
+      }
+    }
+
+    // 3. Determine read status
     const readStatus =
       body.readStatus ??
       (body.lastPage === 0
@@ -100,29 +129,59 @@ export async function PUT(
           ? 'COMPLETED'
           : 'READING');
 
-    // Run both operations in a transaction
+    // 4. Streak Logic
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastRead = user.lastReadDate ? new Date(user.lastReadDate) : null;
+    if (lastRead) lastRead.setHours(0, 0, 0, 0);
+
+    let newStreak = user.readingStreak;
+    if (!lastRead) {
+      newStreak = 1;
+    } else {
+      const diffDays = Math.floor((today.getTime() - lastRead.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+        newStreak += 1;
+      } else if (diffDays > 1) {
+        newStreak = 1;
+      }
+      // if diffDays === 0, streak remains unchanged
+    }
+
+    // 5. Run database updates in a transaction
     const [progress] = await db.$transaction([
       db.readingProgress.upsert({
         where: { comicId },
         update: {
           lastPage: body.lastPage,
           totalPages: body.totalPages,
-          zoomLevel: body.zoomLevel ?? 1.0,
+          zoomLevel: body.zoomLevel,
           readStatus,
+          totalTimeSpent: { increment: validatedTimeDelta },
+          lastReadAt: now,
         },
         create: {
           userId: session.user.id,
           comicId,
           lastPage: body.lastPage,
           totalPages: body.totalPages,
-          zoomLevel: body.zoomLevel ?? 1.0,
+          zoomLevel: body.zoomLevel,
           readStatus,
+          totalTimeSpent: validatedTimeDelta,
+          lastReadAt: now,
         },
       }),
       db.comic.update({
         where: { id: comicId },
-        data: { lastReadAt: new Date() },
-      })
+        data: { lastReadAt: now },
+      }),
+      db.user.update({
+        where: { id: session.user.id },
+        data: {
+          readingStreak: newStreak,
+          lastReadDate: now,
+        },
+      }),
     ]);
 
     return NextResponse.json(progress, { status: 200 });
@@ -178,7 +237,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: unknown) {
-    // Ignore if progress doesn't exist
     if (err instanceof Error && err.message.includes('Record to delete does not exist')) {
       return NextResponse.json({ success: true }, { status: 200 });
     }

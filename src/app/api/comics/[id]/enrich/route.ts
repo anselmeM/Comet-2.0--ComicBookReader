@@ -33,13 +33,26 @@ export async function GET(
       return NextResponse.json({ error: 'Comic not found' }, { status: 404 });
     }
 
-    // Return cached enrichment if available
+    // Return cached enrichment if available (allowed for all tiers)
     if (comic.metadata) {
       try {
         return NextResponse.json(JSON.parse(comic.metadata as string), { status: 200 });
       } catch {
-        // Ignore parse error and fetch fresh
+        // Ignore parse error and proceed
       }
+    }
+
+    // 1. Verify PREMIUM plan for fresh enrichment
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { plan: true },
+    });
+
+    if (user?.plan !== 'PREMIUM') {
+      return NextResponse.json({ 
+        error: 'Automatic metadata enrichment is a Premium feature. Upgrade to enable automatic series and issue detection.',
+        code: 'PREMIUM_REQUIRED'
+      }, { status: 403 });
     }
 
     // Fetch fresh metadata from ComicVine

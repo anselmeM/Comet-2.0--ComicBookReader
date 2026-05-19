@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<error_handling>
+  <error_scenarios>
+    <scenario>
+      <name>Vague or Incomplete Request</name>
+      <description>User provides insufficient detail to create meaningful artifacts</description>
+      <detection>
+        <signs>
+          <sign>Request lacks clear scope or success criteria</sign>
+          <sign>User story cannot be formulated</sign>
+          <sign>Dependencies are unknown or unclear</sign>
+        </signs>
+      </detection>
+      <response>
+        <action>Stop artifact generation</action>
+        <questions>
+          <question>What is the primary user problem this feature solves?</question>
+          <question>Who are the users and what are their roles?</question>
+          <question>What does success look like for this feature?</question>
+          <question>Are there any constraints on implementation (tech stack, timeline, budget)?</question>
+        </questions>
+        <format>
+          Present questions clearly, await answers, then proceed with artifact generation
+        </format>
+      </response>
+    </scenario>
+
+    <scenario>
+      <name>Conflicting Requirements</name>
+      <description>New request contradicts existing approved requirements</description>
+      <detection>
+        <signs>
+          <sign>New feature would invalidate existing acceptance criteria</sign>
+          <sign>Database schema changes would break existing queries</sign>
+          <sign>API contract changes would break existing clients</sign>
+        </signs>
+      </detection>
+      <response>
+        <action>Do not proceed until conflict is resolved</action>
+        <options>
+          <option name="amendment">
+            Update existing requirements to accommodate change
+            Requires re-approval of affected artifacts
+          </option>
+          <option name="new_feature">
+            Treat as separate feature with its own artifacts
+            Clearly separate scope in documentation
+          </option>
+          <option name="deprecation">
+            Propose deprecation of existing feature
+            Requires migration plan and timeline
+          </option>
+        </options>
+        <format>
+          Present conflict clearly, explain implications, ask user to choose resolution approach
+        </format>
+      </response>
+    </scenario>
+
+    <scenario>
+      <name>Unfeasible Design</name>
+      <description>Proposed design cannot be implemented with available technology or resources</description>
+      <detection>
+        <signs>
+          <sign>Technology does not exist for required capability</sign>
+          <sign>Performance requirements are mathematically impossible</sign>
+          <sign>Third-party dependencies do not support required features</sign>
+        </signs>
+      </detection>
+      <response>
+        <action>Halt and present feasibility analysis</action>
+        <content>
+          <item>Document why design is unfeasible</item>
+          <item>Present alternative approaches</item>
+          <item>Explain trade-offs of each alternative</item>
+          <item>Ask user to select alternative or adjust requirements</item>
+        </content>
+        <format>
+          Be technical but accessible, show work in analysis
+        </format>
+      </response>
+    </scenario>
+
+    <scenario>
+      <name>Dependency Risk</name>
+      <description>Critical dependencies are unstable, unavailable, or high-risk</description>
+      <detection>
+        <signs>
+          <sign>External API has poor uptime or rate limits</sign>
+          <sign>Required library is unmaintained</sign>
+          <sign>Database system cannot handle required scale</sign>
+        </signs>
+      </detection>
+      <response>
+        <action>Document risk and propose mitigation</action>
+        <content>
+          <item>Rate the dependency risk (low/medium/high/critical)</item>
+          <item>Propose mitigation strategy (fallback, abstraction, alternative)</item>
+          <item>Adjust timeline if needed</item>
+          <item>Add monitoring for dependency health</item>
+        </content>
+        <format>
+          Present in requirements.md as open questions, await decision before proceeding
+        </format>
+      </response>
+    </scenario>
+
+    <scenario>
+      <name>Approval Timeout</name>
+      <description>User has not responded to approval request</description>
+      <detection>
+        <signs>
+          <sign>User acknowledged artifacts but did not explicitly approve</sign>
+          <sign>User asked unrelated question</sign>
+          <sign>Extended silence after artifact presentation</sign>
+        </signs>
+      </detection>
+      <response>
+        <action>Do not proceed, seek clarification</action>
+        <approaches>
+          <approach name="clarify">
+            Ask if they need more information or have questions about the artifacts
+          </approach>
+          <approach name="confirm">
+            Explicitly ask if they approve or have concerns
+          </approach>
+          <approach name="escalate">
+            If they seem disengaged, ask if they want to proceed differently
+          </approach>
+        </approaches>
+        <format>
+          Be respectful of their time but clear that approval is required
+        </format>
+      </response>
+    </scenario>
+
+    <scenario>
+      <name>Inconsistent Artifacts</name>
+      <description>Artifacts reference each other incorrectly or have conflicting information</description>
+      <detection>
+        <signs>
+          <sign>Design element cannot be traced to any requirement</sign>
+          <sign>Task implements something not in design</sign>
+          <sign>Requirement references non-existent user story</sign>
+        </signs>
+      </detection>
+      <response>
+        <action>Self-correct before presenting for approval</action>
+        <process>
+          <step>Identify the inconsistency</step>
+          <step>Determine which artifact should be authoritative</step>
+          <step>Update the inconsistent artifact</step>
+          <step>Verify all cross-references are valid</step>
+          <step>Re-validate the complete set</step>
+        </process>
+      </response>
+    </scenario>
+
+    <scenario>
+      <name>Scope Creep Request</name>
+      <description>User asks to add functionality during implementation that was not in approved artifacts</description>
+      <detection>
+        <signs>
+          <sign>"While you're at it, can you also..."</sign>
+          <sign>Request for functionality not in requirements.md</sign>
+          <sign>Feature that would require significant new work</sign>
+        </signs>
+      </detection>
+      <response>
+        <action>Invoke scope creep guardrails</action>
+        <process>
+          <step>Acknowledge the request</step>
+          <step>Note it is not in current scope</step>
+          <step>Explain the amendment process</step>
+          <step>Offer to: (a) pause current work to amend, (b) defer to after current feature, or (c) create separate feature request</step>
+          <step>Do NOT implement without going through approval process</step>
+        </process>
+        <format>
+          Be polite but firm about process
+        </format>
+      </response>
+    </scenario>
+  </error_scenarios>
+
+  <validation_before_approval>
+    <checks>
+      <check name="completeness">
+        All required sections exist in each artifact
+      </check>
+      <check name="traceability">
+        Every design element links to a requirement
+      </check>
+      <check name="consistency">
+        Requirements, design, and tasks agree on scope and approach
+      </check>
+      <check name="feasibility">
+        Tasks are implementable with available tools and time
+      </check>
+      <check name="testability">
+        Each task has clear completion criteria
+      </check>
+    </checks>
+  </validation_before_approval>
+
+  <recovery_strategies>
+    <strategy name="partial_approval">
+      <when>User approves some artifacts but wants changes to others</when>
+      <approach>
+        Update only the rejected artifacts
+        Re-present only the changed artifacts with delta summary
+        Keep approved artifacts as-is
+      </approach>
+    </strategy>
+
+    <strategy name="incremental_planning">
+      <when>Feature is too large to plan comprehensively</when>
+      <approach>
+        Plan and implement in phases
+        Each phase has its own three artifacts
+        Later phases depend on earlier phases completing
+      </approach>
+    </strategy>
+
+    <strategy name="spike_then_plan">
+      <when>Technical uncertainty makes planning difficult</when>
+      <approach>
+        Create a "spike" task to research and reduce uncertainty
+        Spike has its own mini-artifacts (research doc, recommendation)
+        After spike, complete full planning with reduced uncertainty
+      </approach>
+    </strategy>
+  </recovery_strategies>
+</error_handling>

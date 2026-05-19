@@ -29,9 +29,20 @@ export async function queueSyncTask(
   
   await db.put('sync_tasks', task);
   
-  // Try to process immediately if online
-  if (navigator.onLine) {
-    processSyncQueue();
+  // Try to register for native background sync if available
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'SyncManager' in window) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await (registration as any).sync.register('comet-sync');
+    } catch (err) {
+      console.warn('[SyncManager] Failed to register native sync, falling back to manual process.', err);
+      if (navigator.onLine) processSyncQueue();
+    }
+  } else {
+    // Fallback for browsers without Background Sync API
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      processSyncQueue();
+    }
   }
 }
 
@@ -39,7 +50,8 @@ export async function queueSyncTask(
  * Processes all pending sync tasks in the queue.
  */
 export async function processSyncQueue(): Promise<number> {
-  if (!navigator.onLine) return 0;
+  const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  if (!isOnline) return 0;
   
   const db = await getDB();
   const tasks = await db.getAll('sync_tasks');
