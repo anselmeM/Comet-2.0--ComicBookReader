@@ -1,0 +1,20 @@
+/**
+ * @file Application-wide constants.
+ */
+
+export const COMIC_CONFIG = {
+  MAX_COVER_DIMENSION: 400,
+  MAX_COVER_FILE_SIZE_BYTES: 200000, // 200KB
+  MAX_UPLOAD_SIZE_BYTES: 200 * 1024 * 1024, // 200MB
+  PAGINATION_DEFAULT_LIMIT: 20,
+  PAGINATION_MAX_LIMIT: 50,
+};
+
+export const AUTH_CONFIG = {
+  PASSWORD_MIN_LENGTH: 8,
+  SESSION_MAX_AGE_DAYS: 30,
+};
+
+export const STORAGE_CONFIG = {
+  SIGNED_URL_EXPIRY_SECONDS: 600, // 10 minutes
+};
