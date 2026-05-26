@@ -19,12 +19,18 @@ if (dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql')) {
   directUrl = ${useDirectUrl}
 }`;
   console.log(`🔄 Configuring Prisma for PostgreSQL. directUrl set to: ${directUrl ? 'DIRECT_URL' : 'DATABASE_URL (fallback)'}`);
+  
+  // Replace metadata type to Json for Postgres support
+  schema = schema.replace(/metadata\s+String\?/g, 'metadata    Json?');
 } else {
   newDatasource = `datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }`;
   console.log('🔄 Configuring Prisma for SQLite (default/local).');
+  
+  // Replace metadata type to String for SQLite compatibility
+  schema = schema.replace(/metadata\s+Json\?/g, 'metadata    String?');
 }
 
 schema = schema.replace(datasourceRegex, newDatasource);
