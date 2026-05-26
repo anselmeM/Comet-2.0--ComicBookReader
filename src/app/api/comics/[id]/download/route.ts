@@ -3,15 +3,15 @@ import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
 import { getDownloadUrl } from '@/lib/storage';
 
-export async function GET(req: Request, { params }: { params: Promise<{ comicId: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { session, errorResponse } = await validateSession();
   if (errorResponse) return errorResponse;
 
-  const { comicId } = await params;
+  const { id } = await params;
 
   try {
     const comic = await db.comic.findUnique({
-      where: { id: comicId, userId: session.user.id },
+      where: { id, userId: session.user.id },
       select: { storageKey: true },
     });
 
