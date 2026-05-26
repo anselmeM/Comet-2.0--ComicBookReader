@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3100",
-    "build": "node scripts/prisma-provider-switch.js && npx prisma generate && npx prisma db push --accept-data-loss && next build",
+    "build": "node scripts/prisma-provider-switch.js && npx prisma generate && next build",
+    "db:push": "node scripts/prisma-provider-switch.js && npx prisma db push --accept-data-loss",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
