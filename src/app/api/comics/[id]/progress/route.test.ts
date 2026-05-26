@@ -50,14 +50,14 @@ describe('Reading Progress API Route ([id])', () => {
 
   describe('GET', () => {
     it('should return 401 if unauthorized', async () => {
-      vi.mocked(auth).mockResolvedValue(null);
+      (auth as any).mockResolvedValue(null);
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await GET(new Request('http://localhost:3100'), { params });
       expect(response.status).toBe(401);
     });
 
     it('should return 404 if comic not found', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      (auth as any).mockResolvedValue(mockSession);
       vi.mocked(db.comic.findUnique).mockResolvedValue(null);
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await GET(new Request('http://localhost:3100'), { params });
@@ -65,7 +65,7 @@ describe('Reading Progress API Route ([id])', () => {
     });
 
     it('should return 403 if comic belongs to another user', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      (auth as any).mockResolvedValue(mockSession);
       vi.mocked(db.comic.findUnique).mockResolvedValue({ userId: 'other-user' } as any);
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await GET(new Request('http://localhost:3100'), { params });
@@ -73,7 +73,7 @@ describe('Reading Progress API Route ([id])', () => {
     });
 
     it('should return progress for owned comic', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      (auth as any).mockResolvedValue(mockSession);
       const mockComicWithProgress = {
         id: 'comic-1',
         userId: 'user-123',
@@ -90,14 +90,14 @@ describe('Reading Progress API Route ([id])', () => {
 
   describe('PUT', () => {
     it('should return 401 if unauthorized', async () => {
-      vi.mocked(auth).mockResolvedValue(null);
+      (auth as any).mockResolvedValue(null);
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await PUT(new Request('http://localhost:3100', { method: 'PUT', body: '{}' }), { params });
       expect(response.status).toBe(401);
     });
 
     it('should return 400 on validation failure', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      (auth as any).mockResolvedValue(mockSession);
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await PUT(new Request('http://localhost:3100', {
         method: 'PUT',
@@ -107,7 +107,7 @@ describe('Reading Progress API Route ([id])', () => {
     });
 
     it('should update progress and handle user streak', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      (auth as any).mockResolvedValue(mockSession);
       vi.mocked(db.comic.findUnique).mockResolvedValue({ id: 'comic-1', userId: 'user-123' } as any);
       vi.mocked(db.user.findUnique).mockResolvedValue({ id: 'user-123', readingStreak: 1, lastReadDate: new Date() } as any);
       vi.mocked(db.readingProgress.findUnique).mockResolvedValue(null);
@@ -132,14 +132,14 @@ describe('Reading Progress API Route ([id])', () => {
 
   describe('DELETE', () => {
     it('should return 401 if unauthorized', async () => {
-      vi.mocked(auth).mockResolvedValue(null);
+      (auth as any).mockResolvedValue(null);
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await DELETE(new Request('http://localhost:3100'), { params });
       expect(response.status).toBe(401);
     });
 
     it('should delete progress', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      (auth as any).mockResolvedValue(mockSession);
       vi.mocked(db.comic.findUnique).mockResolvedValue({ id: 'comic-1', userId: 'user-123' } as any);
       vi.mocked(db.readingProgress.delete).mockResolvedValue({} as any);
       vi.mocked(db.comic.update).mockResolvedValue({} as any);
