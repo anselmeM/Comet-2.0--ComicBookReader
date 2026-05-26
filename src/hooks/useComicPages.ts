@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getCachedComic } from '@/lib/idb';
 import { CachedComic, ComicDTO } from '@/types';
 import { useAuthCallback } from './useAuthCallback';
+import { useSession } from 'next-auth/react';
 
 export type ComicLoadErrorType = 'metadata' | 'cache' | 'auth' | 'unknown';
 
@@ -24,6 +25,7 @@ export interface UseComicPagesResult {
  */
 export function useComicPages(comicId: string): UseComicPagesResult {
   const { handleAuthError } = useAuthCallback();
+  const { data: session } = useSession();
 
   // 1. Fetch metadata from API
   const metaQuery = useQuery<ComicDTO>({
@@ -44,9 +46,9 @@ export function useComicPages(comicId: string): UseComicPagesResult {
   // 2. Fetch pages from IndexedDB
   // Note: We use useQuery even for local IDB to get consistent loading/error patterns
   const pagesQuery = useQuery<CachedComic | null>({
-    queryKey: ['comic-pages', comicId],
+    queryKey: ['comic-pages', comicId, session?.user?.id],
     queryFn: async () => {
-      const cached = await getCachedComic(comicId);
+      const cached = await getCachedComic(comicId, session?.user?.id);
       if (!cached) {
         throw new Error('Comic not found in local storage. Please re-import the comic file.');
       }
@@ -55,6 +57,7 @@ export function useComicPages(comicId: string): UseComicPagesResult {
     enabled: !!comicId,
     staleTime: Infinity, // Local binary data doesn't "expire" in the same way
   });
+
 
   // Determine error type based on which query failed
   const error = (metaQuery.error as Error) || (pagesQuery.error as Error) || null;

@@ -24,6 +24,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   const currentPage = useReaderStore((state) => state.currentPage);
   const brightness = useReaderStore((state) => state.brightness);
   const zoomLevel = useReaderStore((state) => state.zoomLevel);
+  const isGuidedViewEnabled = useReaderStore((state) => state.isGuidedViewEnabled);
 
   const openComic = useReaderStore((state) => state.openComic);
   const nextPage = useReaderStore((state) => state.nextPage);
@@ -286,7 +287,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
 
   // Dual spread / Paged logic
   const getPagesToRender = () => {
-    if (mode === 'single-page' || mode === 'guided-view') {
+    if (mode === 'single-page' || isGuidedViewEnabled) {
       return [{ page: comic.pages[currentPage], index: currentPage }];
     }
 
@@ -317,7 +318,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
 
   if (mode === 'single-vertical') {
     return (
-      <div className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none">
+      <div className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none" role="main">
         <div 
           ref={verticalContainerRef}
           className="comic-reader-vertical-container h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-20 flex flex-col items-center gap-4 scroll-smooth transition-all duration-300"
@@ -343,7 +344,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   }
 
   return (
-    <div className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none">
+    <div className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none" role="main">
       <ReaderViewport>
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div

@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
+import { z } from 'zod';
+
+const comicUpdateSchema = z.object({
+  title: z.string().min(1).max(255).optional(),
+  series: z.string().max(255).optional().nullable(),
+  issue: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val))]).optional().nullable(),
+  year: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val))]).optional().nullable(),
+  isFavorite: z.boolean().optional(),
+  rating: z.number().int().min(0).max(5).optional(),
+  tags: z.union([z.string(), z.array(z.string())]).optional().nullable(),
+});
 
 /**
  * GET /api/comics/[id] — Returns metadata for a single comic, including reading progress.
@@ -51,9 +62,11 @@ export async function PATCH(
     );
   }
   const { id } = await params;
-  const body = await req.json();
 
   try {
+    const rawBody = await req.json();
+    const body = comicUpdateSchema.parse(rawBody);
+
     // Verify ownership
     const comic = await db.comic.findFirst({
       where: { id, userId: session.user.id },
@@ -66,18 +79,27 @@ export async function PATCH(
     const updated = await db.comic.update({
       where: { id },
       data: {
-        title: body.title ?? undefined,
-        series: body.series ?? undefined,
-        issue: body.issue !== undefined ? parseInt(body.issue) : undefined,
-        year: body.year !== undefined ? parseInt(body.year) : undefined,
-        isFavorite: body.isFavorite !== undefined ? !!body.isFavorite : undefined,
-        rating: body.rating !== undefined ? parseInt(body.rating) : undefined,
+        title: body.title !== undefined ? body.title : undefined,
+        series: body.series !== undefined ? body.series : undefined,
+        issue: body.issue !== undefined ? body.issue : undefined,
+        year: body.year !== undefined ? body.year : undefined,
+        isFavorite: body.isFavorite !== undefined ? body.isFavorite : undefined,
+        rating: body.rating !== undefined ? body.rating : undefined,
         tags: body.tags !== undefined ? (Array.isArray(body.tags) ? JSON.stringify(body.tags) : body.tags) : undefined,
       },
     });
 
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.issues[0].message },
+        { status: 400 }
+      );
+    }
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+    }
     console.error(`[API PATCH /comics/${id}] ERROR:`, error);
     return NextResponse.json(
       { error: 'Internal server error' },

@@ -21,19 +21,22 @@ interface CometDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'comet-cache';
+const DB_PREFIX = 'comet-cache-';
 const DB_VERSION = 2;
 
-let _db: IDBPDatabase<CometDB> | null = null;
+const _dbs: Record<string, IDBPDatabase<CometDB>> = {};
 
 /**
- * Returns the singleton IndexedDB connection, opening it on first call.
+ * Returns the user-scoped IndexedDB connection, opening it on first call.
  * 
+ * @param userId - Optional user ID to scope the cache.
  * @returns The typed IDB database instance.
  */
-export async function getDB(): Promise<IDBPDatabase<CometDB>> {
-  if (_db) return _db;
-  _db = await openDB<CometDB>(DB_NAME, DB_VERSION, {
+export async function getDB(userId?: string): Promise<IDBPDatabase<CometDB>> {
+  const dbName = userId ? `${DB_PREFIX}${userId}` : `${DB_PREFIX}anonymous`;
+  if (_dbs[dbName]) return _dbs[dbName]!;
+  
+  const db = await openDB<CometDB>(dbName, DB_VERSION, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         const store = db.createObjectStore('comics', { keyPath: 'comicId' });
@@ -44,14 +47,47 @@ export async function getDB(): Promise<IDBPDatabase<CometDB>> {
       }
     },
   });
-  return _db;
+  _dbs[dbName] = db;
+  return db;
+}
+
+/**
+ * Closes and removes a cached database connection for a user.
+ */
+export async function closeDB(userId?: string): Promise<void> {
+  const dbName = userId ? `${DB_PREFIX}${userId}` : `${DB_PREFIX}anonymous`;
+  const db = _dbs[dbName];
+  if (db) {
+    db.close();
+    delete _dbs[dbName];
+  }
+}
+
+/**
+ * Deletes a user's IndexedDB database.
+ */
+export async function deleteUserDB(userId?: string): Promise<void> {
+  await closeDB(userId);
+  const dbName = userId ? `${DB_PREFIX}${userId}` : `${DB_PREFIX}anonymous`;
+  if (typeof window !== 'undefined' && window.indexedDB) {
+    window.indexedDB.deleteDatabase(dbName);
+  }
+}
+
+/**
+ * Deletes the legacy global comet-cache database.
+ */
+export async function deleteLegacyDB(): Promise<void> {
+  if (typeof window !== 'undefined' && window.indexedDB) {
+    window.indexedDB.deleteDatabase('comet-cache');
+  }
 }
 
 /**
  * Persists a parsed comic to the local cache.
  */
-export async function setCachedComic(comic: CachedComic): Promise<void> {
-  const db = await getDB();
+export async function setCachedComic(comic: CachedComic, userId?: string): Promise<void> {
+  const db = await getDB(userId);
   await db.put('comics', {
     ...comic,
     lastAccessedAt: Date.now(), // update access timestamp on write
@@ -61,8 +97,8 @@ export async function setCachedComic(comic: CachedComic): Promise<void> {
 /**
  * Retrieves a comic from the local cache.
  */
-export async function getCachedComic(comicId: string): Promise<CachedComic | undefined> {
-  const db = await getDB();
+export async function getCachedComic(comicId: string, userId?: string): Promise<CachedComic | undefined> {
+  const db = await getDB(userId);
   const comic = await db.get('comics', comicId);
   
   if (comic) {
@@ -76,16 +112,16 @@ export async function getCachedComic(comicId: string): Promise<CachedComic | und
 /**
  * Deletes a specific comic from the cache.
  */
-export async function evictCachedComic(comicId: string): Promise<void> {
-  const db = await getDB();
+export async function evictCachedComic(comicId: string, userId?: string): Promise<void> {
+  const db = await getDB(userId);
   await db.delete('comics', comicId);
 }
 
 /**
  * Returns a list of all currently cached comic metadata (no blobs).
  */
-export async function getAllCachedComicsMetadata() {
-  const db = await getDB();
+export async function getAllCachedComicsMetadata(userId?: string) {
+  const db = await getDB(userId);
   const all = await db.getAll('comics');
   
   // Return metadata only to keep memory footprint low
@@ -95,8 +131,8 @@ export async function getAllCachedComicsMetadata() {
 /**
  * Returns the total size in bytes of all cached comic pages.
  */
-export async function getCacheTotalSizeBytes(): Promise<number> {
-  const db = await getDB();
+export async function getCacheTotalSizeBytes(userId?: string): Promise<number> {
+  const db = await getDB(userId);
   const all = await db.getAll('comics');
   let size = 0;
   for (const comic of all) {
@@ -110,7 +146,8 @@ export async function getCacheTotalSizeBytes(): Promise<number> {
 /**
  * Clears all cached comics from IDB.
  */
-export async function clearAllParsedComics(): Promise<void> {
-  const db = await getDB();
+export async function clearAllParsedComics(userId?: string): Promise<void> {
+  const db = await getDB(userId);
   await db.clear('comics');
 }
+

@@ -13,8 +13,8 @@ const STORAGE_BUDGET_BYTES = 500 * 1024 * 1024; // 500MB
 /**
  * Gets the current estimated storage usage of our IndexedDB cache.
  */
-async function getStorageUsage(): Promise<number> {
-  return await getCacheTotalSizeBytes();
+async function getStorageUsage(userId?: string): Promise<number> {
+  return await getCacheTotalSizeBytes(userId);
 }
 
 /**
@@ -22,12 +22,12 @@ async function getStorageUsage(): Promise<number> {
  * 
  * @returns The number of comics evicted.
  */
-export async function runLRUEviction(): Promise<number> {
-  const usage = await getStorageUsage();
+export async function runLRUEviction(userId?: string): Promise<number> {
+  const usage = await getStorageUsage(userId);
   if (usage <= STORAGE_BUDGET_BYTES) return 0;
 
   // getAllCachedComicsMetadata returns all comics
-  const cached = await getAllCachedComicsMetadata();
+  const cached = await getAllCachedComicsMetadata(userId);
   
   // Sort oldest-first based on lastAccessedAt
   cached.sort((a, b) => a.lastAccessedAt - b.lastAccessedAt);
@@ -37,10 +37,11 @@ export async function runLRUEviction(): Promise<number> {
 
   for (const comic of cached) {
     if (currentUsage <= STORAGE_BUDGET_BYTES) break;
-    await evictCachedComic(comic.comicId);
+    await evictCachedComic(comic.comicId, userId);
     currentUsage -= comic.sizeBytes;
     evictionCount++;
   }
 
   return evictionCount;
 }
+

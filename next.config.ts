@@ -7,7 +7,9 @@ const withPWA = withPWAInit({
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === 'development',
-  swSrc: 'src/service-worker.ts',
+  workboxOptions: {
+    swSrc: 'src/service-worker.ts',
+  },
 });
 
 const nextConfig: NextConfig = {

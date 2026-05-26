@@ -21,9 +21,27 @@ export async function GET() {
       return NextResponse.json({ activities: cachedFeed });
     }
 
-    // Fetch recent reading progress updates
+    // Fetch user's friends to restrict feed
+    const friendships = await db.friendship.findMany({
+      where: {
+        OR: [
+          { userId: session.user.id },
+          { friendId: session.user.id }
+        ]
+      },
+      select: {
+        userId: true,
+        friendId: true,
+      }
+    });
+
+    const friendIds = friendships.map(f => f.userId === session.user.id ? f.friendId : f.userId);
+    const allowedUserIds = [session.user.id, ...friendIds];
+
+    // Fetch recent reading progress updates from the allowed user list
     const recentActivities = await db.readingProgress.findMany({
       where: {
+        userId: { in: allowedUserIds },
         // Only show activities that have some progress
         lastPage: { gt: 0 },
         // Only show users who have a name (to avoid showing anonymous/bot-like entries)

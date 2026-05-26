@@ -27,10 +27,19 @@ export function useAuthCallback() {
     if (isUnauthorized || isForbidden || force) {
       // Clear client-side session state safely
       try {
+        if (typeof window !== 'undefined' && window.indexedDB && window.indexedDB.databases) {
+          const dbs = await window.indexedDB.databases();
+          for (const dbInfo of dbs) {
+            if (dbInfo.name && (dbInfo.name.startsWith('comet-cache-') || dbInfo.name === 'comet-cache')) {
+              window.indexedDB.deleteDatabase(dbInfo.name);
+            }
+          }
+        }
         await signOut({ redirect: false });
       } catch (e) {
-        console.error('[useAuthCallback] Failed to clear session:', e);
+        console.error('[useAuthCallback] Failed to clear session/cache:', e);
       }
+
       
       triggerNotification(
         isForbidden 

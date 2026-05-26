@@ -10,12 +10,24 @@ import { db } from '@/lib/db';
 import { getCache, setCache, invalidateCache, genCacheKey } from '@/lib/cache';
 import { Prisma } from '@prisma/client';
 import { PaginatedLibraryResponseDTO } from '@/types/schemas';
+import { rateLimit } from '@/lib/rate-limit';
+
 
 /**
  * GET /api/library — Returns the authenticated user's comic library
  */
 export async function GET(_req: Request) {
   try {
+    // Rate limit check
+    const ip = (_req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
+    const limiter = await rateLimit(`library_get_${ip}`, 100, 60 * 1000); // 100 per minute
+    if (limiter.isLimited) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
+        { status: 429, headers: limiter.headers }
+      );
+    }
+
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -130,6 +142,24 @@ export async function GET(_req: Request) {
  */
 export async function POST(_req: Request) {
   try {
+    // Rate limit check
+    const ip = (_req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
+    const limiter = await rateLimit(`library_post_${ip}`, 10, 60 * 1000); // 10 per minute
+    if (limiter.isLimited) {
+      return NextResponse.json(
+        { error: 'Too many upload attempts. Please try again in a minute.', code: 'RATE_LIMIT_EXCEEDED' },
+        { status: 429, headers: limiter.headers }
+      );
+    }
+
+    const contentType = _req.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return NextResponse.json(
+        { error: 'Content-Type must be application/json' },
+        { status: 415 }
+      );
+    }
+
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(

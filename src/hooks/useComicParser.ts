@@ -113,10 +113,10 @@ export function useComicParser() {
                   cachedAt: Date.now(),
                   sizeBytes: pages.reduce((acc: number, p: { blob: Blob }) => acc + p.blob.size, 0),
                   lastAccessedAt: Date.now()
-                });
+                }, session?.user?.id);
 
                 // Run LRU eviction to ensure we stay within storage budget
-                await runLRUEviction();
+                await runLRUEviction(session?.user?.id);
 
                 // Inform server (unless skipping, e.g. when restoring from cloud)
                 let serverComicId = options.existingComicId;
@@ -151,11 +151,12 @@ export function useComicParser() {
                 if (!serverComicId) throw new Error('No comic ID available');
 
                 // Re-key IDB entry
-                const localEntry = await getCachedComic(localComicId);
+                const localEntry = await getCachedComic(localComicId, session?.user?.id);
                 if (localEntry) {
-                  await setCachedComic({ ...localEntry, comicId: serverComicId });
-                  await evictCachedComic(localComicId);
+                  await setCachedComic({ ...localEntry, comicId: serverComicId }, session?.user?.id);
+                  await evictCachedComic(localComicId, session?.user?.id);
                 }
+
 
                 // Cloud Sync for Premium Users (only if it was a new upload)
                 if (!options.skipServerPOST && session?.user?.plan === 'PREMIUM') {

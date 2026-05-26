@@ -17,7 +17,14 @@ describe('auth-utils', () => {
   describe('validateSession', () => {
     it('should return session when authenticated', async () => {
       const mockSession: Session = {
-        user: { id: 'user-123', plan: 'FREE', hasCompletedOnboarding: true },
+        user: { 
+          id: 'user-123', 
+          plan: 'FREE', 
+          hasCompletedOnboarding: true,
+          role: 'USER',
+          defaultReadingMode: 'single-page',
+          theme: 'dark'
+        },
         expires: new Date().toISOString(),
       };
       (auth as any).mockResolvedValue(mockSession);
@@ -42,7 +49,14 @@ describe('auth-utils', () => {
   describe('requireAuth', () => {
     it('should return session when authenticated', async () => {
       const mockSession: Session = {
-        user: { id: 'user-123', plan: 'FREE', hasCompletedOnboarding: true },
+        user: { 
+          id: 'user-123', 
+          plan: 'FREE', 
+          hasCompletedOnboarding: true,
+          role: 'USER',
+          defaultReadingMode: 'single-page',
+          theme: 'dark'
+        },
         expires: new Date().toISOString(),
       };
       (auth as any).mockResolvedValue(mockSession);

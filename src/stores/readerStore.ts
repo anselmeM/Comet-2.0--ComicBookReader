@@ -4,6 +4,13 @@ import { Panel } from '@/types';
 
 export type ReaderMode = 'single-page' | 'single-vertical' | 'dual-spread' | 'manga-rtl' | 'guided-view';
 
+export interface ComicSettings {
+  mode: ReaderMode;
+  zoomLevel: number;
+  brightness: number;
+  isGuidedViewEnabled: boolean;
+}
+
 interface ReaderState {
   // Settings
   mode: ReaderMode;
@@ -12,6 +19,7 @@ interface ReaderState {
   isGuidedViewEnabled: boolean;
   guidedStep: number; // Index into pagePanels[currentPage]
   isFullscreen: boolean;
+  comicSettings: Record<string, ComicSettings>;
 
   // Current Session
   currentComicId: string | null;
@@ -40,6 +48,25 @@ interface ReaderState {
   closeComic: () => void;
 }
 
+const updateSettings = (state: ReaderState, updates: Partial<ComicSettings>) => {
+  if (!state.currentComicId) return {};
+  const current = state.comicSettings[state.currentComicId] || {
+    mode: state.mode,
+    zoomLevel: state.zoomLevel,
+    brightness: state.brightness,
+    isGuidedViewEnabled: state.isGuidedViewEnabled,
+  };
+  return {
+    comicSettings: {
+      ...state.comicSettings,
+      [state.currentComicId]: {
+        ...current,
+        ...updates,
+      }
+    }
+  };
+};
+
 export const useReaderStore = create<ReaderState>()(
   persist(
     (set, get) => ({
@@ -50,6 +77,7 @@ export const useReaderStore = create<ReaderState>()(
       isGuidedViewEnabled: false,
       guidedStep: 0,
       isFullscreen: false,
+      comicSettings: {},
 
       // Initial Session State
       currentComicId: null,
@@ -59,16 +87,50 @@ export const useReaderStore = create<ReaderState>()(
       pagePanels: {},
 
       // Actions implementation
-      setMode: (mode) => set({ mode }),
-      setZoomLevel: (zoomLevel) => set({ zoomLevel: Math.max(0.5, Math.min(5, zoomLevel)) }),
-      zoomIn: () => set((state) => ({ zoomLevel: Math.min(5, state.zoomLevel + 0.25) })),
-      zoomOut: () => set((state) => ({ zoomLevel: Math.max(0.5, state.zoomLevel - 0.25) })),
-      resetZoom: () => set({ zoomLevel: 1.0 }),
-      setBrightness: (brightness) => set({ brightness: Math.max(0.1, Math.min(1.5, brightness)) }),
-      toggleGuidedView: () => set((state) => ({ 
-        isGuidedViewEnabled: !state.isGuidedViewEnabled,
-        guidedStep: 0 
+      setMode: (mode) => set((state) => ({
+        mode,
+        ...updateSettings(state, { mode }),
       })),
+      setZoomLevel: (zoomLevel) => set((state) => {
+        const nextZoom = Math.max(0.5, Math.min(5, zoomLevel));
+        return {
+          zoomLevel: nextZoom,
+          ...updateSettings(state, { zoomLevel: nextZoom }),
+        };
+      }),
+      zoomIn: () => set((state) => {
+        const nextZoom = Math.min(5, state.zoomLevel + 0.25);
+        return {
+          zoomLevel: nextZoom,
+          ...updateSettings(state, { zoomLevel: nextZoom }),
+        };
+      }),
+      zoomOut: () => set((state) => {
+        const nextZoom = Math.max(0.5, state.zoomLevel - 0.25);
+        return {
+          zoomLevel: nextZoom,
+          ...updateSettings(state, { zoomLevel: nextZoom }),
+        };
+      }),
+      resetZoom: () => set((state) => ({
+        zoomLevel: 1.0,
+        ...updateSettings(state, { zoomLevel: 1.0 }),
+      })),
+      setBrightness: (brightness) => set((state) => {
+        const nextBrightness = Math.max(0.1, Math.min(1.5, brightness));
+        return {
+          brightness: nextBrightness,
+          ...updateSettings(state, { brightness: nextBrightness }),
+        };
+      }),
+      toggleGuidedView: () => set((state) => {
+        const nextVal = !state.isGuidedViewEnabled;
+        return {
+          isGuidedViewEnabled: nextVal,
+          guidedStep: 0,
+          ...updateSettings(state, { isGuidedViewEnabled: nextVal }),
+        };
+      }),
       setGuidedStep: (guidedStep) => set({ guidedStep }),
       setPagePanels: (pageIndex, panels) => set((state) => ({
         pagePanels: { ...state.pagePanels, [pageIndex]: panels }
@@ -76,16 +138,28 @@ export const useReaderStore = create<ReaderState>()(
       toggleFullscreen: () => set((state) => ({ isFullscreen: !state.isFullscreen })),
       
       openComic: (comicId, totalPages, initialPage = 0, initialMode) => {
-        set({
+        const existing = get().comicSettings[comicId] || {
+          mode: initialMode || get().mode,
+          zoomLevel: 1.0,
+          brightness: 1.0,
+          isGuidedViewEnabled: false,
+        };
+        set((state) => ({
           currentComicId: comicId,
           totalPages,
           currentPage: initialPage,
-          mode: initialMode || get().mode,
-          zoomLevel: 1.0,
+          mode: existing.mode,
+          zoomLevel: existing.zoomLevel,
+          brightness: existing.brightness,
+          isGuidedViewEnabled: existing.isGuidedViewEnabled,
           guidedStep: 0,
           isMenuVisible: false,
-          pagePanels: {}, // Reset panels on new comic
-        });
+          pagePanels: {},
+          comicSettings: {
+            ...state.comicSettings,
+            [comicId]: existing,
+          }
+        }));
       },
       
       setPage: (pageIndex) => {
@@ -100,12 +174,12 @@ export const useReaderStore = create<ReaderState>()(
         
         const currentPanels = pagePanels[currentPage] || [];
         const hasNextPanel = isGuidedViewEnabled && guidedStep < currentPanels.length - 1;
-
+ 
         if (hasNextPanel) {
           set({ guidedStep: guidedStep + 1 });
           return;
         }
-
+ 
         // Dual mode spread increment logic
         const isDual = mode === 'dual-spread' || mode === 'manga-rtl';
         let increment = 1;
@@ -127,7 +201,7 @@ export const useReaderStore = create<ReaderState>()(
           set({ guidedStep: guidedStep - 1 });
           return;
         }
-
+ 
         // Dual mode spread decrement logic
         const isDual = mode === 'dual-spread' || mode === 'manga-rtl';
         let decrement = 1;
@@ -166,6 +240,7 @@ export const useReaderStore = create<ReaderState>()(
         zoomLevel: state.zoomLevel,
         brightness: state.brightness,
         isGuidedViewEnabled: state.isGuidedViewEnabled,
+        comicSettings: state.comicSettings,
       }),
     }
   )

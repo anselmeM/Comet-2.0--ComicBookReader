@@ -3,9 +3,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { LogOut, Settings } from 'lucide-react';
-import { signOut as nextAuthSignOut } from 'next-auth/react';
+import { signOut as nextAuthSignOut, useSession } from 'next-auth/react';
 import { navItems } from '@/lib/__mocks__/dashboard';
 import { Sparkles } from 'lucide-react';
+import { deleteUserDB, deleteLegacyDB } from '@/lib/idb';
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -25,6 +26,23 @@ export function DashboardSidebar({
   activeView, 
   onNavClick 
 }: DashboardSidebarProps) {
+  const { data: session } = useSession();
+
+  const handleLogout = async () => {
+    try {
+      const userId = session?.user?.id;
+      // Clear user-scoped cache database
+      if (userId) {
+        await deleteUserDB(userId);
+      }
+      // Also delete the legacy database to keep client clean
+      await deleteLegacyDB();
+    } catch (err) {
+      console.error('[DashboardSidebar] Failed to clean cache DBs:', err);
+    }
+    nextAuthSignOut({ callbackUrl: '/login' });
+  };
+
   return (
     <motion.aside 
       initial={false} 
@@ -55,7 +73,7 @@ export function DashboardSidebar({
          {bottomNavItems.map(item => (
            <button 
              key={item.id} 
-             onClick={() => item.id === 'logout' ? nextAuthSignOut({ callbackUrl: '/login' }) : onNavClick(item.id)} 
+             onClick={() => item.id === 'logout' ? handleLogout() : onNavClick(item.id)} 
              title={!isOpen ? item.name : undefined}
              aria-current={activeView === item.id ? 'page' : undefined}
              className={`w-full flex items-center ${isOpen ? 'gap-5 px-6' : 'justify-center'} py-5 rounded-[1.8rem] font-bold text-lg text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900 transition-all ${item.id === 'logout' ? 'hover:text-red-400' : ''}`}

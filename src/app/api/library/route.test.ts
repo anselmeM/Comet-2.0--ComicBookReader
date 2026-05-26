@@ -4,6 +4,11 @@ import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { Session } from 'next-auth';
+import { auth } from '@/auth';
+
+vi.mock('@/auth', () => ({
+  auth: vi.fn() as any,
+}));
 
 vi.mock('@/lib/auth-utils', () => ({
   validateSession: vi.fn(),
@@ -19,6 +24,8 @@ vi.mock('@/lib/db', () => ({
     comic: {
       count: vi.fn(),
       findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
       upsert: vi.fn(),
     },
     user: {
@@ -30,7 +37,14 @@ vi.mock('@/lib/db', () => ({
 
 describe('Library API Route', () => {
   const mockSession: CometSession = {
-    user: { id: 'user-123', plan: 'FREE', hasCompletedOnboarding: true },
+    user: { 
+      id: 'user-123', 
+      plan: 'FREE', 
+      hasCompletedOnboarding: true,
+      role: 'USER',
+      defaultReadingMode: 'single-page',
+      theme: 'dark'
+    },
     expires: new Date().toISOString(),
   };
 
@@ -40,7 +54,7 @@ describe('Library API Route', () => {
 
   describe('GET', () => {
     it('should return paginated comics', async () => {
-      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
+      (auth as any).mockResolvedValue(mockSession);
       vi.mocked(db.comic.count).mockResolvedValue(1);
 
       const mockComics = [
@@ -78,10 +92,7 @@ describe('Library API Route', () => {
     });
 
     it('should return unauthorized if session is invalid', async () => {
-      vi.mocked(validateSession).mockResolvedValue({
-        session: null,
-        errorResponse: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
-      });
+      (auth as any).mockResolvedValue(null);
 
       const req = new Request('http://localhost:3100/api/library');
       const response = await GET(req);
@@ -92,7 +103,7 @@ describe('Library API Route', () => {
 
   describe('POST', () => {
     it('should add a new comic', async () => {
-      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
+      (auth as any).mockResolvedValue(mockSession);
       vi.mocked(db.user.findUnique).mockResolvedValue({ id: 'user-123' } as any);
 
       const mockComic = {
@@ -107,7 +118,8 @@ describe('Library API Route', () => {
         lastReadAt: null,
         progress: null,
       };
-      vi.mocked(db.comic.upsert).mockResolvedValue(mockComic as any);
+      vi.mocked(db.comic.findUnique).mockResolvedValue(null);
+      vi.mocked(db.comic.create).mockResolvedValue(mockComic as any);
 
       const payload = {
         title: 'New Comic',
@@ -129,7 +141,7 @@ describe('Library API Route', () => {
     });
 
     it('should return 415 if content-type is not application/json', async () => {
-      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
+      (auth as any).mockResolvedValue(mockSession);
 
       const req = new Request('http://localhost:3100/api/library', {
         method: 'POST',
@@ -142,7 +154,7 @@ describe('Library API Route', () => {
     });
 
     it('should return 400 for invalid payload', async () => {
-      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
+      (auth as any).mockResolvedValue(mockSession);
 
       const req = new Request('http://localhost:3100/api/library', {
         method: 'POST',
