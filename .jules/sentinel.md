@@ -1,4 +1,0 @@
-## 2024-05-09 - Sensitive Data Exposure in Server Logs
-**Vulnerability:** The password reset flow was logging the complete `resetUrl` (which contained the unhashed, plaintext reset token and the user's email) to the server console via `console.log`. If server logs were monitored or leaked, an attacker could hijack the user's account by intercepting the reset link.
-**Learning:** Even though the reset token was securely hashed before being stored in the database, logging the plain text URL containing the token bypassed this protection. Logging must never include sensitive security tokens, URLs, or passwords.
-**Prevention:** Always use generic log messages for security-sensitive operations (e.g., `Reset token generated for user`) to indicate that an action occurred without exposing the actual data that would enable an exploit.
