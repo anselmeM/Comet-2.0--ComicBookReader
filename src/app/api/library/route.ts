@@ -66,8 +66,8 @@ export async function GET(_req: Request) {
     
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' as any } },
-        { series: { contains: search, mode: 'insensitive' as any } },
+        { title: { contains: search } },
+        { series: { contains: search } },
       ];
     }
     
