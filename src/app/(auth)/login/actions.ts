@@ -3,6 +3,7 @@ import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
 import { rateLimit } from '@/lib/rate-limit';
 import { headers } from 'next/headers';
+import { getSafeRedirect } from '@/lib/url';
 
 export async function loginAction(prevState: any, formData: FormData) {
   try {
@@ -17,7 +18,7 @@ export async function loginAction(prevState: any, formData: FormData) {
 
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    const callbackUrl = (formData.get('callbackUrl') as string) || '/library';
+    const callbackUrl = getSafeRedirect((formData.get('callbackUrl') as string) || '/library');
 
     if (!email || !password) {
       return { error: 'Please enter both email and password.' };

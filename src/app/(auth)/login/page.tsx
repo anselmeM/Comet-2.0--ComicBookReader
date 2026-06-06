@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { loginAction } from './actions';
+import { getSafeRedirect } from '@/lib/url';
 
 function LoginForm() {
   const router = useRouter();
@@ -14,7 +15,7 @@ function LoginForm() {
   const { status } = useSession();
   
   // Get callback URL from query params (set by middleware)
-  const callbackUrl = searchParams.get('callbackUrl') || '/library';
+  const callbackUrl = getSafeRedirect(searchParams.get('callbackUrl') || '/library');
   const errorParam = searchParams.get('error');
   
   const [email, setEmail] = useState('');
