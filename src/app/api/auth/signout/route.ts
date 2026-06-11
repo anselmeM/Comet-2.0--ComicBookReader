@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth, signOut } from '@/auth';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Sign out endpoint - destroys the session and redirects to login
  */
