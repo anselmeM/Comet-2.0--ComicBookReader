@@ -10,23 +10,21 @@ function isImageFile(filename: string): boolean {
 }
 
 self.addEventListener('message', async (event) => {
-  const { type, file, comicId, wasmBinary } = event.data;
+  const { type, buffer, filename, comicId, wasmBinary, format } = event.data;
 
   if (type !== 'PARSE') return;
 
   try {
-    const isCbr = file.name.toLowerCase().endsWith('.cbr');
+    const isCbr = format ? (format === 'rar') : filename.toLowerCase().endsWith('.cbr');
     
-    // We expect the file to be a Blob/File object.
-    const arrayBuffer = await file.arrayBuffer();
-
+    // The buffer is passed directly from the main thread
     const pageEntries: { name: string; blob: Blob; width: number; height: number }[] = [];
 
     if (isCbr) {
       // --------------------------------------------------------
       // CBR Parsing Logic (node-unrar-js with WASM)
       // --------------------------------------------------------
-      console.log('[CBR Parser] Starting extraction for:', file.name);
+      console.log('[CBR Parser] Starting extraction for:', filename);
       
       // Use the WASM binary passed from the main thread
       if (!wasmBinary) {
@@ -35,7 +33,7 @@ self.addEventListener('message', async (event) => {
       
       // Create the extractor with WASM binary
       const extractor = await createExtractorFromData({
-        data: arrayBuffer,
+        data: buffer,
         wasmBinary: wasmBinary
       });
       
@@ -102,7 +100,7 @@ self.addEventListener('message', async (event) => {
       // --------------------------------------------------------
       // CBZ Parsing Logic (jszip)
       // --------------------------------------------------------
-      const zip = await JSZip.loadAsync(arrayBuffer);
+      const zip = await JSZip.loadAsync(buffer);
       
       // Filter out directories and non-image files
       const imageFiles = Object.values(zip.files).filter((file) => 

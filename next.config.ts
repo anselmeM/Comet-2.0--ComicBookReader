@@ -1,5 +1,18 @@
 import type { NextConfig } from 'next';
 import withPWAInit from '@ducanh2912/next-pwa';
+import { spawn } from 'child_process';
+import path from 'path';
+import { withSentryConfig } from '@sentry/nextjs';
+
+if (process.env.NODE_ENV === 'development' && !(global as any).__mockS3ServerStarted) {
+  (global as any).__mockS3ServerStarted = true;
+  console.log('\x1b[35m[Dev] Starting Mock S3 Server on port 3101...\x1b[0m');
+  const mockS3ServerPath = path.join(process.cwd(), 'scripts', 'mock-s3-server.js');
+  const child = spawn('node', [mockS3ServerPath], {
+    stdio: 'inherit',
+  });
+  child.unref();
+}
 
 const withPWA = withPWAInit({
   dest: 'public',
@@ -48,6 +61,10 @@ const nextConfig: NextConfig = {
 
   // Security Headers
   async headers() {
+    const isDev = process.env.NODE_ENV === 'development';
+    const connectSrc = `connect-src 'self' https://comicvine.gamespot.com https://api.stripe.com${isDev ? ' http://localhost:3101 ws://localhost:*' : ''};`;
+    const csp = `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https://comicvine.gamespot.com https://images.unsplash.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self' blob:; ${connectSrc}${isDev ? '' : ' upgrade-insecure-requests;'}`;
+
     return [
       {
         source: '/(.*)',
@@ -78,7 +95,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://comicvine.gamespot.com https://images.unsplash.com; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self' blob:; connect-src 'self' https://comicvine.gamespot.com https://api.stripe.com; upgrade-insecure-requests;"
+            value: csp
           },
           {
             key: 'Permissions-Policy',
@@ -90,4 +107,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+export default withSentryConfig(withPWA(nextConfig), {
+  silent: true,
+  widenClientFileUpload: true,
+  disableLogger: true,
+});

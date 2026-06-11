@@ -42,10 +42,7 @@ describe('comicParser.worker.ts (Web Worker)', () => {
   it('should parse zip files using JSZip and report progress/done', async () => {
     await import('../comicParser.worker');
     
-    const mockFile = {
-      name: 'test.cbz',
-      arrayBuffer: async () => new ArrayBuffer(0),
-    };
+    const mockBuffer = new ArrayBuffer(0);
 
     const mockZip = {
       files: {
@@ -67,12 +64,13 @@ describe('comicParser.worker.ts (Web Worker)', () => {
       await messageHandler({
         data: {
           type: 'PARSE',
-          file: mockFile,
+          buffer: mockBuffer,
+          filename: 'test.cbz',
           comicId: 'test-comic',
         },
       });
 
-      expect(JSZip.loadAsync).toHaveBeenCalled();
+      expect(JSZip.loadAsync).toHaveBeenCalledWith(mockBuffer);
       expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({
         type: 'PROGRESS',
         comicId: 'test-comic',

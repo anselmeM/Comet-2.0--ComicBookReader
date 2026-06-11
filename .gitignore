@@ -43,3 +43,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# mock storage & binaries
+/prisma/mock-s3/
+/scripts/test-comic.cbz
+

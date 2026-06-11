@@ -105,10 +105,26 @@ export function useCloudSync() {
 
       const blob = await downloadRes.blob();
       
+      // Determine appropriate file extension based on magic bytes or existing title
+      let finalTitle = title;
+      const hasValidExtension = ['.cbz', '.cbr', '.zip'].some(ext => title.toLowerCase().endsWith(ext));
+      if (!hasValidExtension) {
+        const headerSlice = blob.slice(0, 4);
+        const headerBuffer = await headerSlice.arrayBuffer();
+        const headerView = new Uint8Array(headerBuffer);
+        
+        const isZip = headerView[0] === 0x50 && headerView[1] === 0x4b && headerView[2] === 0x03 && headerView[3] === 0x04;
+        const isRar = headerView[0] === 0x52 && headerView[1] === 0x61 && headerView[2] === 0x72 && headerView[3] === 0x21;
+        
+        if (isRar) {
+          finalTitle = `${title}.cbr`;
+        } else {
+          finalTitle = `${title}.cbz`; // Default fallback to .cbz (ZIP)
+        }
+      }
+      
       // 3. Create a File object
-      // We don't necessarily know the original extension here without storing it, 
-      // but the parser uses magic bytes anyway.
-      return new File([blob], title, { type: blob.type });
+      return new File([blob], finalTitle, { type: blob.type });
     } catch (error: any) {
       console.error('[CLOUD_DOWNLOAD_ERROR]', error);
       triggerNotification(`Download failed: ${error.message}`, 'error');

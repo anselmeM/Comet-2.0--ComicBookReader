@@ -24,6 +24,20 @@ export async function GET() {
 
     // Determine the price ID (This should ideally come from env or config)
     const priceId = process.env.STRIPE_PREMIUM_PRICE_ID;
+    
+    // Dev mode bypass: immediately update user to PREMIUM if billing is not configured or uses dummy key
+    const isDev = process.env.NODE_ENV === 'development';
+    const isDummyStripe = !process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.startsWith('sk_test_dummy');
+    
+    if (isDev && (isDummyStripe || !priceId)) {
+      await db.user.update({
+        where: { id: session.user.id },
+        data: { plan: 'PREMIUM' },
+      });
+      console.log(`[Stripe Dev Bypass] Upgraded user ${session.user.email} to PREMIUM`);
+      return NextResponse.json({ url: absoluteUrl('/settings?success=true') });
+    }
+
     if (!priceId) {
       console.error('STRIPE_PREMIUM_PRICE_ID is not configured');
       return NextResponse.json({ error: 'Billing configuration error' }, { status: 500 });

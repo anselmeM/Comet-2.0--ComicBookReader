@@ -9,8 +9,10 @@ const comicUpdateSchema = z.object({
   issue: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val))]).optional().nullable(),
   year: z.union([z.number().int(), z.string().regex(/^\d+$/).transform(val => parseInt(val))]).optional().nullable(),
   isFavorite: z.boolean().optional(),
-  rating: z.number().int().min(0).max(5).optional(),
+  rating: z.number().int().min(0).max(10).optional(), // Extended to 10 to match UI
   tags: z.union([z.string(), z.array(z.string())]).optional().nullable(),
+  coverUrl: z.string().optional().nullable(),
+  comicVineId: z.string().optional().nullable(),
 });
 
 /**
@@ -86,6 +88,8 @@ export async function PATCH(
         isFavorite: body.isFavorite !== undefined ? body.isFavorite : undefined,
         rating: body.rating !== undefined ? body.rating : undefined,
         tags: body.tags !== undefined ? (Array.isArray(body.tags) ? JSON.stringify(body.tags) : body.tags) : undefined,
+        coverUrl: body.coverUrl !== undefined ? body.coverUrl : undefined,
+        comicVineId: body.comicVineId !== undefined ? body.comicVineId : undefined,
       },
     });
 

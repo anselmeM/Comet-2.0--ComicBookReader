@@ -11,6 +11,7 @@ import { getAllCachedComicsMetadata } from '@/lib/idb';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ComicDTO } from '@/types';
+import { useNotification } from '@/components/atoms/Toast';
 
 export default function LibraryPage() {
   const router = useRouter();
@@ -117,6 +118,8 @@ export default function LibraryPage() {
     e.target.value = '';
   };
 
+  const { triggerNotification } = useNotification();
+
   const handleRestoreFromCloud = async (comicId: string, title: string) => {
     try {
       const file = await downloadFromCloud(comicId, title);
@@ -125,9 +128,11 @@ export default function LibraryPage() {
         // Refresh local availability
         const cached = await getAllCachedComicsMetadata();
         setLocalComicIds(new Set(cached.map(c => c.comicId)));
+        triggerNotification('Comic restored from cloud', 'success');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Restore failed:', e);
+      triggerNotification(`Restore failed: ${e.message || 'Corrupted archive file'}`, 'error');
     }
   };
 

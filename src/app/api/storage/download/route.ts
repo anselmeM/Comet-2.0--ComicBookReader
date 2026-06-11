@@ -43,13 +43,20 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Comic not found or not synced to cloud' }, { status: 404 });
     }
 
-    // 3. Generate pre-signed GET URL
-    const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: comic.storageKey,
-    });
+    // 3. Generate GET URL (with local mock fallback if S3 is not configured in dev)
+    let url = '';
+    const isDev = process.env.NODE_ENV === 'development';
+    const isS3Configured = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_ENDPOINT;
 
-    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    if (isDev && !isS3Configured) {
+      url = `http://localhost:3101/api/storage/mock-s3?key=${encodeURIComponent(comic.storageKey)}`;
+    } else {
+      const command = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: comic.storageKey,
+      });
+      url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    }
 
     return NextResponse.json({ url });
   } catch (error) {

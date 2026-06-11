@@ -18,6 +18,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
   ...authConfig,
   secret: authSecret,
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user, trigger, session }) {
+      // First, invoke the base authConfig jwt callback
+      let updatedToken = await authConfig.callbacks?.jwt?.({ token, user, trigger, session }) || token;
+      
+      // If we have a userId, fetch the latest plan and role from the database to keep session in sync
+      if (updatedToken?.userId) {
+        try {
+          const dbUser = await db.user.findUnique({
+            where: { id: updatedToken.userId as string },
+            select: { plan: true, role: true }
+          });
+          if (dbUser) {
+            updatedToken.plan = dbUser.plan;
+            updatedToken.role = dbUser.role;
+          }
+        } catch (err) {
+          console.error('[Auth] Failed to refresh user plan/role from DB:', err);
+        }
+      }
+      
+      return updatedToken;
+    }
+  },
   providers: [
     Credentials({
       name: 'Credentials',

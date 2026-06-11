@@ -44,14 +44,21 @@ export async function POST(req: Request) {
     // 3. Generate storage key: user-id/comic-id/filename
     const key = `${session.user.id}/${comicId}/${fileName || 'comic.cbz'}`;
 
-    // 4. Generate pre-signed PUT URL
-    const command = new PutObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key,
-      ContentType: contentType,
-    });
+    // 4. Generate PUT URL (with local mock fallback if S3 is not configured in dev)
+    let url = '';
+    const isDev = process.env.NODE_ENV === 'development';
+    const isS3Configured = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_ENDPOINT;
 
-    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    if (isDev && !isS3Configured) {
+      url = `http://localhost:3101/api/storage/mock-s3?key=${encodeURIComponent(key)}`;
+    } else {
+      const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        ContentType: contentType,
+      });
+      url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    }
 
     // 5. Update comic status to PENDING
     await db.comic.update({

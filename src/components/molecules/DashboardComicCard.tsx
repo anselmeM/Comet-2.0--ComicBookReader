@@ -37,6 +37,7 @@ export interface DashboardComic {
   isFavorite?: boolean;
   syncStatus?: 'LOCAL' | 'PENDING' | 'SYNCED' | 'ERROR';
   isLocallyAvailable?: boolean;
+  comicVineId?: string | null;
   progress?: {
     lastPage: number;
     totalPages: number;
@@ -129,6 +130,7 @@ export function DashboardComicCard({
 
   const handleMetadataClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     setIsMetadataOpen(true);
   };
 
@@ -159,6 +161,7 @@ export function DashboardComicCard({
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                 loading="lazy"
+                unoptimized
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-neutral-600">
@@ -178,6 +181,13 @@ export function DashboardComicCard({
                 title="Fetch metadata"
               >
                 {enrichment.isPending ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              </button>
+              <button
+                onClick={handleMetadataClick}
+                className="p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-blue-400 hover:bg-black/80 transition-all"
+                title="Edit details"
+              >
+                <Edit3 size={16} />
               </button>
               <button
                 onClick={handleDelete}
@@ -204,6 +214,12 @@ export function DashboardComicCard({
           </div>
         </Link>
         
+        <MetadataModal 
+          comic={comic} 
+          isOpen={isMetadataOpen} 
+          onClose={() => setIsMetadataOpen(false)} 
+        />
+
         <PremiumModal 
           isOpen={isPremiumModalOpen} 
           onClose={() => setIsPremiumModalOpen(false)} 
@@ -312,6 +328,7 @@ export function DashboardComicCard({
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105" 
+            unoptimized
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-neutral-600">

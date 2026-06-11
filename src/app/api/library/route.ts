@@ -65,9 +65,18 @@ export async function GET(_req: Request) {
     const where: Prisma.ComicWhereInput = { userId: session.user.id };
     
     if (search) {
+      const isPostgres = process.env.DATABASE_URL?.startsWith('postgres') || false;
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' as any } },
-        { series: { contains: search, mode: 'insensitive' as any } },
+        {
+          title: (isPostgres
+            ? { contains: search, mode: 'insensitive' }
+            : { contains: search }) as any,
+        },
+        {
+          series: (isPostgres
+            ? { contains: search, mode: 'insensitive' }
+            : { contains: search }) as any,
+        },
       ];
     }
     

@@ -182,7 +182,20 @@ export function useComicParser() {
           };
 
           const wasmBinary = await getWasmBinary();
-          worker.postMessage({ type: 'PARSE', file, comicId: localComicId, wasmBinary });
+          const format = isRar ? 'rar' : 'zip';
+          const arrayBuffer = await file.arrayBuffer();
+          
+          worker.postMessage(
+            { 
+              type: 'PARSE', 
+              buffer: arrayBuffer, 
+              filename: file.name, 
+              comicId: localComicId, 
+              wasmBinary, 
+              format 
+            }, 
+            [arrayBuffer]
+          );
         } catch (workerSetupErr) {
           reject(workerSetupErr);
         }

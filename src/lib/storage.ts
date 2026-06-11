@@ -12,15 +12,27 @@ const AWS_ENDPOINT = process.env.AWS_ENDPOINT || process.env.STORAGE_ENDPOINT;
 const AWS_REGION = process.env.AWS_REGION || process.env.STORAGE_REGION || 'auto';
 const AWS_BUCKET_NAME = process.env.AWS_BUCKET_NAME || process.env.STORAGE_BUCKET || 'comet-comics';
 
-if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !AWS_ENDPOINT) {
-  // We don't throw here to avoid crashing the build if these are missing, 
-  // but they are required for Cloud Sync features to work.
+export function verifyStorageConfig(): boolean {
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !AWS_ENDPOINT) {
+    if (isProduction) {
+      throw new Error(
+        'CRITICAL: Cloud storage keys (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT) ' +
+        'are not configured in the production environment.'
+      );
+    }
+    return false;
+  }
+  return true;
+}
+
+if (!verifyStorageConfig()) {
   console.warn('Storage environment variables are missing. Cloud Sync will be disabled.');
 }
 
 export const s3 = new S3Client({
   region: AWS_REGION,
-  endpoint: AWS_ENDPOINT,
+  endpoint: AWS_ENDPOINT || undefined,
   credentials: {
     accessKeyId: AWS_ACCESS_KEY_ID || '',
     secretAccessKey: AWS_SECRET_ACCESS_KEY || '',
@@ -37,6 +49,7 @@ export const BUCKET_NAME = AWS_BUCKET_NAME;
  * @param contentType - The MIME type of the file.
  */
 export async function uploadFile(key: string, body: Buffer | Uint8Array, contentType: string) {
+  verifyStorageConfig();
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -58,6 +71,7 @@ export async function uploadFile(key: string, body: Buffer | Uint8Array, content
  * @param expiresIn - Expiration time in seconds (default 1 hour).
  */
 export async function getDownloadUrl(key: string, expiresIn = 3600) {
+  verifyStorageConfig();
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -72,6 +86,7 @@ export async function getDownloadUrl(key: string, expiresIn = 3600) {
  * @param key - The storage key.
  */
 export async function deleteFile(key: string) {
+  verifyStorageConfig();
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
