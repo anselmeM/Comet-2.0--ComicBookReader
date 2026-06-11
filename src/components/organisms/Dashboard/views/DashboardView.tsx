@@ -202,7 +202,7 @@ export const DashboardView = ({
                   alt={hero.name} 
                   width={96}
                   height={96}
-                  className="rounded-full object-cover mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity" 
+                  className="rounded-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
                 />
               </div>
               <span className="text-sm font-black text-neutral-400 group-hover:text-blue-500 transition-colors uppercase tracking-widest text-[10px]">{hero.name}</span>
