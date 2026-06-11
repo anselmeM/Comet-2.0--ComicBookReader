@@ -6,7 +6,8 @@ import Credentials from 'next-auth/providers/credentials';
 import { authConfig } from './auth.config';
 
 // Runtime validation for critical environment variables
-const authSecret = process.env.AUTH_SECRET;
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+const authSecret = process.env.AUTH_SECRET || (isBuildPhase ? 'dummy_secret_for_build_only' : undefined);
 if (!authSecret || !authSecret.trim()) {
   throw new Error(
     'AUTH_SECRET environment variable is required but was not set. ' +

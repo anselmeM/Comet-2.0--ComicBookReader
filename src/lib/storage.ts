@@ -12,10 +12,10 @@ const AWS_ENDPOINT = process.env.AWS_ENDPOINT || process.env.STORAGE_ENDPOINT;
 const AWS_REGION = process.env.AWS_REGION || process.env.STORAGE_REGION || 'auto';
 const AWS_BUCKET_NAME = process.env.AWS_BUCKET_NAME || process.env.STORAGE_BUCKET || 'comet-comics';
 
-export function verifyStorageConfig(): boolean {
+export function verifyStorageConfig(isRuntimeCheck = false): boolean {
   const isProduction = process.env.NODE_ENV === 'production';
   if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !AWS_ENDPOINT) {
-    if (isProduction) {
+    if (isProduction && isRuntimeCheck) {
       throw new Error(
         'CRITICAL: Cloud storage keys (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT) ' +
         'are not configured in the production environment.'
@@ -26,7 +26,7 @@ export function verifyStorageConfig(): boolean {
   return true;
 }
 
-if (!verifyStorageConfig()) {
+if (!verifyStorageConfig(false)) {
   console.warn('Storage environment variables are missing. Cloud Sync will be disabled.');
 }
 
@@ -49,7 +49,7 @@ export const BUCKET_NAME = AWS_BUCKET_NAME;
  * @param contentType - The MIME type of the file.
  */
 export async function uploadFile(key: string, body: Buffer | Uint8Array, contentType: string) {
-  verifyStorageConfig();
+  verifyStorageConfig(true);
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -71,7 +71,7 @@ export async function uploadFile(key: string, body: Buffer | Uint8Array, content
  * @param expiresIn - Expiration time in seconds (default 1 hour).
  */
 export async function getDownloadUrl(key: string, expiresIn = 3600) {
-  verifyStorageConfig();
+  verifyStorageConfig(true);
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -86,7 +86,7 @@ export async function getDownloadUrl(key: string, expiresIn = 3600) {
  * @param key - The storage key.
  */
 export async function deleteFile(key: string) {
-  verifyStorageConfig();
+  verifyStorageConfig(true);
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
