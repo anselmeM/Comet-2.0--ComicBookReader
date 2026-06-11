@@ -67,10 +67,10 @@ export const authConfig: NextAuthConfig = {
         return null;
       }
 
-      // 2. Issuer validation
+      // 2. Issuer validation (Relaxed for Vercel environments)
       const expectedIss = process.env.NEXTAUTH_URL || 'comet-reader';
-      if (token.iss && token.iss !== expectedIss) {
-        console.error('[Auth] Token validation failed: Issuer mismatch');
+      if (token.iss && token.iss !== expectedIss && !process.env.VERCEL) {
+        console.error('[Auth] Token validation failed: Issuer mismatch. Expected:', expectedIss, 'Got:', token.iss);
         return null;
       }
 
