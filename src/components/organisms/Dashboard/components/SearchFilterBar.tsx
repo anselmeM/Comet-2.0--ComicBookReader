@@ -66,12 +66,12 @@ export function SearchFilterBar({
           <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-2">
             <BookOpen size={12} /> Status
           </label>
-          <div className="flex bg-neutral-50 p-1 rounded-xl border border-neutral-100">
+          <div className="flex gap-1 bg-neutral-50 p-1 rounded-xl border border-neutral-100">
             {['all', 'unread', 'reading', 'completed'].map((status) => (
               <button
                 key={status}
                 onClick={() => onReadStatusChange(status)}
-                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all ${
+                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
                   (readStatus || 'all') === status 
                     ? 'bg-white text-blue-600 shadow-sm' 
                     : 'text-neutral-400 hover:text-neutral-600'
