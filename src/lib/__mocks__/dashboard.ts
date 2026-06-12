@@ -33,8 +33,8 @@ export const navItems: NavItem[] = [
 export const favouriteHeroes = [
   { id: 1, name: 'Spider-Man', color: 'bg-red-500', image: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?w=400&q=80', count: 42 },
   { id: 2, name: 'Hulk', color: 'bg-green-500', image: 'https://images.unsplash.com/photo-1608889175123-8ee362201f81?w=400&q=80', count: 18 },
-  { id: 3, name: 'Iron Man', color: 'bg-purple-600', image: 'https://images.unsplash.com/photo-1623984103173-97c3f30caec2?w=400&q=80', count: 31 },
-  { id: 4, name: 'Wolverine', color: 'bg-yellow-400', image: 'https://images.unsplash.com/photo-1608889825103-eb5fd706ca6a?w=400&q=80', count: 25 },
+  { id: 3, name: 'Iron Man', color: 'bg-purple-600', image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400&q=80', count: 31 },
+  { id: 4, name: 'Wolverine', color: 'bg-yellow-400', image: 'https://images.unsplash.com/photo-1634896941598-b6b500a502a7?w=400&q=80', count: 25 },
   { id: 5, name: 'Captain America', color: 'bg-blue-700', image: 'https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=400&q=80', count: 12 },
   { id: 6, name: 'Thor', color: 'bg-sky-400', image: 'https://images.unsplash.com/photo-1590502160462-079717909307?w=400&q=80', count: 15 },
   { id: 7, name: 'Black Widow', color: 'bg-gray-900', image: 'https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=400&q=80', count: 9 },

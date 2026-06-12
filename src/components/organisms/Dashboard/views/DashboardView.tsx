@@ -32,6 +32,13 @@ interface DashboardViewProps {
   sensors: SensorDescriptor<SensorOptions>[];
 }
 
+const HERO_GLOWS: Record<string, string> = {
+  'Spider-Man': 'group-hover:shadow-[0_0_25px_rgba(239,68,68,0.8)] group-hover:border-red-500',
+  'Hulk': 'group-hover:shadow-[0_0_25px_rgba(34,197,94,0.8)] group-hover:border-green-500',
+  'Iron Man': 'group-hover:shadow-[0_0_25px_rgba(147,51,234,0.8)] group-hover:border-purple-600',
+  'Wolverine': 'group-hover:shadow-[0_0_25px_rgba(250,204,21,0.8)] group-hover:border-yellow-400',
+};
+
 export const DashboardView = ({
   comics,
   topRatedComics,
@@ -196,13 +203,13 @@ export const DashboardView = ({
         <div className="flex flex-wrap gap-8">
           {favouriteHeroes.slice(0, 4).map(hero => (
             <div key={hero.id} className="group flex flex-col items-center gap-4 cursor-pointer">
-              <div className={`relative w-24 h-24 rounded-full ${hero.color} p-1 overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl`}>
+              <div className={`relative w-24 h-24 rounded-full p-[3px] overflow-hidden transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-105 border-2 border-transparent bg-neutral-100/50 ${HERO_GLOWS[hero.name] || 'group-hover:shadow-xl'}`}>
                 <Image 
                   src={hero.image} 
                   alt={hero.name} 
                   width={96}
                   height={96}
-                  className="rounded-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
+                  className="rounded-full object-cover opacity-95 group-hover:opacity-100 transition-all duration-500" 
                 />
               </div>
               <span className="text-sm font-black text-neutral-400 group-hover:text-blue-500 transition-colors uppercase tracking-widest text-[10px]">{hero.name}</span>

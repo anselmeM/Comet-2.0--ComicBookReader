@@ -9,6 +9,17 @@ interface FavouriteHeroesViewProps {
   setActiveView: (view: string) => void;
 }
 
+const HERO_GLOWS: Record<string, string> = {
+  'Spider-Man': 'group-hover:shadow-[0_0_35px_rgba(239,68,68,0.8)] group-hover:border-red-500',
+  'Hulk': 'group-hover:shadow-[0_0_35px_rgba(34,197,94,0.8)] group-hover:border-green-500',
+  'Iron Man': 'group-hover:shadow-[0_0_35px_rgba(147,51,234,0.8)] group-hover:border-purple-600',
+  'Wolverine': 'group-hover:shadow-[0_0_35px_rgba(250,204,21,0.8)] group-hover:border-yellow-400',
+  'Captain America': 'group-hover:shadow-[0_0_35px_rgba(29,78,216,0.8)] group-hover:border-blue-700',
+  'Thor': 'group-hover:shadow-[0_0_35px_rgba(56,189,248,0.8)] group-hover:border-sky-400',
+  'Black Widow': 'group-hover:shadow-[0_0_35px_rgba(17,24,39,0.8)] group-hover:border-gray-950',
+  'Black Panther': 'group-hover:shadow-[0_0_35px_rgba(38,38,38,0.8)] group-hover:border-neutral-800'
+};
+
 export const FavouriteHeroesView = ({
   favouriteHeroes,
   setActiveView
@@ -32,13 +43,13 @@ export const FavouriteHeroesView = ({
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-10">
       {favouriteHeroes.map(hero => (
         <div key={hero.id} className="group flex flex-col items-center gap-6 cursor-pointer">
-          <div className={`relative w-32 h-32 md:w-40 md:h-40 rounded-full ${hero.color} p-1.5 overflow-hidden transition-all duration-500 group-hover:-translate-y-3 group-hover:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.3)]`}>
+          <div className={`relative w-32 h-32 md:w-40 md:h-40 rounded-full p-2 overflow-hidden transition-all duration-500 group-hover:-translate-y-3 group-hover:scale-105 border-2 border-transparent bg-neutral-100/50 ${HERO_GLOWS[hero.name] || 'group-hover:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.3)]'}`}>
             <Image 
               src={hero.image} 
               alt={hero.name} 
               width={160}
               height={160}
-              className="w-full h-full rounded-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
+              className="w-full h-full rounded-full object-cover opacity-95 group-hover:opacity-100 transition-all duration-500" 
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
