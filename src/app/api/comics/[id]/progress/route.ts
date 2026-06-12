@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { UpdateProgressRequestSchema } from '@/types/schemas';
+import { invalidateCache } from '@/lib/cache';
 
 /**
  * GET /api/comics/[id]/progress — Fetches reading progress for a comic
@@ -183,6 +184,9 @@ export async function PUT(
         },
       }),
     ]);
+
+    // Invalidate library cache for this user since reading progress changed
+    await invalidateCache(`comet:u:${session.user.id}:library`, true);
 
     return NextResponse.json(progress, { status: 200 });
   } catch (err: unknown) {

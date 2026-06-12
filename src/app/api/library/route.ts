@@ -178,7 +178,7 @@ export async function POST(_req: Request) {
     }
 
     // Invalidate library cache for this user (T-INF-004)
-    await invalidateCache(`u:${session.user.id}:library`, true);
+    await invalidateCache(`comet:u:${session.user.id}:library`, true);
 
     const body = await _req.json();
     const { title, filehash, pageCount, coverUrl } = body;

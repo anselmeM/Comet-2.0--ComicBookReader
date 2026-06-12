@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { invalidateCache } from '@/lib/cache';
 
 const comicUpdateSchema = z.object({
   title: z.string().min(1).max(255).optional(),
@@ -93,6 +94,9 @@ export async function PATCH(
       },
     });
 
+    // Invalidate library cache for this user since fields (like isFavorite) changed
+    await invalidateCache(`comet:u:${session.user.id}:library`, true);
+
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -141,6 +145,9 @@ export async function DELETE(
     await db.comic.delete({
       where: { id },
     });
+
+    // Invalidate library cache for this user since a comic was removed
+    await invalidateCache(`comet:u:${session.user.id}:library`, true);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
