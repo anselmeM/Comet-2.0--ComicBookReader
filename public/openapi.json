@@ -1,0 +1,1403 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Comet API",
+    "version": "1.0.0",
+    "description": "API documentation for Comet: The Speed of Light Comic Reader."
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Local API"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "ReadingProgress": {
+        "type": "object",
+        "required": [
+          "lastPage",
+          "totalPages"
+        ],
+        "properties": {
+          "lastPage": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "zoomLevel": {
+            "type": "number",
+            "default": 1
+          },
+          "readStatus": {
+            "type": "string",
+            "enum": [
+              "UNREAD",
+              "READING",
+              "COMPLETED"
+            ]
+          },
+          "timeDelta": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ComicDTO": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "pageCount",
+          "addedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string",
+            "nullable": true
+          },
+          "coverUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "pageCount": {
+            "type": "integer"
+          },
+          "year": {
+            "type": "integer",
+            "nullable": true
+          },
+          "series": {
+            "type": "string",
+            "nullable": true
+          },
+          "isFavorite": {
+            "type": "boolean",
+            "default": false
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10,
+            "default": 0
+          },
+          "syncStatus": {
+            "type": "string",
+            "enum": [
+              "LOCAL",
+              "PENDING",
+              "SYNCED",
+              "ERROR"
+            ],
+            "default": "LOCAL"
+          },
+          "filehash": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "integer"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ReadingProgress"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ComicUpdateSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "series": {
+            "type": "string",
+            "nullable": true
+          },
+          "issue": {
+            "type": "integer",
+            "nullable": true
+          },
+          "year": {
+            "type": "integer",
+            "nullable": true
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "coverUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "comicVineId": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "CollectionDTO": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "userId",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "userId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "_count": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "CollectionCreateSchema": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      },
+      "RegisterSchema": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8
+          }
+        }
+      },
+      "PaginatedLibraryResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComicDTO"
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "integer"
+              },
+              "limit": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              },
+              "totalPages": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "BookmarkDTO": {
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "comicId",
+          "page",
+          "note",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "comicId": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BookmarkCreateSchema": {
+        "type": "object",
+        "required": [
+          "comicId",
+          "page"
+        ],
+        "properties": {
+          "comicId": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "FriendDTO": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "image"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "image": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "FriendRequestDTO": {
+        "type": "object",
+        "required": [
+          "id",
+          "senderId",
+          "receiverId",
+          "status",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "senderId": {
+            "type": "string"
+          },
+          "receiverId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "DECLINED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sender": {
+            "$ref": "#/components/schemas/FriendDTO"
+          }
+        }
+      },
+      "UserProfileUpdateSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ComicVineMetadata": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "issue_number": {
+            "type": "string"
+          },
+          "cover_date": {
+            "type": "string"
+          },
+          "image": {
+            "type": "object",
+            "properties": {
+              "icon_url": {
+                "type": "string"
+              },
+              "medium_url": {
+                "type": "string"
+              },
+              "screen_url": {
+                "type": "string"
+              },
+              "super_url": {
+                "type": "string"
+              },
+              "thumb_url": {
+                "type": "string"
+              },
+              "tiny_url": {
+                "type": "string"
+              },
+              "original_url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Register new user",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "409": {
+            "description": "User already exists"
+          },
+          "429": {
+            "description": "Too many requests"
+          }
+        },
+        "operationId": "post_auth_register"
+      }
+    },
+    "/library": {
+      "get": {
+        "summary": "Get comic library",
+        "tags": [
+          "Library"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedLibraryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "get_library"
+      }
+    },
+    "/library/upload": {
+      "post": {
+        "summary": "Upload comic file to S3",
+        "tags": [
+          "Library"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "filehash": {
+                    "type": "string",
+                    "minLength": 64,
+                    "maxLength": 64
+                  },
+                  "extension": {
+                    "type": "string",
+                    "enum": [
+                      "cbz",
+                      "cbr"
+                    ]
+                  }
+                },
+                "required": [
+                  "file",
+                  "filehash",
+                  "extension"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload successful"
+          },
+          "400": {
+            "description": "Invalid format or missing data"
+          },
+          "413": {
+            "description": "File too large"
+          }
+        },
+        "operationId": "post_library_upload"
+      }
+    },
+    "/comics/{id}": {
+      "get": {
+        "summary": "Get a specific comic",
+        "tags": [
+          "Comics"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comic retrieved successfully"
+          },
+          "404": {
+            "description": "Comic not found"
+          }
+        },
+        "operationId": "get_comics_id"
+      },
+      "patch": {
+        "summary": "Update comic metadata",
+        "tags": [
+          "Comics"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComicUpdateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Comic updated successfully"
+          },
+          "404": {
+            "description": "Comic not found"
+          }
+        },
+        "operationId": "patch_comics_id"
+      },
+      "delete": {
+        "summary": "Delete comic",
+        "tags": [
+          "Comics"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comic deleted successfully"
+          },
+          "404": {
+            "description": "Comic not found"
+          }
+        },
+        "operationId": "delete_comics_id"
+      }
+    },
+    "/comics/{id}/progress": {
+      "put": {
+        "summary": "Update reading progress",
+        "tags": [
+          "Comics"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadingProgress"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Progress updated successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "put_comics_id_progress"
+      }
+    },
+    "/collections": {
+      "get": {
+        "summary": "List collections",
+        "tags": [
+          "Collections"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of user collections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "collections": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CollectionDTO"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "get_collections"
+      },
+      "post": {
+        "summary": "Create collection",
+        "tags": [
+          "Collections"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Collection created successfully"
+          },
+          "400": {
+            "description": "Validation error or duplicate name"
+          }
+        },
+        "operationId": "post_collections"
+      }
+    },
+    "/bookmarks": {
+      "get": {
+        "summary": "List bookmarks",
+        "tags": [
+          "Bookmarks"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of bookmarks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BookmarkDTO"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "get_bookmarks"
+      },
+      "post": {
+        "summary": "Create a bookmark",
+        "tags": [
+          "Bookmarks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookmarkCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bookmark created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "post_bookmarks"
+      },
+      "delete": {
+        "summary": "Delete a bookmark",
+        "tags": [
+          "Bookmarks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bookmark deleted"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "delete_bookmarks"
+      }
+    },
+    "/collections/{id}": {
+      "get": {
+        "summary": "Get collection",
+        "tags": [
+          "Collections"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection details"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "operationId": "get_collections_id"
+      },
+      "patch": {
+        "summary": "Update collection",
+        "tags": [
+          "Collections"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Collection updated"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "operationId": "patch_collections_id"
+      },
+      "delete": {
+        "summary": "Delete collection",
+        "tags": [
+          "Collections"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection deleted"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "operationId": "delete_collections_id"
+      }
+    },
+    "/collections/{id}/items": {
+      "post": {
+        "summary": "Add comic to collection",
+        "tags": [
+          "Collections"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "comicId"
+                ],
+                "properties": {
+                  "comicId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Added successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "post_collections_id_items"
+      },
+      "delete": {
+        "summary": "Remove comic from collection",
+        "tags": [
+          "Collections"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "comicId"
+                ],
+                "properties": {
+                  "comicId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Removed successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "delete_collections_id_items"
+      }
+    },
+    "/comics/{id}/download": {
+      "get": {
+        "summary": "Download comic file",
+        "tags": [
+          "Comics"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File stream",
+            "content": {
+              "application/octet-stream": {}
+            }
+          },
+          "404": {
+            "description": "File not found"
+          }
+        },
+        "operationId": "get_comics_id_download"
+      }
+    },
+    "/comics/{id}/enrich": {
+      "get": {
+        "summary": "Fetch ComicVine metadata",
+        "tags": [
+          "Comics"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Enrichment result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComicVineMetadata"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "get_comics_id_enrich"
+      }
+    },
+    "/comics/{id}/favorite": {
+      "post": {
+        "summary": "Add to favorites",
+        "tags": [
+          "Comics"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Added to favorites"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "post_comics_id_favorite"
+      },
+      "delete": {
+        "summary": "Remove from favorites",
+        "tags": [
+          "Comics"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed from favorites"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "delete_comics_id_favorite"
+      }
+    },
+    "/comics/search-metadata": {
+      "get": {
+        "summary": "Search ComicVine metadata",
+        "tags": [
+          "Comics"
+        ],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComicVineMetadata"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "get_comics_search-metadata"
+      }
+    },
+    "/friends": {
+      "get": {
+        "summary": "List friends",
+        "tags": [
+          "Friends"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of friends",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FriendDTO"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "get_friends"
+      },
+      "delete": {
+        "summary": "Remove a friend",
+        "tags": [
+          "Friends"
+        ],
+        "parameters": [
+          {
+            "name": "friendId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Friend removed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "delete_friends"
+      }
+    },
+    "/friends/invite": {
+      "post": {
+        "summary": "Invite a friend by email",
+        "tags": [
+          "Friends"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invite sent"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "operationId": "post_friends_invite"
+      }
+    },
+    "/friends/requests": {
+      "get": {
+        "summary": "List friend requests",
+        "tags": [
+          "Friends"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FriendRequestDTO"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "get_friends_requests"
+      },
+      "post": {
+        "summary": "Send a friend request",
+        "tags": [
+          "Friends"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "receiverId"
+                ],
+                "properties": {
+                  "receiverId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Request sent"
+          },
+          "400": {
+            "description": "Request already exists"
+          }
+        },
+        "operationId": "post_friends_requests"
+      }
+    },
+    "/friends/requests/{id}": {
+      "put": {
+        "summary": "Accept or decline friend request",
+        "tags": [
+          "Friends"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "ACCEPT",
+                      "DECLINE"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request processed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "put_friends_requests_id"
+      }
+    },
+    "/library/{id}": {
+      "delete": {
+        "summary": "Remove comic from library",
+        "tags": [
+          "Library"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comic removed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "delete_library_id"
+      }
+    },
+    "/user/profile": {
+      "patch": {
+        "summary": "Update user profile",
+        "tags": [
+          "User"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserProfileUpdateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "operationId": "patch_user_profile"
+      }
+    }
+  }
+}

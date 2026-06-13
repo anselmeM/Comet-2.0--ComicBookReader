@@ -1,26 +1,16 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/friends — Returns the authenticated user's friends list
  */
-export async function GET() {
+export const GET = withAuth(async (req: Request, context, session) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
-
     const friendships = await db.friendship.findMany({
       where: {
-        OR: [
-          { userId: session.user.id },
-          { friendId: session.user.id },
-        ],
+        OR: [{ userId: session.user.id }, { friendId: session.user.id }],
       },
       include: {
         user: {
@@ -58,26 +48,19 @@ export async function GET() {
 
     return NextResponse.json({ friends });
   } catch (error) {
-    console.error('[API] Friends GET error:', error);
+    logger.error('Friends GET error', {}, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});
 
 /**
  * DELETE /api/friends?friendId=... — Removes a friend
  */
-export async function DELETE(req: Request) {
+export const DELETE = withAuth(async (req: Request, context, session) => {
+  let friendId: string | null = null;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
-    const friendId = searchParams.get('friendId');
+    friendId = searchParams.get('friendId');
 
     if (!friendId) {
       return NextResponse.json({ error: 'Friend ID is required' }, { status: 400 });
@@ -94,7 +77,7 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[API] Friends DELETE error:', error);
+    logger.error('Friends DELETE error', { friendId: friendId || undefined }, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});

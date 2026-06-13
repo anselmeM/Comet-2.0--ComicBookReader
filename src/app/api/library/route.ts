@@ -5,18 +5,18 @@
  * Requires: Valid Auth.js session
  */
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
 import { getCache, setCache, invalidateCache, genCacheKey } from '@/lib/cache';
 import { Prisma } from '@prisma/client';
 import { PaginatedLibraryResponseDTO } from '@/types/schemas';
 import { rateLimit } from '@/lib/rate-limit';
-
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/library — Returns the authenticated user's comic library
  */
-export async function GET(_req: Request) {
+export const GET = withAuth(async (_req: Request, context, session) => {
   try {
     // Rate limit check
     const ip = (_req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
@@ -24,15 +24,7 @@ export async function GET(_req: Request) {
     if (limiter.isLimited) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
-        { status: 429, headers: limiter.headers }
-      );
-    }
-
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
+        { status: 429, headers: limiter.headers },
       );
     }
 
@@ -43,19 +35,28 @@ export async function GET(_req: Request) {
     const search = searchParams.get('search') || '';
     const series = searchParams.get('series') || '';
     const sortBy = searchParams.get('sortBy') || 'recent';
-    const yearStart = searchParams.get('yearStart') ? parseInt(searchParams.get('yearStart')!) : null;
+    const yearStart = searchParams.get('yearStart')
+      ? parseInt(searchParams.get('yearStart')!)
+      : null;
     const yearEnd = searchParams.get('yearEnd') ? parseInt(searchParams.get('yearEnd')!) : null;
     const readStatus = searchParams.get('readStatus') || 'all'; // all, unread, reading, completed
-    
+
     // Check Cache (T-INF-004)
-    const cacheKey = genCacheKey(session.user.id, 'library', { 
-      page, limit, search, series, sortBy, yearStart, yearEnd, readStatus 
+    const cacheKey = genCacheKey(session.user.id, 'library', {
+      page,
+      limit,
+      search,
+      series,
+      sortBy,
+      yearStart,
+      yearEnd,
+      readStatus,
     });
     const cachedData = await getCache<PaginatedLibraryResponseDTO>(cacheKey);
     if (cachedData) {
-      return NextResponse.json(cachedData, { 
-        status: 200, 
-        headers: { 'X-Cache': 'HIT' } 
+      return NextResponse.json(cachedData, {
+        status: 200,
+        headers: { 'X-Cache': 'HIT' },
       });
     }
 
@@ -63,7 +64,7 @@ export async function GET(_req: Request) {
 
     // Build where clause
     const where: Prisma.ComicWhereInput = { userId: session.user.id };
-    
+
     if (search) {
       const isPostgres = process.env.DATABASE_URL?.startsWith('postgres') || false;
       where.OR = [
@@ -79,7 +80,7 @@ export async function GET(_req: Request) {
         },
       ];
     }
-    
+
     if (series) {
       where.series = series;
     }
@@ -136,45 +137,37 @@ export async function GET(_req: Request) {
     // Store in Cache for 5 minutes (T-INF-004)
     await setCache(cacheKey, response, 5 * 60);
 
-    return NextResponse.json(response, { 
-      status: 200, 
-      headers: { 'X-Cache': 'MISS' } 
+    return NextResponse.json(response, {
+      status: 200,
+      headers: { 'X-Cache': 'MISS' },
     });
   } catch (error) {
-    console.error('[API] Library GET error:', error);
+    logger.error('Library GET error', {}, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});
 
 /**
  * POST /api/library — Adds a new comic to the library
  */
-export async function POST(_req: Request) {
+export const POST = withAuth(async (_req: Request, context, session) => {
   try {
     // Rate limit check
     const ip = (_req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
     const limiter = await rateLimit(`library_post_${ip}`, 10, 60 * 1000); // 10 per minute
     if (limiter.isLimited) {
       return NextResponse.json(
-        { error: 'Too many upload attempts. Please try again in a minute.', code: 'RATE_LIMIT_EXCEEDED' },
-        { status: 429, headers: limiter.headers }
+        {
+          error: 'Too many upload attempts. Please try again in a minute.',
+          code: 'RATE_LIMIT_EXCEEDED',
+        },
+        { status: 429, headers: limiter.headers },
       );
     }
 
     const contentType = _req.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
-      return NextResponse.json(
-        { error: 'Content-Type must be application/json' },
-        { status: 415 }
-      );
-    }
-
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Content-Type must be application/json' }, { status: 415 });
     }
 
     // Invalidate library cache for this user (T-INF-004)
@@ -184,10 +177,7 @@ export async function POST(_req: Request) {
     const { title, filehash, pageCount, coverUrl } = body;
 
     if (!title || !filehash || !pageCount) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Check if comic already exists for this user (filehash deduplication)
@@ -217,10 +207,10 @@ export async function POST(_req: Request) {
 
     return NextResponse.json(comic, { status: 201 });
   } catch (err) {
-    console.error('[API] Library POST error:', err);
+    logger.error('Library POST error', {}, err as Error);
     if (err instanceof SyntaxError) {
       return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});

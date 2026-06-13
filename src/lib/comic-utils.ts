@@ -18,6 +18,7 @@ export async function computeFileHash(file: File): Promise<string> {
 }
 
 import { COMIC_CONFIG } from './constants';
+import { getSharedCanvas } from './canvas';
 
 /**
  * Compresses a comic page for use as a cover image.
@@ -32,11 +33,9 @@ export async function generateCoverDataUrl(
 
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const canvas = document.createElement('canvas');
 
       const { width, height } = calculateDimensions(img.width, img.height, maxDim);
-      canvas.width = width;
-      canvas.height = height;
+      const canvas = getSharedCanvas(width, height);
 
       const ctx = canvas.getContext('2d');
       if (!ctx) return resolve('');

@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/notifications — Returns all notifications for the authenticated user
  */
 export async function GET() {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse) return errorResponse;
 
     const notifications = await db.notification.findMany({
       where: { userId: session.user.id },
@@ -27,7 +23,7 @@ export async function GET() {
 
     return NextResponse.json({ notifications, unreadCount });
   } catch (error) {
-    console.error('[API] Notifications GET error:', error);
+    logger.error('Notifications GET error', {}, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -37,13 +33,8 @@ export async function GET() {
  */
 export async function PATCH() {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse) return errorResponse;
 
     await db.notification.updateMany({
       where: { userId: session.user.id, isRead: false },
@@ -52,7 +43,7 @@ export async function PATCH() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[API] Notifications PATCH error:', error);
+    logger.error('Notifications PATCH error', {}, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -62,13 +53,8 @@ export async function PATCH() {
  */
 export async function DELETE() {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse) return errorResponse;
 
     await db.notification.deleteMany({
       where: { userId: session.user.id },
@@ -76,7 +62,7 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[API] Notifications DELETE error:', error);
+    logger.error('Notifications DELETE error', {}, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

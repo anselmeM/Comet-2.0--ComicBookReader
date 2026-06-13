@@ -12,45 +12,53 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ComicDTO } from '@/types';
 import { useNotification } from '@/components/atoms/Toast';
+import { logger } from '@/lib/logger';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function LibraryPage() {
   const router = useRouter();
   const { parseComic, isParsing, progress } = useComicParser();
   const { downloadFromCloud, isSyncing: isCloudDownloading } = useCloudSync();
-  
+
   // State for pagination, search and sort
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [sortBy, setSortBy] = useState('recent');
-  
+
   // State for advanced filters
   const [yearStart, setYearStart] = useState<number | null>(null);
   const [yearEnd, setYearEnd] = useState<number | null>(null);
   const [readStatus, setReadStatus] = useState('all');
   const [localComicIds, setLocalComicIds] = useState<Set<string>>(new Set());
-  
-  const { data: libraryData, isLoading, error, refetch } = useLibrary({ 
-    page: currentPage, 
+
+  const {
+    data: libraryData,
+    isLoading,
+    error,
+    refetch,
+  } = useLibrary({
+    page: currentPage,
     limit: 20,
-    search: searchQuery,
+    search: debouncedSearchQuery,
     sortBy: sortBy,
     yearStart,
     yearEnd,
-    readStatus
+    readStatus,
   });
 
   const deleteMutation = useDeleteComic();
-  
+
   const handleBulkDelete = async (ids: string[]) => {
     try {
-      await Promise.all(ids.map(id => deleteMutation.mutateAsync(id)));
+      await Promise.all(ids.map((id) => deleteMutation.mutateAsync(id)));
       await refetch();
     } catch (e) {
       console.error('Bulk delete error:', e);
       throw e;
     }
   };
-  
+
   const { status: sessionStatus, data: session } = useSession();
   const [isDragging, setIsDragging] = useState(false);
 
@@ -58,7 +66,7 @@ export default function LibraryPage() {
   React.useEffect(() => {
     const checkLocal = async () => {
       const cached = await getAllCachedComicsMetadata();
-      setLocalComicIds(new Set(cached.map(c => c.comicId)));
+      setLocalComicIds(new Set(cached.map((c) => c.comicId)));
     };
     checkLocal();
   }, [libraryData]);
@@ -78,10 +86,12 @@ export default function LibraryPage() {
       isFavorite: comic.isFavorite,
       syncStatus: comic.syncStatus,
       isLocallyAvailable: localComicIds.has(comic.id),
-      progress: comic.progress ? {
-        lastPage: comic.progress.lastPage,
-        totalPages: comic.progress.totalPages,
-      } : undefined,
+      progress: comic.progress
+        ? {
+            lastPage: comic.progress.lastPage,
+            totalPages: comic.progress.totalPages,
+          }
+        : undefined,
     }));
   }, [libraryData?.data, localComicIds]);
 
@@ -127,7 +137,7 @@ export default function LibraryPage() {
         await parseComic(file, { skipServerPOST: true, existingComicId: comicId });
         // Refresh local availability
         const cached = await getAllCachedComicsMetadata();
-        setLocalComicIds(new Set(cached.map(c => c.comicId)));
+        setLocalComicIds(new Set(cached.map((c) => c.comicId)));
         triggerNotification('Comic restored from cloud', 'success');
       }
     } catch (e: any) {
@@ -155,7 +165,12 @@ export default function LibraryPage() {
           <Library size={32} className="text-red-500 mx-auto" />
           <h2 className="text-xl font-bold">Failed to load library</h2>
           <p className="text-comet-muted">{errorMessage}</p>
-          <button onClick={() => refetch()} className="bg-comet-accent text-white px-6 py-2 rounded-full font-medium">Try Again</button>
+          <button
+            onClick={() => refetch()}
+            className="bg-comet-accent text-white px-6 py-2 rounded-full font-medium"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -163,14 +178,21 @@ export default function LibraryPage() {
 
   return (
     <>
-      <div className={`fixed bottom-8 right-8 z-50 transition-all ${isDragging ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}>
+      <div
+        className={`fixed bottom-8 right-8 z-50 transition-all ${isDragging ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}
+      >
         <div className="bg-blue-500 text-white px-6 py-4 rounded-2xl shadow-xl flex items-center gap-3">
           <UploadCloud size={24} />
           <span className="font-semibold">Drop comic file here</span>
         </div>
       </div>
 
-      <div className="hidden" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+      <div
+        className="hidden"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <input type="file" accept=".cbz,.cbr" id="comic-upload-input" onChange={handleFileInput} />
       </div>
 
@@ -179,13 +201,15 @@ export default function LibraryPage() {
           <div className="bg-neutral-900 p-8 rounded-3xl text-center border border-neutral-800">
             <Loader2 size={48} className="text-blue-500 animate-spin mx-auto mb-4" />
             <p className="text-white font-medium">
-              {isCloudDownloading ? 'Downloading from Cloud...' : `Parsing ${progress ? `${progress.page} / ${progress.total}` : 'Comic'}...`}
+              {isCloudDownloading
+                ? 'Downloading from Cloud...'
+                : `Parsing ${progress ? `${progress.page} / ${progress.total}` : 'Comic'}...`}
             </p>
           </div>
         </div>
       )}
 
-      <DashboardLayout 
+      <DashboardLayout
         comics={dashboardComics}
         onFileSelect={handleFileUpload}
         onRestoreFromCloud={handleRestoreFromCloud}

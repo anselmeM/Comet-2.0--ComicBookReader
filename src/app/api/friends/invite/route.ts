@@ -1,27 +1,18 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 import nodemailer from 'nodemailer';
 import { rateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
-const inviteSchema = z.object({
-  email: z.string().email('Invalid email address'),
-});
+import { InviteSchema } from '@/types/schemas';
 
 /**
  * POST /api/friends/invite — Sends an invitation to a potential friend via email
  */
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: Request, context, session) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
-
     // Rate limiting (Phase 2)
     const ip = (req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
     const limiter = await rateLimit(`invite_${session.user.id}`, 5, 60 * 60 * 1000); // 5 per hour
@@ -29,12 +20,15 @@ export async function POST(req: Request) {
     if (limiter.isLimited) {
       return NextResponse.json(
         { error: 'Too many invitations sent. Please try again in an hour.' },
-        { status: 429, headers: limiter.headers }
+        { status: 429, headers: limiter.headers },
       );
     }
 
     const body = await req.json();
-    const { email } = inviteSchema.parse(body);
+    const result = InviteSchema.safeParse(body);
+    if (!result.success)
+      return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 });
+    const { email } = result.data;
     const targetEmail = email.toLowerCase().trim();
 
     if (targetEmail === session.user.email) {
@@ -47,23 +41,29 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-      return NextResponse.json({ 
-        error: 'This user is already a member. Use the search feature to find them.',
-        isMember: true 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'This user is already a member. Use the search feature to find them.',
+          isMember: true,
+        },
+        { status: 400 },
+      );
     }
 
     // 2. Check if an invitation was already sent
     const existingInvite = await db.invitation.findFirst({
-      where: { 
+      where: {
         senderId: session.user.id,
         email: targetEmail,
-        status: 'PENDING'
+        status: 'PENDING',
       },
     });
 
     if (existingInvite) {
-      return NextResponse.json({ error: 'An invitation has already been sent to this email.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'An invitation has already been sent to this email.' },
+        { status: 400 },
+      );
     }
 
     // 3. Create the invitation in the DB
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
         `,
       });
     } catch (mailError) {
-      console.error('[API] Failed to send invite email:', mailError);
+      logger.error('Failed to send invite email', { targetEmail }, mailError as Error);
       // We still return success because the record was created in the DB
     }
 
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
-    console.error('[API] Invite POST error:', error);
+    logger.error('Invite POST error', {}, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});

@@ -1,23 +1,23 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
 import { s3, BUCKET_NAME } from '@/lib/storage';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/storage/download?comicId=... — Generates a pre-signed URL for comic download.
  * Requires: PREMIUM plan.
  */
 export async function GET(req: Request) {
+  let comicId: string | null = null;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse) return errorResponse;
 
     const { searchParams } = new URL(req.url);
-    const comicId = searchParams.get('comicId');
+    comicId = searchParams.get('comicId');
 
     if (!comicId) {
       return NextResponse.json({ error: 'Comic ID is required' }, { status: 400 });
@@ -30,7 +30,10 @@ export async function GET(req: Request) {
     });
 
     if (user?.plan !== 'PREMIUM') {
-      return NextResponse.json({ error: 'Upgrade to Premium to enable Cloud Sync' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Upgrade to Premium to enable Cloud Sync' },
+        { status: 403 },
+      );
     }
 
     // 2. Verify comic ownership and get storage key
@@ -40,13 +43,19 @@ export async function GET(req: Request) {
     });
 
     if (!comic || !comic.storageKey) {
-      return NextResponse.json({ error: 'Comic not found or not synced to cloud' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Comic not found or not synced to cloud' },
+        { status: 404 },
+      );
     }
 
     // 3. Generate GET URL (with local mock fallback if S3 is not configured in dev)
     let url = '';
     const isDev = process.env.NODE_ENV === 'development';
-    const isS3Configured = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_ENDPOINT;
+    const isS3Configured =
+      process.env.AWS_ACCESS_KEY_ID &&
+      process.env.AWS_SECRET_ACCESS_KEY &&
+      process.env.AWS_ENDPOINT;
 
     if (isDev && !isS3Configured) {
       url = `http://localhost:3101/api/storage/mock-s3?key=${encodeURIComponent(comic.storageKey)}`;
@@ -60,7 +69,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ url });
   } catch (error) {
-    console.error('[STORAGE_DOWNLOAD_ERROR]', error);
+    logger.error('Storage download error', { comicId: comicId || undefined }, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

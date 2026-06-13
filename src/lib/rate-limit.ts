@@ -4,6 +4,7 @@
  */
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
+import { logger } from '@/lib/logger';
 
 // Initialize Redis client
 let redis: Redis | null = null;
@@ -20,7 +21,11 @@ try {
     });
   }
 } catch (err) {
-  console.warn('[RateLimit] Failed to initialize Upstash Ratelimit:', err);
+  logger.warn(
+    '[RateLimit] Failed to initialize Upstash Ratelimit:',
+    {},
+    err instanceof Error ? err : undefined,
+  );
 }
 
 // In-memory fallback
@@ -32,7 +37,7 @@ const memoryStore = new Map<string, RateLimitRecord>();
 
 /**
  * Checks if a request should be rate-limited.
- * 
+ *
  * @param key Unique key to limit (e.g. IP address or email)
  * @param limit Maximum number of requests allowed
  * @param windowMs Time window in milliseconds (used for fallback only)
@@ -44,7 +49,7 @@ export async function rateLimit(key: string, limit: number, windowMs: number) {
   if (ratelimit) {
     try {
       const { success, remaining, reset, limit: actualLimit } = await ratelimit.limit(identifier);
-      
+
       return {
         isLimited: !success,
         remaining,
@@ -56,7 +61,11 @@ export async function rateLimit(key: string, limit: number, windowMs: number) {
         },
       };
     } catch (err) {
-      console.error(`[RateLimit] Redis error for key ${key}:`, err);
+      logger.error(
+        `[RateLimit] Redis error for key ${key}:`,
+        {},
+        err instanceof Error ? err : undefined,
+      );
     }
   }
 
@@ -82,7 +91,7 @@ export async function rateLimit(key: string, limit: number, windowMs: number) {
   // Prevent memory leak - more aggressive cleanup
   if (memoryStore.size > 2000) {
     const keysToDelete = Array.from(memoryStore.keys()).slice(0, 500);
-    keysToDelete.forEach(k => memoryStore.delete(k));
+    keysToDelete.forEach((k) => memoryStore.delete(k));
   }
 
   const current = record.count;

@@ -6,6 +6,7 @@ import { useReaderStore } from '@/stores/readerStore';
 import { UpdateProgressPayload } from '@/types';
 import { queueSyncTask } from '@/lib/sync';
 import { useAuthCallback } from './useAuthCallback';
+import { logger } from '@/lib/logger';
 
 interface UseReadingProgressOptions {
   comicId: string | null;
@@ -21,7 +22,7 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
   const zoomLevel = useReaderStore((state) => state.zoomLevel);
   const lastSavedPage = useRef<number>(-1);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Time tracking state
   const [secondsSpent, setSecondsSpent] = useState(0);
   const lastSyncTimeRef = useRef<number | null>(null);
@@ -41,7 +42,7 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
     mutationFn: async (payload: UpdateProgressPayload) => {
       // If offline, queue for background sync (T-PWA-004)
       if (typeof window !== 'undefined' && !navigator.onLine) {
-        console.log('[Sync] Offline: Queueing progress update');
+        logger.info('[Sync] Offline: Queueing progress update');
         await queueSyncTask(`/api/comics/${comicId}/progress`, 'PUT', payload);
         return { queued: true };
       }
@@ -85,8 +86,12 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
       isActiveRef.current = document.visibilityState === 'visible';
     };
 
-    const handleBlur = () => { isActiveRef.current = false; };
-    const handleFocus = () => { isActiveRef.current = true; };
+    const handleBlur = () => {
+      isActiveRef.current = false;
+    };
+    const handleFocus = () => {
+      isActiveRef.current = true;
+    };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleBlur);

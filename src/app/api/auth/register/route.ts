@@ -4,12 +4,8 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { rateLimit } from '@/lib/rate-limit';
 import { createNotification } from '@/lib/notifications';
-
-const registerSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-});
+import { logger } from '@/lib/logger';
+import { registerSchema } from '@/lib/validations';
 
 export async function POST(req: Request) {
   try {
@@ -20,7 +16,7 @@ export async function POST(req: Request) {
     if (limiter.isLimited) {
       return NextResponse.json(
         { message: 'Too many registration attempts. Please try again in an hour.' },
-        { status: 429, headers: limiter.headers }
+        { status: 429, headers: limiter.headers },
       );
     }
 
@@ -36,7 +32,7 @@ export async function POST(req: Request) {
     if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email already exists', code: 'USER_EXISTS' },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -73,8 +69,8 @@ export async function POST(req: Request) {
                 userId: invite.senderId,
                 friendId: user.id,
               },
-            })
-          )
+            }),
+          ),
         );
 
         // Update invitation status
@@ -92,30 +88,21 @@ export async function POST(req: Request) {
               title: 'Friend Joined Comet!',
               message: `${user.name || 'A friend you invited'} has joined Comet and is now your friend!`,
               link: '/friends',
-            })
-          )
+            }),
+          ),
         );
       }
     } catch (inviteError) {
-      console.error('[API] Invitation processing error:', inviteError);
+      logger.error('[API] Invitation processing error', {}, inviteError as Error);
     }
 
-    return NextResponse.json(
-      { message: 'User created successfully', user },
-      { status: 201 }
-    );
+    return NextResponse.json({ message: 'User created successfully', user }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0].message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
 
-    console.error('Registration error:', error);
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    );
+    logger.error('Registration error', {}, error as Error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }

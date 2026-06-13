@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { rateLimit } from '@/lib/rate-limit';
 import { createNotification } from '@/lib/notifications';
+import { logger } from '@/lib/logger';
+import { z } from 'zod';
+import { resetPasswordCompleteSchema } from '@/lib/validations';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,19 +17,18 @@ export async function POST(req: NextRequest) {
     if (limiter.isLimited) {
       return NextResponse.json(
         { error: 'Too many reset attempts. Please try again in an hour.' },
-        { status: 429, headers: limiter.headers }
+        { status: 429, headers: limiter.headers },
       );
     }
 
-    const { email, token, newPassword } = await req.json();
+    const body = await req.json();
+    const result = resetPasswordCompleteSchema.safeParse(body);
 
-    if (!email || !token || !newPassword) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 });
     }
 
-    if (newPassword.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
-    }
+    const { email, token, newPassword } = result.data;
 
     // Hash the received token to compare with the one stored in DB
     const hashedResetToken = crypto.createHash('sha256').update(token).digest('hex');
@@ -64,12 +66,13 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       type: 'SYSTEM_ALERT',
       title: 'Password Changed',
-      message: 'Your account password was recently changed. If this wasn\'t you, please contact support immediately.',
+      message:
+        "Your account password was recently changed. If this wasn't you, please contact support immediately.",
     });
 
     return NextResponse.json({ message: 'Password has been reset successfully' }, { status: 200 });
   } catch (error) {
-    console.error('[Password Reset Complete] Error:', error);
+    logger.error('[Password Reset Complete] Error', {}, error as Error);
     return NextResponse.json({ error: 'An error occurred' }, { status: 500 });
   }
 }

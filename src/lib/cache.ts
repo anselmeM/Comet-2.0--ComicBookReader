@@ -3,6 +3,7 @@
  * Falls back to in-memory Map if Redis is not configured.
  */
 import { Redis } from '@upstash/redis';
+import { logger } from '@/lib/logger';
 
 // Initialize Redis client if environment variables are present
 let redis: Redis | null = null;
@@ -12,7 +13,11 @@ try {
     redis = Redis.fromEnv();
   }
 } catch (err) {
-  console.warn('[Cache] Failed to initialize Upstash Redis:', err);
+  logger.warn(
+    '[Cache] Failed to initialize Upstash Redis:',
+    {},
+    err instanceof Error ? err : undefined,
+  );
 }
 
 // In-memory fallback
@@ -30,7 +35,11 @@ export async function getCache<T>(key: string): Promise<T | null> {
     try {
       return await redis.get<T>(key);
     } catch (err) {
-      console.error(`[Cache] Redis GET error for key ${key}:`, err);
+      logger.error(
+        `[Cache] Redis GET error for key ${key}:`,
+        {},
+        err instanceof Error ? err : undefined,
+      );
     }
   }
 
@@ -53,14 +62,18 @@ export async function setCache<T>(key: string, data: T, ttlSeconds = 60): Promis
       await redis.set(key, data, { ex: ttlSeconds });
       return;
     } catch (err) {
-      console.error(`[Cache] Redis SET error for key ${key}:`, err);
+      logger.error(
+        `[Cache] Redis SET error for key ${key}:`,
+        {},
+        err instanceof Error ? err : undefined,
+      );
     }
   }
 
   // Fallback to memory
   memoryStore.set(key, {
     data,
-    expiresAt: Date.now() + (ttlSeconds * 1000)
+    expiresAt: Date.now() + ttlSeconds * 1000,
   });
 
   if (memoryStore.size > 500) {
@@ -78,20 +91,27 @@ export async function invalidateCache(keyOrPrefix: string, usePrefix = false): P
       if (!usePrefix) {
         await redis.del(keyOrPrefix);
       } else {
-        // Caution: KEYS/SCAN might be slow on large databases, 
+        // Caution: KEYS/SCAN might be slow on large databases,
         // but for a user-prefixed cache it's usually fine.
-        let cursor = "0";
+        let cursor = '0';
         do {
-          const [nextCursor, keys] = await redis.scan(cursor, { match: `${keyOrPrefix}*`, count: 100 });
+          const [nextCursor, keys] = await redis.scan(cursor, {
+            match: `${keyOrPrefix}*`,
+            count: 100,
+          });
           if (keys.length > 0) {
             await redis.del(...keys);
           }
           cursor = nextCursor;
-        } while (cursor !== "0");
+        } while (cursor !== '0');
       }
       return;
     } catch (err) {
-      console.error(`[Cache] Redis DEL error for ${keyOrPrefix}:`, err);
+      logger.error(
+        `[Cache] Redis DEL error for ${keyOrPrefix}:`,
+        {},
+        err instanceof Error ? err : undefined,
+      );
     }
   }
 
@@ -116,12 +136,15 @@ export function genCacheKey(userId: string, endpoint: string, params?: any): str
   if (!params) return base;
 
   // Use a stable stringify for params to ensure consistent keys
-  const stableParams = typeof params === 'object' && params !== null
-    ? Object.keys(params).sort().reduce((acc: any, key) => {
-        acc[key] = params[key];
-        return acc;
-      }, {})
-    : params;
+  const stableParams =
+    typeof params === 'object' && params !== null
+      ? Object.keys(params)
+          .sort()
+          .reduce((acc: any, key) => {
+            acc[key] = params[key];
+            return acc;
+          }, {})
+      : params;
 
   return `${base}:${JSON.stringify(stableParams)}`;
 }

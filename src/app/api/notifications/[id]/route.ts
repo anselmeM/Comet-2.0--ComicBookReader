@@ -1,24 +1,18 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * PATCH /api/notifications/[id] — Marks a single notification as read
  */
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  let id: string | undefined;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse) return errorResponse;
 
-    const { id } = await params;
+    ({ id } = await params);
 
     const notification = await db.notification.findUnique({
       where: { id },
@@ -39,7 +33,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[API] Notification PATCH error:', error);
+    logger.error('Notification PATCH error', { id }, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -47,20 +41,13 @@ export async function PATCH(
 /**
  * DELETE /api/notifications/[id] — Deletes a single notification
  */
-export async function DELETE(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  let id: string | undefined;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse) return errorResponse;
 
-    const { id } = await params;
+    ({ id } = await params);
 
     const notification = await db.notification.findUnique({
       where: { id },
@@ -80,7 +67,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[API] Notification DELETE error:', error);
+    logger.error('Notification DELETE error', { id }, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

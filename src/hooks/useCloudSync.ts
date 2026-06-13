@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useNotification } from '@/components/atoms/Toast';
+import { logger } from '@/lib/logger';
 
 export function useCloudSync() {
   const { data: session } = useSession();
@@ -17,7 +18,7 @@ export function useCloudSync() {
 
     try {
       setIsSyncing(true);
-      
+
       // 1. Get pre-signed URL
       const res = await fetch('/api/storage/upload', {
         method: 'POST',
@@ -25,7 +26,7 @@ export function useCloudSync() {
         body: JSON.stringify({
           comicId,
           contentType: file.type || 'application/octet-stream',
-          fileName: file.name
+          fileName: file.name,
         }),
       });
 
@@ -55,22 +56,22 @@ export function useCloudSync() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           comicId,
-          status: 'SYNCED'
+          status: 'SYNCED',
         }),
       });
 
       triggerNotification('Comic synced to cloud', 'success');
     } catch (error: any) {
-      console.error('[CLOUD_UPLOAD_ERROR]', error);
+      logger.error('[CLOUD_UPLOAD_ERROR]', {}, error instanceof Error ? error : undefined);
       triggerNotification(`Cloud sync failed: ${error.message}`, 'error');
-      
+
       // Mark as error on server
       await fetch('/api/storage/upload', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           comicId,
-          status: 'ERROR'
+          status: 'ERROR',
         }),
       });
     } finally {
@@ -87,7 +88,7 @@ export function useCloudSync() {
 
     try {
       setIsSyncing(true);
-      
+
       // 1. Get pre-signed download URL
       const res = await fetch(`/api/storage/download?comicId=${comicId}`);
       if (!res.ok) {
@@ -104,29 +105,39 @@ export function useCloudSync() {
       }
 
       const blob = await downloadRes.blob();
-      
+
       // Determine appropriate file extension based on magic bytes or existing title
       let finalTitle = title;
-      const hasValidExtension = ['.cbz', '.cbr', '.zip'].some(ext => title.toLowerCase().endsWith(ext));
+      const hasValidExtension = ['.cbz', '.cbr', '.zip'].some((ext) =>
+        title.toLowerCase().endsWith(ext),
+      );
       if (!hasValidExtension) {
         const headerSlice = blob.slice(0, 4);
         const headerBuffer = await headerSlice.arrayBuffer();
         const headerView = new Uint8Array(headerBuffer);
-        
-        const isZip = headerView[0] === 0x50 && headerView[1] === 0x4b && headerView[2] === 0x03 && headerView[3] === 0x04;
-        const isRar = headerView[0] === 0x52 && headerView[1] === 0x61 && headerView[2] === 0x72 && headerView[3] === 0x21;
-        
+
+        const isZip =
+          headerView[0] === 0x50 &&
+          headerView[1] === 0x4b &&
+          headerView[2] === 0x03 &&
+          headerView[3] === 0x04;
+        const isRar =
+          headerView[0] === 0x52 &&
+          headerView[1] === 0x61 &&
+          headerView[2] === 0x72 &&
+          headerView[3] === 0x21;
+
         if (isRar) {
           finalTitle = `${title}.cbr`;
         } else {
           finalTitle = `${title}.cbz`; // Default fallback to .cbz (ZIP)
         }
       }
-      
+
       // 3. Create a File object
       return new File([blob], finalTitle, { type: blob.type });
     } catch (error: any) {
-      console.error('[CLOUD_DOWNLOAD_ERROR]', error);
+      logger.error('[CLOUD_DOWNLOAD_ERROR]', {}, error instanceof Error ? error : undefined);
       triggerNotification(`Download failed: ${error.message}`, 'error');
       return null;
     } finally {

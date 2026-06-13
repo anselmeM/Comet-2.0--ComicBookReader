@@ -4,14 +4,16 @@ import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import Credentials from 'next-auth/providers/credentials';
 import { authConfig } from './auth.config';
+import { logger } from '@/lib/logger';
 
 // Runtime validation for critical environment variables
 const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
-const authSecret = process.env.AUTH_SECRET || (isBuildPhase ? 'dummy_secret_for_build_only' : undefined);
+const authSecret =
+  process.env.AUTH_SECRET || (isBuildPhase ? 'dummy_secret_for_build_only' : undefined);
 if (!authSecret || !authSecret.trim()) {
   throw new Error(
     'AUTH_SECRET environment variable is required but was not set. ' +
-    'Generate one with: openssl rand -base64 32'
+      'Generate one with: openssl rand -base64 32',
   );
 }
 
@@ -23,26 +25,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
     async jwt({ token, user, trigger, session }) {
       // First, invoke the base authConfig jwt callback
-      let updatedToken = await authConfig.callbacks?.jwt?.({ token, user, trigger, session }) || token;
-      
+      const updatedToken =
+        (await authConfig.callbacks?.jwt?.({ token, user, trigger, session })) || token;
+
       // If we have a userId, fetch the latest plan and role from the database to keep session in sync
       if (updatedToken?.userId) {
         try {
           const dbUser = await db.user.findUnique({
             where: { id: updatedToken.userId as string },
-            select: { plan: true, role: true }
+            select: { plan: true, role: true },
           });
           if (dbUser) {
             updatedToken.plan = dbUser.plan;
             updatedToken.role = dbUser.role;
           }
         } catch (err) {
-          console.error('[Auth] Failed to refresh user plan/role from DB:', err);
+          logger.error(
+            '[Auth] Failed to refresh user plan/role from DB:',
+            {},
+            err instanceof Error ? err : undefined,
+          );
         }
       }
-      
+
       return updatedToken;
-    }
+    },
   },
   providers: [
     Credentials({
@@ -55,22 +62,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
-        
+
         const email = (credentials.email as string).toLowerCase().trim();
         const password = credentials.password as string;
 
         try {
           const user = await db.user.findUnique({ where: { email } });
-          
+
           if (!user || !user.password) {
-            console.log(`[Auth] Login failed: User not found or no password hash for ${email}`);
+            logger.warn(`[Auth] Login failed: User not found or no password hash for ${email}`);
             return null;
           }
 
           // Check for account lockout
           if (user.lockoutUntil && user.lockoutUntil > new Date()) {
             const minutesLeft = Math.ceil((user.lockoutUntil.getTime() - Date.now()) / 60000);
-            console.warn(`[Auth] Login blocked: Account locked for ${email}. ${minutesLeft}m remaining.`);
+            logger.warn(
+              `[Auth] Login blocked: Account locked for ${email}. ${minutesLeft}m remaining.`,
+            );
             throw new Error(`Account locked. Please try again in ${minutesLeft} minutes.`);
           }
 
@@ -81,10 +90,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (user.failedAttempts > 0 || user.lockoutUntil) {
               await db.user.update({
                 where: { id: user.id },
-                data: { failedAttempts: 0, lockoutUntil: null }
+                data: { failedAttempts: 0, lockoutUntil: null },
               });
             }
-            console.log(`[Auth] Login success for ${email}`);
+            logger.info(`[Auth] Login success for ${email}`);
             return user;
           }
 
@@ -94,26 +103,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const LOCKOUT_DURATION_MIN = 15;
 
           const updateData: any = { failedAttempts: newFailedAttempts };
-          
+
           if (newFailedAttempts >= MAX_ATTEMPTS) {
             const lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MIN * 60 * 1000);
             updateData.lockoutUntil = lockoutUntil;
-            console.warn(`[Auth] Account locked: ${email} reached ${MAX_ATTEMPTS} failed attempts.`);
+            logger.warn(`[Auth] Account locked: ${email} reached ${MAX_ATTEMPTS} failed attempts.`);
           }
 
           await db.user.update({
             where: { id: user.id },
-            data: updateData
+            data: updateData,
           });
 
-          console.log(`[Auth] Login failed: Password mismatch for ${email}. Attempt ${newFailedAttempts}/${MAX_ATTEMPTS}`);
+          logger.warn(
+            `[Auth] Login failed: Password mismatch for ${email}. Attempt ${newFailedAttempts}/${MAX_ATTEMPTS}`,
+          );
           return null;
         } catch (dbError: any) {
           // Re-throw lockout error so it can be handled by the UI
           if (dbError.message?.includes('Account locked')) {
             throw dbError;
           }
-          console.error('[Auth] Database error during authorize:', dbError);
+          logger.error(
+            '[Auth] Database error during authorize',
+            {},
+            dbError instanceof Error ? dbError : undefined,
+          );
           return null;
         }
       },

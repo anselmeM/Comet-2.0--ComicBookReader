@@ -12,20 +12,22 @@ interface BBox {
   height: number;
 }
 
+import { getSharedCanvas } from './canvas';
+
 /**
  * Detects comic panels in an image using Recursive Gutter Splitting.
- * 
+ *
  * @param image - The ImageBitmap or HTMLImageElement to analyze.
  * @param options - Detection sensitivity options.
  * @returns An array of detected Panels.
  */
 export async function detectPanels(
   image: ImageBitmap | HTMLImageElement,
-  options = { threshold: 22, minPanelSize: 60, gutterWidth: 6, maxDepth: 12 }
+  options = { threshold: 22, minPanelSize: 60, gutterWidth: 6, maxDepth: 12 },
 ): Promise<Panel[]> {
-  const canvas = document.createElement('canvas');
+  const canvas = getSharedCanvas();
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  
+
   if (!ctx) throw new Error('Could not create detection canvas context');
 
   // 1. Preprocessing: Scale down for performance
@@ -33,7 +35,7 @@ export async function detectPanels(
   const scale = Math.min(MAX_DIM / image.width, MAX_DIM / image.height, 1);
   canvas.width = image.width * scale;
   canvas.height = image.height * scale;
-  
+
   ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const { data, width, height } = imageData;
@@ -50,14 +52,14 @@ export async function detectPanels(
       const g = data[px + 1];
       const b = data[px + 2];
       // Grayscale value
-      const val = (r * 0.299 + g * 0.587 + b * 0.114);
+      const val = r * 0.299 + g * 0.587 + b * 0.114;
       sum += val;
       sumSq += val * val;
       count++;
     }
 
     const avg = sum / count;
-    const variance = (sumSq / count) - (avg * avg);
+    const variance = sumSq / count - avg * avg;
     return variance;
   };
 
@@ -68,21 +70,29 @@ export async function detectPanels(
    */
   const trimPanel = (p: BBox): BBox => {
     let { x, y, width: w, height: h } = p;
-    
+
     // Trim from top
     while (h > options.minPanelSize && getVariance(true, y, x, x + w) < options.threshold) {
-      y++; h--;
+      y++;
+      h--;
     }
     // Trim from bottom
-    while (h > options.minPanelSize && getVariance(true, Math.max(0, y + h - 1), x, x + w) < options.threshold) {
+    while (
+      h > options.minPanelSize &&
+      getVariance(true, Math.max(0, y + h - 1), x, x + w) < options.threshold
+    ) {
       h--;
     }
     // Trim from left
     while (w > options.minPanelSize && getVariance(false, x, y, y + h) < options.threshold) {
-      x++; w--;
+      x++;
+      w--;
     }
     // Trim from right
-    while (w > options.minPanelSize && getVariance(false, Math.max(0, x + w - 1), y, y + h) < options.threshold) {
+    while (
+      w > options.minPanelSize &&
+      getVariance(false, Math.max(0, x + w - 1), y, y + h) < options.threshold
+    ) {
       w--;
     }
 
@@ -151,12 +161,12 @@ export async function detectPanels(
   splitRegion(0, 0, width, height, 0);
 
   const finalPanels = panels
-    .filter(p => p.width >= options.minPanelSize && p.height >= options.minPanelSize)
-    .map(p => ({
+    .filter((p) => p.width >= options.minPanelSize && p.height >= options.minPanelSize)
+    .map((p) => ({
       x: Math.round(p.x / scale),
       y: Math.round(p.y / scale),
       width: Math.round(p.width / scale),
-      height: Math.round(p.height / scale)
+      height: Math.round(p.height / scale),
     }));
 
   return sortPanels(finalPanels);
@@ -168,13 +178,13 @@ export async function detectPanels(
 export function sortPanels(panels: Panel[], rtl = false): Panel[] {
   return [...panels].sort((a, b) => {
     // 1. Group by rows (if Y difference is small, they are in the same row)
-    const rowThreshold = 50; 
+    const rowThreshold = 50;
     const yDiff = a.y - b.y;
-    
+
     if (Math.abs(yDiff) > rowThreshold) {
       return yDiff;
     }
-    
+
     // 2. Sort by X within the row
     return rtl ? b.x - a.x : a.x - b.x;
   });

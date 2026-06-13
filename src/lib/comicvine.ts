@@ -4,6 +4,7 @@
  */
 
 import { EnrichmentData } from '@/types';
+import { getCachedData, setCachedData } from '@/lib/redis';
 
 const COMICVINE_BASE = 'https://comicvine.gamespot.com/api';
 const API_KEY = process.env.COMICVINE_API_KEY;
@@ -29,14 +30,24 @@ export async function searchComicIssue(title: string): Promise<EnrichmentData | 
   }
 
   const cleanedTitle = cleanTitle(title);
-  
+
+  // Check Redis cache first
+  const cacheKey = `comicvine:search:${encodeURIComponent(cleanedTitle.toLowerCase())}`;
+  const cached = await getCachedData<EnrichmentData>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const searchUrl = new URL(`${COMICVINE_BASE}/search/`);
   searchUrl.searchParams.set('api_key', API_KEY);
   searchUrl.searchParams.set('format', 'json');
   searchUrl.searchParams.set('query', cleanedTitle);
   searchUrl.searchParams.set('resources', 'issue');
   searchUrl.searchParams.set('limit', '5'); // Fetch a few to find the best match
-  searchUrl.searchParams.set('field_list', 'id,name,issue_number,cover_date,image,volume,description,deck,character_credits,publisher');
+  searchUrl.searchParams.set(
+    'field_list',
+    'id,name,issue_number,cover_date,image,volume,description,deck,character_credits,publisher',
+  );
 
   const response = await fetch(searchUrl.toString(), {
     headers: { 'User-Agent': 'Comet Comic Reader/2.0' },
@@ -50,6 +61,8 @@ export async function searchComicIssue(title: string): Promise<EnrichmentData | 
   const results = data?.results ?? [];
 
   if (results.length === 0) {
+    // Cache the negative result for 24 hours
+    await setCachedData(cacheKey, null, 60 * 60 * 24);
     return null;
   }
 
@@ -57,7 +70,7 @@ export async function searchComicIssue(title: string): Promise<EnrichmentData | 
   // In a real app, we might do more fuzzy matching or let the user choose
   const result = results[0];
 
-  return {
+  const payload: EnrichmentData = {
     comicVineId: String(result.id),
     series: result.volume?.name ?? null,
     issue: result.issue_number ? parseInt(result.issue_number, 10) : null,
@@ -67,4 +80,9 @@ export async function searchComicIssue(title: string): Promise<EnrichmentData | 
     characters: result.character_credits?.map((c: { name: string }) => c.name) ?? [],
     publishers: result.publisher?.name ? [result.publisher.name] : [],
   };
+
+  // Cache the result for 7 days
+  await setCachedData(cacheKey, payload, 60 * 60 * 24 * 7);
+
+  return payload;
 }

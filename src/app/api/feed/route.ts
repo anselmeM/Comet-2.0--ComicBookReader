@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { getCache, setCache, genCacheKey } from '@/lib/cache';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/feed — Returns a list of recent reading activities across the community.
@@ -24,18 +25,17 @@ export async function GET() {
     // Fetch user's friends to restrict feed
     const friendships = await db.friendship.findMany({
       where: {
-        OR: [
-          { userId: session.user.id },
-          { friendId: session.user.id }
-        ]
+        OR: [{ userId: session.user.id }, { friendId: session.user.id }],
       },
       select: {
         userId: true,
         friendId: true,
-      }
+      },
     });
 
-    const friendIds = friendships.map(f => f.userId === session.user.id ? f.friendId : f.userId);
+    const friendIds = friendships.map((f) =>
+      f.userId === session.user.id ? f.friendId : f.userId,
+    );
     const allowedUserIds = [session.user.id, ...friendIds];
 
     // Fetch recent reading progress updates from the allowed user list
@@ -45,7 +45,7 @@ export async function GET() {
         // Only show activities that have some progress
         lastPage: { gt: 0 },
         // Only show users who have a name (to avoid showing anonymous/bot-like entries)
-        user: { name: { not: null } }
+        user: { name: { not: null } },
       },
       take: 20,
       orderBy: { updatedAt: 'desc' },
@@ -55,7 +55,7 @@ export async function GET() {
             id: true,
             name: true,
             image: true,
-          }
+          },
         },
         comic: {
           select: {
@@ -64,15 +64,16 @@ export async function GET() {
             coverUrl: true,
             series: true,
             issue: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     // Transform into activity objects
-    const activities = recentActivities.map(progress => {
-      const isCompleted = progress.readStatus === 'COMPLETED' || progress.lastPage >= progress.totalPages - 1;
-      
+    const activities = recentActivities.map((progress) => {
+      const isCompleted =
+        progress.readStatus === 'COMPLETED' || progress.lastPage >= progress.totalPages - 1;
+
       return {
         id: progress.id,
         userId: progress.userId,
@@ -93,7 +94,7 @@ export async function GET() {
 
     return NextResponse.json({ activities });
   } catch (error) {
-    console.error('[API] Feed GET Error:', error);
+    logger.error('Failed to get feed', {}, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

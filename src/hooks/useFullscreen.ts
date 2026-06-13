@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 
 // Extended Document type to include vendor-prefixed fullscreen APIs
 interface ExtendedDocument extends Document {
@@ -148,7 +149,7 @@ export function useFullscreen({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to enter fullscreen';
       setError(errorMessage);
-      console.error('Fullscreen error:', err);
+      logger.error('Fullscreen error:', {}, err instanceof Error ? err : undefined);
     }
   }, [elementRef, requestFullscreen, onEnter]);
 

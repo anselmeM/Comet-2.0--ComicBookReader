@@ -1,58 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
-const collectionSchema = z.object({
-  name: z.string().min(1, 'Collection name is required').max(50),
-  description: z.string().max(200).optional(),
-});
+import { CollectionSchema } from '@/types/schemas';
 
 /**
  * GET /api/collections — Returns all collections for the authenticated user
  */
-export async function GET() {
+export const GET = withAuth(async (req: NextRequest, context, session) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
-
     const collections = await db.collection.findMany({
       where: { userId: session.user.id },
       include: {
         _count: {
-          select: { items: true }
-        }
+          select: { items: true },
+        },
       },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updatedAt: 'desc' },
     });
 
     return NextResponse.json({ collections });
   } catch (error) {
-    console.error('[API] Collections GET error:', error);
+    logger.error('[API] Collections GET error', {}, error as Error);
     return NextResponse.json({ error: 'Failed to fetch collections' }, { status: 500 });
   }
-}
+});
 
 /**
  * POST /api/collections — Creates a new collection
  */
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, context, session) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
-
     const body = await req.json();
-    const result = collectionSchema.safeParse(body);
+    const result = CollectionSchema.safeParse(body);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 });
@@ -65,26 +47,29 @@ export async function POST(req: NextRequest) {
       where: {
         userId_name: {
           userId: session.user.id,
-          name
-        }
-      }
+          name,
+        },
+      },
     });
 
     if (existing) {
-      return NextResponse.json({ error: 'A collection with this name already exists' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'A collection with this name already exists' },
+        { status: 400 },
+      );
     }
 
     const collection = await db.collection.create({
       data: {
         userId: session.user.id,
         name,
-        description
-      }
+        description,
+      },
     });
 
     return NextResponse.json({ collection });
   } catch (error) {
-    console.error('[API] Collections POST error:', error);
+    logger.error('[API] Collections POST error', {}, error as Error);
     return NextResponse.json({ error: 'Failed to create collection' }, { status: 500 });
   }
-}
+});

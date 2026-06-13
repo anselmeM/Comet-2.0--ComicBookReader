@@ -1,35 +1,71 @@
 'use client';
 
-import { useUpdateComic } from './useLibrary';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNotification } from '@/components/atoms/Toast';
+import { useAuthCallback } from './useAuthCallback';
+import { PaginatedLibraryResponseDTO } from '@/types';
+import { logger } from '@/lib/logger';
 
 /**
  * Hook to manage comic favorites with server synchronization.
- * Uses the useUpdateComic mutation to persist changes to the DB.
+ * Uses dedicated POST/DELETE endpoints.
  */
 export function useFavorites() {
-  const updateComic = useUpdateComic();
+  const queryClient = useQueryClient();
   const { triggerNotification } = useNotification();
+  const { handleAuthError } = useAuthCallback();
+
+  const favoriteMutation = useMutation({
+    mutationFn: async ({ comicId, isFavorite }: { comicId: string; isFavorite: boolean }) => {
+      const method = isFavorite ? 'POST' : 'DELETE';
+      const res = await fetch(`/api/comics/${comicId}/favorite`, {
+        method,
+      });
+
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update favorite status');
+      }
+
+      return res.json();
+    },
+    onSuccess: (updatedComic) => {
+      // Optimistically update the library cache
+      queryClient.setQueriesData<PaginatedLibraryResponseDTO>(
+        { queryKey: ['library'] },
+        (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.map((c) =>
+              c.id === updatedComic.id ? { ...c, ...updatedComic } : c,
+            ),
+          };
+        },
+      );
+      // Invalidate to make sure cache matches DB
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+    },
+  });
 
   const toggleFavorite = async (comicId: string, currentStatus: boolean) => {
+    const nextStatus = !currentStatus;
     try {
-      await updateComic.mutateAsync({
-        id: comicId,
-        data: { isFavorite: !currentStatus },
+      await favoriteMutation.mutateAsync({
+        comicId,
+        isFavorite: nextStatus,
       });
-      
-      triggerNotification(
-        !currentStatus ? 'Added to favorites' : 'Removed from favorites',
-        'success'
-      );
+
+      triggerNotification(nextStatus ? 'Added to favorites' : 'Removed from favorites', 'success');
     } catch (error) {
       triggerNotification('Failed to update favorite status', 'error');
-      console.error(error);
+      logger.error(String(error), {}, error instanceof Error ? error : undefined);
     }
   };
 
-  // Helper to check if a comic is favorite (mostly for components that don't have the comic object)
-  // In most cases, components should use comic.isFavorite directly.
   const isFavorite = (comic: { isFavorite?: boolean }) => {
     return !!comic.isFavorite;
   };
@@ -37,6 +73,6 @@ export function useFavorites() {
   return {
     toggleFavorite,
     isFavorite,
-    isUpdating: updateComic.isPending,
+    isUpdating: favoriteMutation.isPending,
   };
 }

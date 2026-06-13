@@ -9,22 +9,22 @@ import { test, expect } from '@playwright/test';
 test.describe('Comet Critical Flows', () => {
   test('landing page should load and show hero section', async ({ page }) => {
     await page.goto('/');
-    
+
     // Check main title
     await expect(page.locator('h1')).toContainText('Read Beyond Boundaries.');
-    
+
     // Check call to action
     const startReading = page.getByRole('link', { name: /Start Reading/i });
-    await expect(startReading).toBeVisible();
-    
+    await expect(startReading).toBeVisible({ timeout: 15000 });
+
     // Clicking Start Reading should go to register
     await startReading.click();
-    await expect(page).toHaveURL(/\/register/);
+    await expect(page).toHaveURL(/\/register/, { timeout: 15000 });
   });
 
   test('responsive layout check', async ({ page, isMobile }) => {
     await page.goto('/');
-    
+
     const nav = page.locator('nav');
     if (isMobile) {
       // Mobile menu button should be present

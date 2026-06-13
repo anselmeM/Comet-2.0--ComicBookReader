@@ -5,13 +5,10 @@ import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { Session } from 'next-auth';
 import { auth } from '@/auth';
+import { PaginatedLibraryResponseSchema, ComicDTOSchema } from '@/types/schemas';
 
 vi.mock('@/auth', () => ({
   auth: vi.fn() as any,
-}));
-
-vi.mock('@/lib/auth-utils', () => ({
-  validateSession: vi.fn(),
 }));
 
 // More precise type for the session we use in the app
@@ -37,13 +34,13 @@ vi.mock('@/lib/db', () => ({
 
 describe('Library API Route', () => {
   const mockSession: CometSession = {
-    user: { 
-      id: 'user-123', 
-      plan: 'FREE', 
+    user: {
+      id: 'user-123',
+      plan: 'FREE',
       hasCompletedOnboarding: true,
       role: 'USER',
       defaultReadingMode: 'single-page',
-      theme: 'dark'
+      theme: 'dark',
     },
     expires: new Date().toISOString(),
   };
@@ -59,7 +56,7 @@ describe('Library API Route', () => {
 
       const mockComics = [
         {
-          id: 'comic-1',
+          id: 'cl0123456000008l987654321',
           title: 'Test Comic',
           pageCount: 10,
           coverUrl: null,
@@ -69,20 +66,25 @@ describe('Library API Route', () => {
           addedAt: new Date(),
           lastReadAt: null,
           progress: null,
+          isFavorite: false,
+          rating: 0,
+          syncStatus: 'LOCAL',
         },
       ];
       vi.mocked(db.comic.findMany).mockResolvedValue(mockComics as unknown as []);
 
       const req = new Request('http://localhost:3100/api/library?page=1&limit=10');
       const response = await GET(req);
-      const data = (await response.json()) as {
-        data: typeof mockComics;
-        pagination: { total: number };
-      };
+      const data = await response.json();
 
       expect(response.status).toBe(200);
       expect(data.data).toHaveLength(1);
       expect(data.pagination.total).toBe(1);
+
+      // Contract test assertion
+      const validationResult = PaginatedLibraryResponseSchema.safeParse(data);
+      expect(validationResult.success).toBe(true);
+
       expect(db.comic.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           take: 10,
@@ -107,7 +109,7 @@ describe('Library API Route', () => {
       vi.mocked(db.user.findUnique).mockResolvedValue({ id: 'user-123' } as any);
 
       const mockComic = {
-        id: 'comic-1',
+        id: 'cl0123456000008l987654321',
         title: 'New Comic',
         pageCount: 10,
         coverUrl: null,
@@ -117,6 +119,9 @@ describe('Library API Route', () => {
         addedAt: new Date(),
         lastReadAt: null,
         progress: null,
+        isFavorite: false,
+        rating: 0,
+        syncStatus: 'LOCAL',
       };
       vi.mocked(db.comic.findUnique).mockResolvedValue(null);
       vi.mocked(db.comic.create).mockResolvedValue(mockComic as any);
@@ -134,10 +139,14 @@ describe('Library API Route', () => {
       });
 
       const response = await POST(req);
-      const data = (await response.json()) as { title: string };
+      const data = await response.json();
 
       expect(response.status).toBe(201);
       expect(data.title).toBe('New Comic');
+
+      // Contract test assertion
+      const validationResult = ComicDTOSchema.safeParse(data);
+      expect(validationResult.success).toBe(true);
     });
 
     it('should return 415 if content-type is not application/json', async () => {

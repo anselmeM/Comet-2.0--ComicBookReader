@@ -8,6 +8,7 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: vi.fn(),
   useMutation: vi.fn(),
   useQueryClient: vi.fn(),
+  keepPreviousData: vi.fn(),
 }));
 
 // Mock Auth Callback
@@ -41,12 +42,8 @@ describe('useLibrary', () => {
 
     renderHook(() => useLibrary({ search: 'batman', page: 2 }));
 
-    expect(globalFetch).toHaveBeenCalledWith(
-      expect.stringContaining('search=batman')
-    );
-    expect(globalFetch).toHaveBeenCalledWith(
-      expect.stringContaining('page=2')
-    );
+    expect(globalFetch).toHaveBeenCalledWith(expect.stringContaining('search=batman'));
+    expect(globalFetch).toHaveBeenCalledWith(expect.stringContaining('page=2'));
   });
 });
 
@@ -69,10 +66,12 @@ describe('useDeleteComic', () => {
     let mutationFn: any;
     (useMutation as any).mockImplementation(({ mutationFn: fn, onSuccess }: any) => {
       mutationFn = fn;
-      return { mutate: async (id: string) => {
-        await fn(id);
-        onSuccess();
-      }};
+      return {
+        mutate: async (id: string) => {
+          await fn(id);
+          onSuccess();
+        },
+      };
     });
 
     const globalFetch = vi.fn().mockResolvedValue({
@@ -82,12 +81,12 @@ describe('useDeleteComic', () => {
     vi.stubGlobal('fetch', globalFetch);
 
     const { result } = renderHook(() => useDeleteComic());
-    
+
     await result.current.mutate('comic-123');
 
     expect(globalFetch).toHaveBeenCalledWith(
       '/api/library/comic-123',
-      expect.objectContaining({ method: 'DELETE' })
+      expect.objectContaining({ method: 'DELETE' }),
     );
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['library'] });
   });

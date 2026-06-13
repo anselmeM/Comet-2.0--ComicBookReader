@@ -3,6 +3,7 @@ import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
 import { rateLimit } from '@/lib/rate-limit';
 import { headers } from 'next/headers';
+import { logger } from '@/lib/logger';
 
 export async function loginAction(prevState: any, formData: FormData) {
   try {
@@ -23,19 +24,19 @@ export async function loginAction(prevState: any, formData: FormData) {
       return { error: 'Please enter both email and password.' };
     }
 
-    // Use redirect: false to avoid "Failed to fetch" error when signIn 
+    // Use redirect: false to avoid "Failed to fetch" error when signIn
     // throws redirect from server action context. Handle redirect manually.
     const result = await signIn('credentials', {
       email: email.trim().toLowerCase(),
       password: password,
       redirect: false,
     });
-    
+
     if (result?.error) {
       // This is caught by the AuthError handler below
       throw new Error('AUTH_ERROR_' + result.error);
     }
-    
+
     // Return the URL for client-side redirect
     return { success: true, redirectUrl: callbackUrl };
   } catch (error: any) {
@@ -47,12 +48,12 @@ export async function loginAction(prevState: any, formData: FormData) {
       }
       return { error: 'Something went wrong. Please try again.' };
     }
-    
+
     // Handle custom lockout error
     if (error.message?.includes('Account locked')) {
       return { error: error.message };
     }
-    
+
     if (error instanceof AuthError) {
       switch (error.type) {
         case 'CredentialsSignin':
@@ -61,14 +62,14 @@ export async function loginAction(prevState: any, formData: FormData) {
           return { error: 'Something went wrong. Please try again.' };
       }
     }
-    
-    // Very important: Re-throw the error if it's a redirect, 
+
+    // Very important: Re-throw the error if it's a redirect,
     // as Next.js uses errors for redirects.
     if (error.message === 'NEXT_REDIRECT' || error.digest?.startsWith('NEXT_REDIRECT')) {
       throw error;
     }
-    
-    console.error('[LoginAction] Unexpected error:', error);
+
+    logger.error('[LoginAction] Unexpected error:', {}, error instanceof Error ? error : undefined);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
 }

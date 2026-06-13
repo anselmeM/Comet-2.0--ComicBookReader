@@ -6,22 +6,23 @@ import { useStorage } from '@/hooks/useStorage';
 import { useReaderStore } from '@/stores/readerStore';
 import type { ReaderMode } from '@/stores/readerStore';
 import NextImage from 'next/image';
-import { 
-  Trash2, 
-  Smartphone, 
-  HardDrive, 
-  Monitor, 
-  BookOpen, 
-  RefreshCw, 
-  User, 
-  Camera, 
-  Loader2, 
-  Save, 
+import {
+  Trash2,
+  Smartphone,
+  HardDrive,
+  Monitor,
+  BookOpen,
+  RefreshCw,
+  User,
+  Camera,
+  Loader2,
+  Save,
   File,
   AlignRight,
-  ChevronLeft
+  ChevronLeft,
 } from 'lucide-react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 function formatBytes(bytes: number, decimals = 2) {
   if (!+bytes) return '0 Bytes';
@@ -38,7 +39,7 @@ export function SettingsPanel() {
   const setMode = useReaderStore((state) => state.setMode);
   const brightness = useReaderStore((state) => state.brightness);
   const setBrightness = useReaderStore((state) => state.setBrightness);
-  
+
   // User profile state
   const { data: session, update: updateSession } = useSession();
   const [isUploading, setIsUploading] = useState(false);
@@ -52,34 +53,34 @@ export function SettingsPanel() {
       setName(session.user.name);
     }
   }, [session?.user?.name]);
-  
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
       return;
     }
-    
+
     if (file.size > 2 * 1024 * 1024) {
       alert('Image must be less than 2MB');
       return;
     }
-    
+
     setIsUploading(true);
-    
+
     try {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64Image = event.target?.result as string;
-        
+
         const response = await fetch('/api/user/profile', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64Image })
+          body: JSON.stringify({ image: base64Image }),
         });
-        
+
         if (response.ok) {
           await updateSession();
         } else {
@@ -89,7 +90,7 @@ export function SettingsPanel() {
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', {}, error instanceof Error ? error : undefined);
       setIsUploading(false);
       alert('Failed to upload image');
     }
@@ -98,14 +99,14 @@ export function SettingsPanel() {
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    
+
     try {
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name }),
       });
-      
+
       if (response.ok) {
         await updateSession();
         alert('Profile updated!');
@@ -114,7 +115,7 @@ export function SettingsPanel() {
         alert(data.error || 'Failed to update profile');
       }
     } catch (error) {
-      console.error('Update error:', error);
+      logger.error('Update error:', {}, error instanceof Error ? error : undefined);
       alert('Failed to update profile');
     } finally {
       setIsSaving(false);
@@ -123,15 +124,19 @@ export function SettingsPanel() {
 
   const saveReadingPreference = async (newMode: ReaderMode) => {
     setMode(newMode);
-    
+
     try {
       await fetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ defaultReadingMode: newMode })
+        body: JSON.stringify({ defaultReadingMode: newMode }),
       });
     } catch (error) {
-      console.error('Failed to save reading preference:', error);
+      logger.error(
+        'Failed to save reading preference:',
+        {},
+        error instanceof Error ? error : undefined,
+      );
     }
   };
 
@@ -140,18 +145,26 @@ export function SettingsPanel() {
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: newTheme })
+        body: JSON.stringify({ theme: newTheme }),
       });
       if (response.ok) {
         await updateSession();
       }
     } catch (error) {
-      console.error('Failed to save theme preference:', error);
+      logger.error(
+        'Failed to save theme preference:',
+        {},
+        error instanceof Error ? error : undefined,
+      );
     }
   };
 
   const handleClear = async () => {
-    if (confirm('Are you sure you want to clear your local comic cache? You will need to re-download or re-parse comics to read them offline.')) {
+    if (
+      confirm(
+        'Are you sure you want to clear your local comic cache? You will need to re-download or re-parse comics to read them offline.',
+      )
+    ) {
       await clearCache();
       alert('Cache cleared!');
     }
@@ -160,7 +173,7 @@ export function SettingsPanel() {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-12 pb-24 text-comet-text">
       <header className="flex items-center gap-6">
-        <Link 
+        <Link
           href="/library"
           className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl hover:bg-neutral-800 transition-all text-neutral-400 hover:text-blue-500 shadow-sm"
         >
@@ -183,8 +196,8 @@ export function SettingsPanel() {
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="relative">
               {session?.user?.image ? (
-                <NextImage 
-                  src={session.user.image} 
+                <NextImage
+                  src={session.user.image}
                   alt={name || session.user.name || 'User'}
                   width={96}
                   height={96}
@@ -196,15 +209,19 @@ export function SettingsPanel() {
                   {(name || session?.user?.name || 'U').charAt(0).toUpperCase()}
                 </div>
               )}
-              <button 
+              <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
                 className="absolute bottom-0 right-0 p-2 bg-blue-500 rounded-full text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
                 title="Change profile picture"
               >
-                {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                {isUploading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Camera size={16} />
+                )}
               </button>
-              <input 
+              <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
@@ -212,26 +229,33 @@ export function SettingsPanel() {
                 className="hidden"
               />
             </div>
-            
+
             <div className="flex-1 text-center sm:text-left">
-              <h3 className="text-lg font-semibold text-white">{name || session?.user?.name || 'User'}</h3>
+              <h3 className="text-lg font-semibold text-white">
+                {name || session?.user?.name || 'User'}
+              </h3>
               <p className="text-neutral-400 text-sm">{session?.user?.email}</p>
             </div>
           </div>
 
-          <form onSubmit={handleProfileUpdate} className="space-y-4 pt-4 border-t border-neutral-800">
+          <form
+            onSubmit={handleProfileUpdate}
+            className="space-y-4 pt-4 border-t border-neutral-800"
+          >
             <div className="space-y-2">
-              <label htmlFor="display-name" className="block text-sm font-medium text-neutral-300">Display Name</label>
+              <label htmlFor="display-name" className="block text-sm font-medium text-neutral-300">
+                Display Name
+              </label>
               <div className="flex gap-2">
-                <input 
+                <input
                   id="display-name"
-                  type="text" 
+                  type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your name"
                 />
-                <button 
+                <button
                   type="submit"
                   disabled={isSaving || name === session?.user?.name}
                   className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -254,21 +278,23 @@ export function SettingsPanel() {
 
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-3">Default Reading Mode</label>
+            <label className="block text-sm font-medium text-neutral-300 mb-3">
+              Default Reading Mode
+            </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 { id: 'single-page', label: 'Single Page', icon: <File size={18} /> },
                 { id: 'single-vertical', label: 'Vertical Scroll', icon: <Smartphone size={18} /> },
                 { id: 'dual-spread', label: 'Dual Spread', icon: <Monitor size={18} /> },
-                { id: 'manga-rtl', label: 'Manga (RTL)', icon: <AlignRight size={18} /> }
-              ].map(item => (
+                { id: 'manga-rtl', label: 'Manga (RTL)', icon: <AlignRight size={18} /> },
+              ].map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => saveReadingPreference(item.id as ReaderMode)}
                   className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
-                    mode === item.id 
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.1)]' 
+                    mode === item.id
+                      ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
                       : 'border-neutral-800 bg-neutral-900 text-neutral-400 hover:border-neutral-600 hover:text-white'
                   }`}
                 >
@@ -280,14 +306,16 @@ export function SettingsPanel() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-3">Brightness Filter</label>
+            <label className="block text-sm font-medium text-neutral-300 mb-3">
+              Brightness Filter
+            </label>
             <div className="p-6 bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md">
               <div className="flex items-center gap-4">
-                <input 
-                  type="range" 
-                  min="0.5" 
-                  max="1.5" 
-                  step="0.05" 
+                <input
+                  type="range"
+                  min="0.5"
+                  max="1.5"
+                  step="0.05"
                   value={brightness}
                   onChange={(e) => setBrightness(parseFloat(e.target.value))}
                   className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
@@ -297,7 +325,9 @@ export function SettingsPanel() {
                   {Math.round(brightness * 100)}%
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 mt-4">Adjusts the brightness of the reader viewport.</p>
+              <p className="text-xs text-neutral-500 mt-4">
+                Adjusts the brightness of the reader viewport.
+              </p>
             </div>
           </div>
 
@@ -307,15 +337,16 @@ export function SettingsPanel() {
               {[
                 { id: 'dark', label: 'Dark', bg: 'bg-zinc-950', border: 'border-zinc-800' },
                 { id: 'light', label: 'Light', bg: 'bg-white', border: 'border-zinc-200' },
-                { id: 'sepia', label: 'Sepia', bg: 'bg-[#f4ecd8]', border: 'border-[#e0d6b8]' }
-              ].map(item => (
+                { id: 'sepia', label: 'Sepia', bg: 'bg-[#f4ecd8]', border: 'border-[#e0d6b8]' },
+              ].map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => saveThemePreference(item.id)}
                   className={`flex items-center flex-col gap-3 p-4 rounded-xl border transition-all ${
-                    (session?.user as any)?.theme === item.id || (!session?.user && item.id === 'dark')
-                      ? 'border-blue-500 ring-2 ring-blue-500/20' 
+                    (session?.user as any)?.theme === item.id ||
+                    (!session?.user && item.id === 'dark')
+                      ? 'border-blue-500 ring-2 ring-blue-500/20'
                       : 'border-neutral-800 bg-neutral-900'
                   }`}
                 >
@@ -343,8 +374,8 @@ export function SettingsPanel() {
                 Comics you open are parsed and stored locally for instant, offline access.
               </p>
             </div>
-            
-            <button 
+
+            <button
               onClick={handleClear}
               className="flex items-center justify-center gap-2 px-6 py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 active:scale-95 transition-all shrink-0 font-semibold"
             >
@@ -356,45 +387,58 @@ export function SettingsPanel() {
           <div className="space-y-4">
             <div className="flex justify-between items-end">
               <div className="space-y-1">
-                <span className="text-neutral-500 text-xs font-bold uppercase tracking-wider">Used Space</span>
+                <span className="text-neutral-500 text-xs font-bold uppercase tracking-wider">
+                  Used Space
+                </span>
                 <div className="text-3xl font-black text-white">
                   {info.loading ? '...' : formatBytes(info.idbCustomUsage)}
                 </div>
               </div>
-              
+
               <div className="text-right space-y-1">
-                <span className="text-neutral-500 text-xs font-bold uppercase tracking-wider text-right block">Storage Health</span>
-                <div className={`text-sm font-bold flex items-center gap-2 ${
-                  (info.idbCustomUsage / info.quota) > 0.8 ? 'text-amber-400' : 'text-emerald-400'
-                }`}>
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${
-                    (info.idbCustomUsage / info.quota) > 0.8 ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
-                  }`} />
-                  {(info.idbCustomUsage / info.quota) > 0.8 ? 'Near Capacity' : 'Healthy'}
+                <span className="text-neutral-500 text-xs font-bold uppercase tracking-wider text-right block">
+                  Storage Health
+                </span>
+                <div
+                  className={`text-sm font-bold flex items-center gap-2 ${
+                    info.idbCustomUsage / info.quota > 0.8 ? 'text-amber-400' : 'text-emerald-400'
+                  }`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full animate-pulse ${
+                      info.idbCustomUsage / info.quota > 0.8
+                        ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'
+                        : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
+                    }`}
+                  />
+                  {info.idbCustomUsage / info.quota > 0.8 ? 'Near Capacity' : 'Healthy'}
                 </div>
               </div>
             </div>
-            
+
             {/* Progress Bar Container */}
             <div className="relative w-full h-4 bg-black/40 rounded-full border border-white/5 overflow-hidden">
-              <div 
+              <div
                 className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                  (info.idbCustomUsage / info.quota) > 0.8 
-                    ? 'bg-gradient-to-r from-amber-500 to-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
+                  info.idbCustomUsage / info.quota > 0.8
+                    ? 'bg-gradient-to-r from-amber-500 to-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
                     : 'bg-gradient-to-r from-blue-600 via-indigo-500 to-comet-blue shadow-[0_0_15px_rgba(59,130,246,0.2)]'
                 }`}
-                style={{ 
-                  width: info.quota > 0 ? `${Math.max(2, (info.idbCustomUsage / info.quota) * 100)}%` : '0%' 
+                style={{
+                  width:
+                    info.quota > 0
+                      ? `${Math.max(2, (info.idbCustomUsage / info.quota) * 100)}%`
+                      : '0%',
                 }}
               />
             </div>
-            
+
             <div className="flex justify-between items-center text-xs text-neutral-500">
               <span>Limit: {info.quota > 0 ? formatBytes(info.quota) : 'Unlimited'}</span>
               <div className="flex items-center gap-3">
                 <span>* Estimated usage for parsed pages.</span>
-                <button 
-                  onClick={refresh} 
+                <button
+                  onClick={refresh}
                   className="text-comet-blue hover:text-white transition-colors flex items-center gap-1 font-bold"
                 >
                   <RefreshCw className="w-3 h-3" />
@@ -405,7 +449,6 @@ export function SettingsPanel() {
           </div>
         </div>
       </section>
-
     </div>
   );
 }

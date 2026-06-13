@@ -6,15 +6,16 @@
 
 import { getDB } from '@/lib/idb';
 import { SyncTask } from '@/types';
+import { logger } from '@/lib/logger';
 
 /**
  * Queues a request for background sync.
  */
 export async function queueSyncTask(
-  url: string, 
-  method: SyncTask['method'], 
+  url: string,
+  method: SyncTask['method'],
   body: any,
-  headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  headers: Record<string, string> = { 'Content-Type': 'application/json' },
 ): Promise<void> {
   const db = await getDB();
   const task: SyncTask = {
@@ -24,18 +25,22 @@ export async function queueSyncTask(
     body,
     headers,
     timestamp: Date.now(),
-    attempts: 0
+    attempts: 0,
   };
-  
+
   await db.put('sync_tasks', task);
-  
+
   // Try to register for native background sync if available
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'SyncManager' in window) {
     try {
       const registration = await navigator.serviceWorker.ready;
       await (registration as any).sync.register('comet-sync');
     } catch (err) {
-      console.warn('[SyncManager] Failed to register native sync, falling back to manual process.', err);
+      logger.warn(
+        '[SyncManager] Failed to register native sync, falling back to manual process.',
+        {},
+        err instanceof Error ? err : undefined,
+      );
       if (navigator.onLine) processSyncQueue();
     }
   } else {
@@ -52,7 +57,7 @@ export async function queueSyncTask(
 export async function processSyncQueue(): Promise<number> {
   const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
   if (!isOnline) return 0;
-  
+
   const db = await getDB();
   const tasks = await db.getAll('sync_tasks');
   let successCount = 0;
@@ -79,7 +84,11 @@ export async function processSyncQueue(): Promise<number> {
         }
       }
     } catch (err) {
-      console.warn(`[SyncManager] Failed to sync task ${task.id}, will retry later.`, err);
+      logger.warn(
+        `[SyncManager] Failed to sync task ${task.id}, will retry later.`,
+        {},
+        err instanceof Error ? err : undefined,
+      );
     }
   }
 
@@ -93,7 +102,7 @@ export function initSyncManager() {
   if (typeof window === 'undefined') return;
 
   window.addEventListener('online', () => {
-    console.log('[SyncManager] Online detected, processing queue...');
+    logger.info('[SyncManager] Online detected, processing queue...');
     processSyncQueue();
   });
 }

@@ -1,24 +1,18 @@
 import { NextResponse } from 'next/server';
-import { validateSession } from '@/lib/auth-utils';
+import { withAuth } from '@/lib/api-middleware';
 import { uploadFile, getComicKey } from '@/lib/storage';
 import { z } from 'zod';
 
 import { COMIC_CONFIG } from '@/lib/constants';
 
-const uploadSchema = z.object({
-  filehash: z.string().length(64),
-  extension: z.enum(['cbz', 'cbr']),
-});
+import { UploadSchema } from '@/types/schemas';
 
 const MAGIC_BYTES: Record<string, number[]> = {
   cbz: [0x50, 0x4b, 0x03, 0x04], // PK zip signature
   cbr: [0x52, 0x61, 0x72, 0x21], // Rar! signature
 };
 
-export async function POST(req: Request) {
-  const { session, errorResponse } = await validateSession();
-  if (errorResponse) return errorResponse;
-
+export const POST = withAuth(async (req: Request, context, session) => {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
@@ -26,7 +20,7 @@ export async function POST(req: Request) {
     const extension = formData.get('extension') as string;
 
     // Validate inputs
-    const validated = uploadSchema.safeParse({ filehash, extension });
+    const validated = UploadSchema.safeParse({ filehash, extension });
     if (!validated.success || !file) {
       return NextResponse.json({ error: 'Invalid upload data' }, { status: 400 });
     }
@@ -55,4 +49,4 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: 'Failed to upload comic' }, { status: 500 });
   }
-}
+});

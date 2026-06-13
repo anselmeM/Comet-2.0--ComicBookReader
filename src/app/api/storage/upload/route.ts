@@ -1,20 +1,20 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
 import { s3, BUCKET_NAME } from '@/lib/storage';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/storage/upload — Generates a pre-signed URL for comic upload.
  * Requires: PREMIUM plan.
  */
 export async function POST(req: Request) {
+  let comicId: string | undefined;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse) return errorResponse;
 
     // 1. Verify PREMIUM plan
     const user = await db.user.findUnique({
@@ -23,10 +23,15 @@ export async function POST(req: Request) {
     });
 
     if (user?.plan !== 'PREMIUM') {
-      return NextResponse.json({ error: 'Upgrade to Premium to enable Cloud Sync' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Upgrade to Premium to enable Cloud Sync' },
+        { status: 403 },
+      );
     }
 
-    const { comicId, contentType, fileName } = await req.json();
+    const body = await req.json();
+    comicId = body.comicId;
+    const { contentType, fileName } = body;
 
     if (!comicId || !contentType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -47,7 +52,10 @@ export async function POST(req: Request) {
     // 4. Generate PUT URL (with local mock fallback if S3 is not configured in dev)
     let url = '';
     const isDev = process.env.NODE_ENV === 'development';
-    const isS3Configured = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_ENDPOINT;
+    const isS3Configured =
+      process.env.AWS_ACCESS_KEY_ID &&
+      process.env.AWS_SECRET_ACCESS_KEY &&
+      process.env.AWS_ENDPOINT;
 
     if (isDev && !isS3Configured) {
       url = `http://localhost:3101/api/storage/mock-s3?key=${encodeURIComponent(key)}`;
@@ -63,15 +71,15 @@ export async function POST(req: Request) {
     // 5. Update comic status to PENDING
     await db.comic.update({
       where: { id: comicId },
-      data: { 
+      data: {
         storageKey: key,
-        syncStatus: 'PENDING'
+        syncStatus: 'PENDING',
       },
     });
 
     return NextResponse.json({ url, key });
   } catch (error) {
-    console.error('[STORAGE_UPLOAD_ERROR]', error);
+    logger.error('Storage upload error', { comicId }, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -80,13 +88,14 @@ export async function POST(req: Request) {
  * PATCH /api/storage/upload — Marks an upload as completed.
  */
 export async function PATCH(req: Request) {
+  let comicId: string | undefined;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse) return errorResponse;
 
-    const { comicId, status } = await req.json(); // status: 'SYNCED' or 'ERROR'
+    const body = await req.json();
+    comicId = body.comicId;
+    const { status } = body; // status: 'SYNCED' or 'ERROR'
 
     if (!comicId || !status) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -99,7 +108,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[STORAGE_UPLOAD_PATCH_ERROR]', error);
+    logger.error('Storage upload patch error', { comicId }, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

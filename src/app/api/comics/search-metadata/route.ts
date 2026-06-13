@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 const COMICVINE_BASE = 'https://comicvine.gamespot.com/api';
 const API_KEY = process.env.COMICVINE_API_KEY;
 
-export async function GET(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized', code: 'AUTH_EXPIRED' }, { status: 401 });
-  }
-
+export const GET = withAuth(async (req: Request, context, session) => {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get('query');
 
@@ -29,10 +25,14 @@ export async function GET(req: Request) {
     });
 
     if (user?.plan !== 'PREMIUM') {
-      return NextResponse.json({ 
-        error: 'Automatic metadata search is a Premium feature. Upgrade to enable online database searching.',
-        code: 'PREMIUM_REQUIRED'
-      }, { status: 403 });
+      return NextResponse.json(
+        {
+          error:
+            'Automatic metadata search is a Premium feature. Upgrade to enable online database searching.',
+          code: 'PREMIUM_REQUIRED',
+        },
+        { status: 403 },
+      );
     }
 
     const searchUrl = new URL(`${COMICVINE_BASE}/search/`);
@@ -41,7 +41,10 @@ export async function GET(req: Request) {
     searchUrl.searchParams.set('query', query);
     searchUrl.searchParams.set('resources', 'issue');
     searchUrl.searchParams.set('limit', '5');
-    searchUrl.searchParams.set('field_list', 'id,name,issue_number,cover_date,image,volume,description,deck');
+    searchUrl.searchParams.set(
+      'field_list',
+      'id,name,issue_number,cover_date,image,volume,description,deck',
+    );
 
     const response = await fetch(searchUrl.toString(), {
       headers: { 'User-Agent': 'Comet Comic Reader/2.0' },
@@ -54,7 +57,9 @@ export async function GET(req: Request) {
     const data = await response.json();
     const results = (data?.results ?? []).map((result: any) => ({
       comicVineId: String(result.id),
-      title: result.name || (result.volume?.name ? `${result.volume.name} #${result.issue_number}` : 'Unknown Title'),
+      title:
+        result.name ||
+        (result.volume?.name ? `${result.volume.name} #${result.issue_number}` : 'Unknown Title'),
       series: result.volume?.name ?? '',
       issue: result.issue_number ? parseInt(result.issue_number, 10) : null,
       year: result.cover_date ? new Date(result.cover_date).getFullYear() : null,
@@ -64,7 +69,10 @@ export async function GET(req: Request) {
 
     return NextResponse.json(results);
   } catch (error: any) {
-    console.error('[SEARCH_METADATA_ERROR]', error);
-    return NextResponse.json({ error: error.message || 'Failed to search ComicVine' }, { status: 502 });
+    logger.error('Failed to search ComicVine metadata', { query }, error as Error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to search ComicVine' },
+      { status: 502 },
+    );
   }
-}
+});

@@ -12,7 +12,14 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const plan = req.auth?.user?.plan || 'FREE';
 
-  const isPublicRoute = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/pricing'].includes(nextUrl.pathname);
+  const isPublicRoute = [
+    '/',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/pricing',
+  ].includes(nextUrl.pathname);
   const isPublicApiRoute = nextUrl.pathname.startsWith('/api/auth');
   const isStorageApiRoute = nextUrl.pathname.startsWith('/api/storage');
 
@@ -20,12 +27,14 @@ export default auth((req) => {
     return;
   }
 
+  // Bypass auth for E2E tests
+  if (process.env.NODE_ENV !== 'production' && req.cookies.get('__COMET_TEST_BYPASS')) {
+    return;
+  }
+
   // Restrict Storage APIs to PREMIUM users
   if (isStorageApiRoute && plan !== 'PREMIUM') {
-    return NextResponse.json(
-      { error: 'Premium subscription required' },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: 'Premium subscription required' }, { status: 403 });
   }
 
   if (isPublicRoute) {

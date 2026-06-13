@@ -1,0 +1,7 @@
+#!/sh
+# .husky/pre-commit
+# Runs quality checks before git commit
+
+npm run typecheck
+npx lint-staged
+npm run test:ci

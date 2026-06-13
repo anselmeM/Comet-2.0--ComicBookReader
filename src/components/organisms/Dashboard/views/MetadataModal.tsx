@@ -9,6 +9,7 @@ import { useNotification } from '@/components/atoms/Toast';
 import Image from 'next/image';
 
 import { createPortal } from 'react-dom';
+import { logger } from '@/lib/logger';
 
 interface MetadataModalProps {
   comic: DashboardComic;
@@ -30,7 +31,7 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
   const updateComic = useUpdateComic();
   const { triggerNotification } = useNotification();
   const [mounted, setMounted] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: comic.title || '',
     series: comic.author || '', // DashboardComic uses 'author' for series
@@ -38,7 +39,7 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
     year: comic.year?.toString() || '',
     rating: comic.rating || 0,
     coverUrl: comic.coverUrl || '',
-    comicVineId: comic.comicVineId || ''
+    comicVineId: comic.comicVineId || '',
   });
 
   const [searchQuery, setSearchQuery] = useState(comic.title || '');
@@ -61,7 +62,7 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
         year: comic.year?.toString() || '',
         rating: comic.rating || 0,
         coverUrl: comic.coverUrl || '',
-        comicVineId: comic.comicVineId || ''
+        comicVineId: comic.comicVineId || '',
       });
       setSearchQuery(comic.title || '');
       setSearchResults([]);
@@ -72,12 +73,14 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    
+
     setIsSearching(true);
     try {
-      const res = await fetch(`/api/comics/search-metadata?query=${encodeURIComponent(searchQuery.trim())}`);
+      const res = await fetch(
+        `/api/comics/search-metadata?query=${encodeURIComponent(searchQuery.trim())}`,
+      );
       const data = await res.json();
-      
+
       if (res.ok) {
         setSearchResults(data);
         if (data.length === 0) {
@@ -91,7 +94,7 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
         }
       }
     } catch (err) {
-      console.error('[MetadataSearch] Error:', err);
+      logger.error('[MetadataSearch] Error:', {}, err instanceof Error ? err : undefined);
       triggerNotification('An unexpected error occurred during search', 'error');
     } finally {
       setIsSearching(false);
@@ -99,14 +102,14 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
   };
 
   const handleSelectResult = (result: SearchResult) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       title: result.title,
       series: result.series || '',
       issue: result.issue?.toString() || '',
       year: result.year?.toString() || '',
       coverUrl: result.coverUrl || prev.coverUrl,
-      comicVineId: result.comicVineId
+      comicVineId: result.comicVineId,
     }));
     triggerNotification('Metadata auto-populated! Review details below.', 'success');
     setActiveTab('edit');
@@ -124,14 +127,14 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
           year: formData.year ? parseInt(formData.year) : null,
           rating: formData.rating,
           coverUrl: formData.coverUrl || null,
-          comicVineId: formData.comicVineId || null
-        }
+          comicVineId: formData.comicVineId || null,
+        },
       });
       triggerNotification('Metadata updated successfully!', 'success');
       onClose();
     } catch (err) {
       triggerNotification('Failed to update metadata', 'error');
-      console.error(err);
+      logger.error(String(err), {}, err instanceof Error ? err : undefined);
     }
   };
 
@@ -140,11 +143,11 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-[250] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
           onClick={(e) => e.stopPropagation()}
         >
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -158,11 +161,13 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold tracking-tight italic">Comic Metadata Editor</h3>
-                  <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Enrich your library info</p>
+                  <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">
+                    Enrich your library info
+                  </p>
                 </div>
               </div>
-              <button 
-                onClick={onClose} 
+              <button
+                onClick={onClose}
                 className="p-2 hover:bg-neutral-800 rounded-xl transition-all text-neutral-400"
                 aria-label="Close"
               >
@@ -353,7 +358,9 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
 
                   {/* Rating */}
                   <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase tracking-wider text-neutral-400 ml-1">Personal Rating (1-10)</label>
+                    <label className="text-[9px] font-black uppercase tracking-wider text-neutral-400 ml-1">
+                      Personal Rating (1-10)
+                    </label>
                     <div className="flex bg-neutral-950/60 p-1 rounded-xl border border-neutral-850">
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((r) => (
                         <button
@@ -374,7 +381,9 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
 
                   {/* Cover URL (Manual edit if needed) */}
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase tracking-wider text-neutral-400 ml-1">Cover Image URL</label>
+                    <label className="text-[9px] font-black uppercase tracking-wider text-neutral-400 ml-1">
+                      Cover Image URL
+                    </label>
                     <input
                       type="text"
                       value={formData.coverUrl}
@@ -398,7 +407,11 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                       disabled={updateComic.isPending}
                       className="flex-[2] bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2"
                     >
-                      {updateComic.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save size={14} />}
+                      {updateComic.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save size={14} />
+                      )}
                       Save Changes
                     </button>
                   </div>
@@ -409,6 +422,6 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
         </div>
       )}
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 }

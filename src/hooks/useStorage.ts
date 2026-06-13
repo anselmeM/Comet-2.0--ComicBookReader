@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getCacheTotalSizeBytes, clearAllParsedComics } from '@/lib/idb';
+import { logger } from '@/lib/logger';
 
 interface StorageInfo {
   usage: number;
@@ -26,7 +27,7 @@ export function useStorage() {
       try {
         const { usage, quota } = await navigator.storage.estimate();
         const idbSize = await getCacheTotalSizeBytes();
-        
+
         if (isMounted.current) {
           setInfo({
             usage: usage || 0,
@@ -36,9 +37,9 @@ export function useStorage() {
           });
         }
       } catch (err) {
-        console.error('Failed to fetch storage info:', err);
+        logger.error('Failed to fetch storage info:', {}, err instanceof Error ? err : undefined);
         if (isMounted.current) {
-          setInfo(prev => ({ ...prev, loading: false }));
+          setInfo((prev) => ({ ...prev, loading: false }));
         }
       }
     }
@@ -46,14 +47,14 @@ export function useStorage() {
 
   useEffect(() => {
     isMounted.current = true;
-    
+
     // Defer to next tick to avoid "set state in effect" warning if synchronous
     const timeout = setTimeout(() => {
       refresh();
     }, 0);
 
-    return () => { 
-      isMounted.current = false; 
+    return () => {
+      isMounted.current = false;
       clearTimeout(timeout);
     };
   }, [refresh]);

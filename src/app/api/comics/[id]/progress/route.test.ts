@@ -3,6 +3,7 @@ import { GET, PUT, DELETE } from './route';
 import { db } from '@/lib/db';
 import { auth } from '@/auth';
 import { Session } from 'next-auth';
+import { ReadingProgressSchema } from '@/types/schemas';
 
 vi.mock('@/auth', () => ({
   auth: vi.fn(),
@@ -33,13 +34,13 @@ type CometSession = Session & {
 
 describe('Reading Progress API Route ([id])', () => {
   const mockSession: CometSession = {
-    user: { 
-      id: 'user-123', 
-      plan: 'FREE', 
+    user: {
+      id: 'user-123',
+      plan: 'FREE',
       hasCompletedOnboarding: true,
       role: 'USER',
       defaultReadingMode: 'single-page',
-      theme: 'dark'
+      theme: 'dark',
     },
     expires: new Date().toISOString(),
   };
@@ -85,6 +86,10 @@ describe('Reading Progress API Route ([id])', () => {
       const data = await response.json();
       expect(response.status).toBe(200);
       expect(data.lastPage).toBe(5);
+
+      // Contract test assertion
+      const validationResult = ReadingProgressSchema.safeParse(data);
+      expect(validationResult.success).toBe(true);
     });
   });
 
@@ -92,24 +97,37 @@ describe('Reading Progress API Route ([id])', () => {
     it('should return 401 if unauthorized', async () => {
       (auth as any).mockResolvedValue(null);
       const params = Promise.resolve({ id: 'comic-1' });
-      const response = await PUT(new Request('http://localhost:3100', { method: 'PUT', body: '{}' }), { params });
+      const response = await PUT(
+        new Request('http://localhost:3100', { method: 'PUT', body: '{}' }),
+        { params },
+      );
       expect(response.status).toBe(401);
     });
 
     it('should return 400 on validation failure', async () => {
       (auth as any).mockResolvedValue(mockSession);
       const params = Promise.resolve({ id: 'comic-1' });
-      const response = await PUT(new Request('http://localhost:3100', {
-        method: 'PUT',
-        body: JSON.stringify({ lastPage: -1 }), // Invalid page index
-      }), { params });
+      const response = await PUT(
+        new Request('http://localhost:3100', {
+          method: 'PUT',
+          body: JSON.stringify({ lastPage: -1 }), // Invalid page index
+        }),
+        { params },
+      );
       expect(response.status).toBe(400);
     });
 
     it('should update progress and handle user streak', async () => {
       (auth as any).mockResolvedValue(mockSession);
-      vi.mocked(db.comic.findUnique).mockResolvedValue({ id: 'comic-1', userId: 'user-123' } as any);
-      vi.mocked(db.user.findUnique).mockResolvedValue({ id: 'user-123', readingStreak: 1, lastReadDate: new Date() } as any);
+      vi.mocked(db.comic.findUnique).mockResolvedValue({
+        id: 'comic-1',
+        userId: 'user-123',
+      } as any);
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: 'user-123',
+        readingStreak: 1,
+        lastReadDate: new Date(),
+      } as any);
       vi.mocked(db.readingProgress.findUnique).mockResolvedValue(null);
       vi.mocked(db.readingProgress.upsert).mockResolvedValue({
         lastPage: 10,
@@ -119,14 +137,22 @@ describe('Reading Progress API Route ([id])', () => {
       } as any);
 
       const params = Promise.resolve({ id: 'comic-1' });
-      const response = await PUT(new Request('http://localhost:3100', {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ lastPage: 10, totalPages: 20 }),
-      }), { params });
+      const response = await PUT(
+        new Request('http://localhost:3100', {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ lastPage: 10, totalPages: 20 }),
+        }),
+        { params },
+      );
 
+      const data = await response.json();
       expect(response.status).toBe(200);
       expect(db.readingProgress.upsert).toHaveBeenCalled();
+
+      // Contract test assertion
+      const validationResult = ReadingProgressSchema.safeParse(data);
+      expect(validationResult.success).toBe(true);
     });
   });
 
@@ -140,12 +166,17 @@ describe('Reading Progress API Route ([id])', () => {
 
     it('should delete progress', async () => {
       (auth as any).mockResolvedValue(mockSession);
-      vi.mocked(db.comic.findUnique).mockResolvedValue({ id: 'comic-1', userId: 'user-123' } as any);
+      vi.mocked(db.comic.findUnique).mockResolvedValue({
+        id: 'comic-1',
+        userId: 'user-123',
+      } as any);
       vi.mocked(db.readingProgress.delete).mockResolvedValue({} as any);
       vi.mocked(db.comic.update).mockResolvedValue({} as any);
 
       const params = Promise.resolve({ id: 'comic-1' });
-      const response = await DELETE(new Request('http://localhost:3100', { method: 'DELETE' }), { params });
+      const response = await DELETE(new Request('http://localhost:3100', { method: 'DELETE' }), {
+        params,
+      });
 
       expect(response.status).toBe(200);
       expect(db.readingProgress.delete).toHaveBeenCalled();

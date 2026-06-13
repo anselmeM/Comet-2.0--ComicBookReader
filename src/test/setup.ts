@@ -21,3 +21,17 @@ global.Worker = class {
   postMessage = vi.fn();
   terminate = vi.fn();
 } as any;
+
+// Mock next/headers for test bypass logic in auth-utils
+vi.mock('next/headers', () => {
+  return {
+    cookies: vi.fn().mockResolvedValue({
+      get: vi.fn().mockReturnValue(undefined),
+      set: vi.fn(),
+      delete: vi.fn(),
+    }),
+    headers: vi.fn().mockResolvedValue({
+      get: vi.fn(),
+    }),
+  };
+});

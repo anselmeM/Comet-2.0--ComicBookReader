@@ -11,6 +11,7 @@ import { detectPanels } from '@/lib/guidedView';
 import { useSession } from 'next-auth/react';
 import { Panel } from '@/types';
 import { useBookmarks } from '@/hooks/useBookmarks';
+import { logger } from '@/lib/logger';
 
 interface ComicReaderProps {
   comicId: string;
@@ -50,13 +51,13 @@ export function ComicReader({ comicId }: ComicReaderProps) {
       try {
         const imageBitmap = await createImageBitmap(comic.pages[index].blob);
         const detected = await detectPanels(imageBitmap);
-        
+
         // Advanced sort for multi-column layouts
         // Group panels into logical "rows" based on Y overlap
         const sorted = [...detected].sort((a, b) => a.y - b.y);
         const rows: Panel[][] = [];
-        
-        sorted.forEach(panel => {
+
+        sorted.forEach((panel) => {
           let foundRow = false;
           for (const row of rows) {
             const rowY = row[0].y;
@@ -72,14 +73,18 @@ export function ComicReader({ comicId }: ComicReaderProps) {
         });
 
         // Sort each row horizontally based on reading mode
-        const finalPanels = rows.flatMap(row => 
-          row.sort((a, b) => mode === 'manga-rtl' ? b.x - a.x : a.x - b.x)
+        const finalPanels = rows.flatMap((row) =>
+          row.sort((a, b) => (mode === 'manga-rtl' ? b.x - a.x : a.x - b.x)),
         );
 
         setPagePanels(index, finalPanels);
         imageBitmap.close();
       } catch (err) {
-        console.error('Panel detection failed for page', index, err);
+        logger.error(
+          `Panel detection failed for page ${index}`,
+          {},
+          err instanceof Error ? err : undefined,
+        );
       }
     };
 
@@ -90,7 +95,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
       if (currentPage + 2 < comic.pages.length) pagesToDetect.push(currentPage + 2);
     }
 
-    pagesToDetect.forEach(idx => detectForPage(idx));
+    pagesToDetect.forEach((idx) => detectForPage(idx));
   }, [comic, loading, currentPage, mode, pagePanels, setPagePanels]);
 
   // Track reading progress
@@ -136,7 +141,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
       {
         root: verticalContainerRef.current,
         threshold: 0.5, // Trigger when 50% of the page is visible
-      }
+      },
     );
 
     const pages = verticalContainerRef.current?.querySelectorAll('[data-page-index]');
@@ -149,7 +154,9 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   useEffect(() => {
     if (mode !== 'single-vertical' || !verticalContainerRef.current) return;
 
-    const pageElement = verticalContainerRef.current.querySelector(`[data-page-index="${currentPage}"]`);
+    const pageElement = verticalContainerRef.current.querySelector(
+      `[data-page-index="${currentPage}"]`,
+    );
     if (pageElement) {
       pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -213,10 +220,24 @@ export function ComicReader({ comicId }: ComicReaderProps) {
           break;
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [nextPage, prevPage, mode, toggleFullscreen, zoomIn, zoomOut, resetZoom, currentPage, comic, setPage, addBookmark, removeBookmark, getBookmarkForPage]);
+  }, [
+    nextPage,
+    prevPage,
+    mode,
+    toggleFullscreen,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    currentPage,
+    comic,
+    setPage,
+    addBookmark,
+    removeBookmark,
+    getBookmarkForPage,
+  ]);
 
   if (loading) {
     return (
@@ -234,13 +255,22 @@ export function ComicReader({ comicId }: ComicReaderProps) {
       <div className="flex h-screen items-center justify-center bg-black p-8 text-center">
         <div className="max-w-md">
           <div className="text-yellow-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-16 w-16 mx-auto"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold mb-2 text-white">
-            Unable to Load Comic
-          </h2>
+          <h2 className="text-2xl font-bold mb-2 text-white">Unable to Load Comic</h2>
           <p className="opacity-80 text-gray-300">
             There was an unexpected issue loading this comic. Please try again.
           </p>
@@ -251,13 +281,14 @@ export function ComicReader({ comicId }: ComicReaderProps) {
 
   if (error || !comic) {
     const errorMessage = (error as Error)?.message || '';
-    
+
     let title = 'Extraction Error';
     let message = errorMessage || 'Failed to initialize comic stream.';
-    
+
     if (errorType === 'cache') {
       title = 'Comic Not Available';
-      message = 'The comic could not be loaded from the local storage. Please try importing the file again.';
+      message =
+        'The comic could not be loaded from the local storage. Please try importing the file again.';
     } else if (errorType === 'auth') {
       title = 'Authentication Required';
       message = 'You need to be logged in to view this comic.';
@@ -265,21 +296,28 @@ export function ComicReader({ comicId }: ComicReaderProps) {
       title = 'Comic Not Found';
       message = 'This comic may have been removed from your library.';
     }
-    
+
     return (
       <div className="flex h-screen items-center justify-center bg-black p-8 text-center">
         <div className="max-w-md">
           <div className="text-red-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-16 w-16 mx-auto"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold mb-2 text-white">
-            {title}
-          </h2>
-          <p className="opacity-80 text-gray-300">
-            {message}
-          </p>
+          <h2 className="text-2xl font-bold mb-2 text-white">{title}</h2>
+          <p className="opacity-80 text-gray-300">{message}</p>
         </div>
       </div>
     );
@@ -301,16 +339,18 @@ export function ComicReader({ comicId }: ComicReaderProps) {
     }
 
     const pairIndex = currentPage % 2 === 1 ? currentPage : currentPage - 1;
-    
+
     const pages = [];
     if (mode === 'manga-rtl') {
-      if (comic.pages[pairIndex + 1]) pages.push({ page: comic.pages[pairIndex + 1], index: pairIndex + 1 });
+      if (comic.pages[pairIndex + 1])
+        pages.push({ page: comic.pages[pairIndex + 1], index: pairIndex + 1 });
       if (comic.pages[pairIndex]) pages.push({ page: comic.pages[pairIndex], index: pairIndex });
     } else {
       if (comic.pages[pairIndex]) pages.push({ page: comic.pages[pairIndex], index: pairIndex });
-      if (comic.pages[pairIndex + 1]) pages.push({ page: comic.pages[pairIndex + 1], index: pairIndex + 1 });
+      if (comic.pages[pairIndex + 1])
+        pages.push({ page: comic.pages[pairIndex + 1], index: pairIndex + 1 });
     }
-    
+
     return pages;
   };
 
@@ -318,14 +358,17 @@ export function ComicReader({ comicId }: ComicReaderProps) {
 
   if (mode === 'single-vertical') {
     return (
-      <div className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none" role="main">
-        <div 
+      <div
+        className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none"
+        role="main"
+      >
+        <div
           ref={verticalContainerRef}
           className="comic-reader-vertical-container h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-20 flex flex-col items-center gap-4 scroll-smooth transition-all duration-300"
         >
           {comic.pages.map((page, idx) => (
-            <div 
-              key={`page-${idx}`} 
+            <div
+              key={`page-${idx}`}
               data-page-index={idx}
               className="comic-reader-page-wrapper w-full flex justify-center"
             >
@@ -344,7 +387,10 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   }
 
   return (
-    <div className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none" role="main">
+    <div
+      className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none"
+      role="main"
+    >
       <ReaderViewport>
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div

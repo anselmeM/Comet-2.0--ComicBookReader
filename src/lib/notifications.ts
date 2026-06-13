@@ -1,11 +1,12 @@
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
-export type NotificationType = 
-  | 'FRIEND_REQUEST_ACCEPTED' 
-  | 'NEW_MESSAGE' 
-  | 'CONTENT_LIKE' 
-  | 'CONTENT_COMMENT' 
-  | 'NEW_CONTENT' 
+export type NotificationType =
+  | 'FRIEND_REQUEST_ACCEPTED'
+  | 'NEW_MESSAGE'
+  | 'CONTENT_LIKE'
+  | 'CONTENT_COMMENT'
+  | 'NEW_CONTENT'
   | 'SYSTEM_ALERT';
 
 interface CreateNotificationParams {
@@ -24,7 +25,7 @@ export async function createNotification({
   type,
   title,
   message,
-  link
+  link,
 }: CreateNotificationParams) {
   try {
     return await db.notification.create({
@@ -33,11 +34,15 @@ export async function createNotification({
         type,
         title,
         message,
-        link
-      }
+        link,
+      },
     });
   } catch (error) {
-    console.error('[Notifications] Failed to create notification:', error);
+    logger.error(
+      '[Notifications] Failed to create notification:',
+      {},
+      error instanceof Error ? error : undefined,
+    );
     return null;
   }
 }
@@ -48,10 +53,14 @@ export async function createNotification({
 export async function createBatchNotifications(notifications: CreateNotificationParams[]) {
   try {
     return await db.notification.createMany({
-      data: notifications
+      data: notifications,
     });
   } catch (error) {
-    console.error('[Notifications] Failed to create batch notifications:', error);
+    logger.error(
+      '[Notifications] Failed to create batch notifications:',
+      {},
+      error instanceof Error ? error : undefined,
+    );
     return null;
   }
 }

@@ -1,29 +1,17 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 import { rateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
-const profileUpdateSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(50).optional(),
-  image: z.string().url('Invalid image URL').or(z.literal('')).optional(),
-  defaultReadingMode: z.enum(['single-page', 'single-vertical', 'dual-spread', 'manga-rtl']).optional(),
-  theme: z.enum(['dark', 'light', 'sepia']).optional(),
-});
+import { ProfileUpdateSchema } from '@/types/schemas';
 
 /**
  * PUT /api/user/profile — Updates user profile and preferences.
  */
-export async function PUT(req: Request) {
+export const PUT = withAuth(async (req: Request, context, session) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
-
     // Rate limiting (Phase 2)
     const ip = (req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
     const limiter = await rateLimit(`profile_${session.user.id}`, 10, 60 * 1000); // 10 updates per minute
@@ -31,17 +19,17 @@ export async function PUT(req: Request) {
     if (limiter.isLimited) {
       return NextResponse.json(
         { error: 'Too many profile updates. Please wait a minute.' },
-        { status: 429, headers: limiter.headers }
+        { status: 429, headers: limiter.headers },
       );
     }
 
     const body = await req.json();
-    const parsed = profileUpdateSchema.safeParse(body);
+    const result = ProfileUpdateSchema.safeParse(body);
 
-    if (!parsed.success) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: 'Invalid input', details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
+        { error: 'Invalid input', details: result.error.flatten().fieldErrors },
+        { status: 400 },
       );
     }
 
@@ -49,7 +37,7 @@ export async function PUT(req: Request) {
     const updatedUser = await db.user.update({
       where: { id: session.user.id },
       data: {
-        ...parsed.data,
+        ...result.data,
       },
       select: {
         id: true,
@@ -63,10 +51,7 @@ export async function PUT(req: Request) {
 
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error('[API] Profile Update Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    );
+    logger.error('Profile Update Error', {}, error as Error);
+    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
-}
+});

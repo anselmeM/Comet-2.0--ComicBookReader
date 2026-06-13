@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '@/lib/logger';
 
 const MOCK_S3_DIR = path.join(process.cwd(), 'prisma', 'mock-s3');
 
@@ -36,8 +37,11 @@ export async function GET(req: Request) {
       },
     });
   } catch (error: any) {
-    console.error('[MOCK_S3_GET_ERROR]', error);
-    return NextResponse.json({ error: error.message || 'Failed to download from mock storage' }, { status: 500 });
+    logger.error('[MOCK_S3_GET_ERROR]', {}, error instanceof Error ? error : undefined);
+    return NextResponse.json(
+      { error: error.message || 'Failed to download from mock storage' },
+      { status: 500 },
+    );
   }
 }
 
@@ -59,12 +63,15 @@ export async function PUT(req: Request) {
 
     // Save to local mock directory
     fs.writeFileSync(filePath, buffer);
-    console.log(`[Mock S3] Saved ${buffer.length} bytes to ${filePath}`);
+    logger.info(`[Mock S3] Saved ${buffer.length} bytes to ${filePath}`);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('[MOCK_S3_PUT_ERROR]', error);
-    return NextResponse.json({ error: error.message || 'Failed to upload to mock storage' }, { status: 500 });
+    logger.error('[MOCK_S3_PUT_ERROR]', {}, error instanceof Error ? error : undefined);
+    return NextResponse.json(
+      { error: error.message || 'Failed to upload to mock storage' },
+      { status: 500 },
+    );
   }
 }
 
@@ -83,12 +90,15 @@ export async function DELETE(req: Request) {
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
-      console.log(`[Mock S3] Deleted ${filePath}`);
+      logger.info(`[Mock S3] Deleted ${filePath}`);
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('[MOCK_S3_DELETE_ERROR]', error);
-    return NextResponse.json({ error: error.message || 'Failed to delete from mock storage' }, { status: 500 });
+    logger.error('[MOCK_S3_DELETE_ERROR]', {}, error instanceof Error ? error : undefined);
+    return NextResponse.json(
+      { error: error.message || 'Failed to delete from mock storage' },
+      { status: 500 },
+    );
   }
 }

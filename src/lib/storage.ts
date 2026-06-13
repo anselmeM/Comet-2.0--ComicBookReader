@@ -5,9 +5,11 @@ import {
   DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { logger } from '@/lib/logger';
 
 const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || process.env.STORAGE_ACCESS_KEY_ID;
-const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || process.env.STORAGE_SECRET_ACCESS_KEY;
+const AWS_SECRET_ACCESS_KEY =
+  process.env.AWS_SECRET_ACCESS_KEY || process.env.STORAGE_SECRET_ACCESS_KEY;
 const AWS_ENDPOINT = process.env.AWS_ENDPOINT || process.env.STORAGE_ENDPOINT;
 const AWS_REGION = process.env.AWS_REGION || process.env.STORAGE_REGION || 'auto';
 const AWS_BUCKET_NAME = process.env.AWS_BUCKET_NAME || process.env.STORAGE_BUCKET || 'comet-comics';
@@ -18,7 +20,7 @@ export function verifyStorageConfig(isRuntimeCheck = false): boolean {
     if (isProduction && isRuntimeCheck) {
       throw new Error(
         'CRITICAL: Cloud storage keys (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT) ' +
-        'are not configured in the production environment.'
+          'are not configured in the production environment.',
       );
     }
     return false;
@@ -27,7 +29,7 @@ export function verifyStorageConfig(isRuntimeCheck = false): boolean {
 }
 
 if (!verifyStorageConfig(false)) {
-  console.warn('Storage environment variables are missing. Cloud Sync will be disabled.');
+  logger.warn('Storage environment variables are missing. Cloud Sync will be disabled.');
 }
 
 export const s3 = new S3Client({

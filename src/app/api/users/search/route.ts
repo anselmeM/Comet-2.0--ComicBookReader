@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: Request) {
+  let query: string | null = null;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse) return errorResponse;
 
     const { searchParams } = new URL(req.url);
-    const query = searchParams.get('q');
+    query = searchParams.get('q');
 
     if (!query || query.length < 2) {
       return NextResponse.json({ users: [] });
@@ -20,10 +20,7 @@ export async function GET(req: Request) {
       where: {
         AND: [
           {
-            OR: [
-              { name: { contains: query } },
-              { email: { contains: query } },
-            ],
+            OR: [{ name: { contains: query } }, { email: { contains: query } }],
           },
           { id: { not: session.user.id } },
         ],
@@ -80,12 +77,12 @@ export async function GET(req: Request) {
         }
 
         return { ...user, status: 'NONE' };
-      })
+      }),
     );
 
     return NextResponse.json({ users: usersWithStatus });
   } catch (error) {
-    console.error('[API] Users Search Error:', error);
+    logger.error('Users Search Error', { query: query || undefined }, error as Error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

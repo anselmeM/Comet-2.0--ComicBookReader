@@ -24,7 +24,7 @@ export const ComicDTOSchema = z.object({
   year: z.number().int().nullable().optional(),
   series: z.string().nullable().optional(),
   isFavorite: z.boolean().default(false),
-  rating: z.number().int().min(0).max(5).default(0),
+  rating: z.number().int().min(0).max(10).default(0),
   syncStatus: z.enum(['LOCAL', 'PENDING', 'SYNCED', 'ERROR']).default('LOCAL'),
   filehash: z.string().optional(),
   sizeBytes: z.number().int().optional(),
@@ -37,14 +37,63 @@ export const ComicDTOSchema = z.object({
 export const UpdateProgressRequestSchema = ReadingProgressSchema;
 
 export const UpdateComicRequestSchema = z.object({
-  title: z.string().min(1).optional(),
-  author: z.string().optional(),
-  isFavorite: z.boolean().optional(),
-  rating: z.number().int().min(0).max(5).optional(),
-  series: z.string().optional(),
-  issue: z.number().int().optional(),
-  year: z.number().int().optional(),
-  tags: z.string().optional(),
+  title: z.string().min(1).max(255).optional(),
+  series: z.string().max(255).optional().nullable(),
+  issue: z
+    .union([
+      z.number().int(),
+      z
+        .string()
+        .regex(/^\d+$/)
+        .transform((val) => parseInt(val)),
+    ])
+    .optional()
+    .nullable(),
+  year: z
+    .union([
+      z.number().int(),
+      z
+        .string()
+        .regex(/^\d+$/)
+        .transform((val) => parseInt(val)),
+    ])
+    .optional()
+    .nullable(),
+  rating: z.number().int().min(0).max(10).optional(),
+  tags: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .nullable(),
+  coverUrl: z.string().optional().nullable(),
+  comicVineId: z.string().optional().nullable(),
+});
+
+export const CollectionSchema = z.object({
+  name: z.string().min(1, 'Collection name is required').max(50),
+  description: z.string().max(200).optional(),
+});
+
+export const CollectionUpdateSchema = z.object({
+  name: z.string().min(1, 'Collection name is required').max(50).optional(),
+  description: z.string().max(200).optional(),
+});
+
+export const InviteSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+export const UploadSchema = z.object({
+  filehash: z.string().length(64),
+  extension: z.enum(['cbz', 'cbr']),
+});
+
+export const ProfileUpdateSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(50).optional(),
+  image: z.string().url('Invalid image URL').or(z.literal('')).optional(),
+  defaultReadingMode: z
+    .enum(['single-page', 'single-vertical', 'dual-spread', 'manga-rtl'])
+    .optional(),
+  theme: z.enum(['dark', 'light', 'sepia']).optional(),
 });
 
 // --- Response DTOs ---

@@ -3,19 +3,19 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { 
-  Heart, 
-  Loader2, 
-  Sparkles, 
-  CheckCircle2, 
-  Circle, 
-  LayoutGrid, 
-  Edit3, 
-  Cloud, 
-  CloudDownload, 
+import {
+  Heart,
+  Loader2,
+  Sparkles,
+  CheckCircle2,
+  Circle,
+  LayoutGrid,
+  Edit3,
+  Cloud,
+  CloudDownload,
   CloudOff,
   Trash2,
-  BookOpen
+  BookOpen,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -24,6 +24,7 @@ import { useEnrichment } from '@/hooks/useEnrichment';
 import { useDeleteComic } from '@/hooks/useLibrary';
 import { MetadataModal } from '../organisms/Dashboard/views/MetadataModal';
 import { PremiumModal } from '../atoms/PremiumModal';
+import { logger } from '@/lib/logger';
 
 export interface DashboardComic {
   id: string;
@@ -69,14 +70,12 @@ export function DashboardComicCard({
   onToggleFav,
   isEditMode,
   isSelected,
-  onToggleSelect
+  onToggleSelect,
 }: DashboardComicCardProps) {
-  const {
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: comic.id, disabled: !isEditMode || variant === 'standard' });
+  const { setNodeRef, transform, transition, isDragging } = useSortable({
+    id: comic.id,
+    disabled: !isEditMode || variant === 'standard',
+  });
 
   const enrichment = useEnrichment();
   const deleteMutation = useDeleteComic();
@@ -114,8 +113,9 @@ export function DashboardComicCard({
       if (err.message?.includes('Premium feature') || err.message?.includes('PREMIUM_REQUIRED')) {
         setIsPremiumModalOpen(true);
       } else {
-        if (onNotification) onNotification(err.message || `Failed to enrich "${comic.title}"`, 'error');
-        else console.error('Manual enrichment failed:', err);
+        if (onNotification)
+          onNotification(err.message || `Failed to enrich "${comic.title}"`, 'error');
+        else logger.error('Manual enrichment failed:', {}, err instanceof Error ? err : undefined);
       }
     }
   };
@@ -168,7 +168,7 @@ export function DashboardComicCard({
                 <BookOpen size={48} strokeWidth={1} />
               </div>
             )}
-            
+
             <div className="absolute bottom-0 left-0 w-full h-1 bg-black/40">
               <div className="h-full bg-blue-500" style={{ width: `${progressPercent}%` }} />
             </div>
@@ -180,7 +180,11 @@ export function DashboardComicCard({
                 className="p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-blue-400 hover:bg-black/80 transition-all"
                 title="Fetch metadata"
               >
-                {enrichment.isPending ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                {enrichment.isPending ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Sparkles size={16} />
+                )}
               </button>
               <button
                 onClick={handleMetadataClick}
@@ -213,16 +217,16 @@ export function DashboardComicCard({
             </div>
           </div>
         </Link>
-        
-        <MetadataModal 
-          comic={comic} 
-          isOpen={isMetadataOpen} 
-          onClose={() => setIsMetadataOpen(false)} 
+
+        <MetadataModal
+          comic={comic}
+          isOpen={isMetadataOpen}
+          onClose={() => setIsMetadataOpen(false)}
         />
 
-        <PremiumModal 
-          isOpen={isPremiumModalOpen} 
-          onClose={() => setIsPremiumModalOpen(false)} 
+        <PremiumModal
+          isOpen={isPremiumModalOpen}
+          onClose={() => setIsPremiumModalOpen(false)}
           featureName="Automatic Metadata Enrichment"
         />
       </motion.div>
@@ -234,12 +238,14 @@ export function DashboardComicCard({
     <div
       ref={setNodeRef}
       style={style}
-      role={isEditMode ? "button" : "region"}
+      role={isEditMode ? 'button' : 'region'}
       tabIndex={isEditMode ? 0 : undefined}
       className={`group relative flex flex-col bg-white rounded-3xl overflow-hidden shadow-lg border transition-all cursor-pointer ${
         isDragging ? 'opacity-50 scale-105 z-50' : 'hover:shadow-xl hover:-translate-y-1'
       } ${
-        isSelected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-neutral-100 hover:border-neutral-700'
+        isSelected
+          ? 'border-blue-500 ring-2 ring-blue-500/20'
+          : 'border-neutral-100 hover:border-neutral-700'
       }`}
       onClick={handleClick}
       onKeyDown={(e) => {
@@ -263,12 +269,12 @@ export function DashboardComicCard({
           <button
             onClick={handleFavoriteClick}
             className="p-1.5 bg-white/90 rounded-xl shadow-lg hover:bg-white text-neutral-600 transition-all"
-            title={isFav ? "Remove from favorites" : "Add to favorites"}
-            aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+            title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
           >
             <Heart size={16} className={`${isFav ? 'text-red-500 fill-red-500' : ''}`} />
           </button>
-          
+
           <button
             onClick={handleEnrich}
             disabled={enrichment.isPending}
@@ -276,7 +282,11 @@ export function DashboardComicCard({
             title="Enrich metadata"
             aria-label="Enrich metadata"
           >
-            {enrichment.isPending ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {enrichment.isPending ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Sparkles size={16} />
+            )}
           </button>
 
           <button
@@ -309,25 +319,29 @@ export function DashboardComicCard({
 
       {comic.syncStatus === 'SYNCED' && !comic.isLocallyAvailable && (
         <div className="absolute inset-0 z-10 bg-slate-900/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 text-center gap-4">
-           <CloudOff size={40} className="text-white/40" />
-           <p className="text-[10px] font-black text-white uppercase tracking-widest leading-tight">Missing Locally<br/><span className="text-blue-400">Cloud Sync Available</span></p>
-           <button 
-             onClick={handleRestoreClick}
-             className="bg-blue-500 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-blue-500/20"
-           >
-             Download Now
-           </button>
+          <CloudOff size={40} className="text-white/40" />
+          <p className="text-[10px] font-black text-white uppercase tracking-widest leading-tight">
+            Missing Locally
+            <br />
+            <span className="text-blue-400">Cloud Sync Available</span>
+          </p>
+          <button
+            onClick={handleRestoreClick}
+            className="bg-blue-500 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-blue-500/20"
+          >
+            Download Now
+          </button>
         </div>
       )}
 
       <div className="block relative aspect-[2/3] bg-neutral-800 w-full overflow-hidden">
         {comic.coverUrl ? (
-          <Image 
-            src={comic.coverUrl} 
-            alt={comic.title} 
+          <Image
+            src={comic.coverUrl}
+            alt={comic.title}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105" 
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
             unoptimized
           />
         ) : (
@@ -336,10 +350,18 @@ export function DashboardComicCard({
           </div>
         )}
         <div className="absolute bottom-0 left-0 w-full h-1 bg-neutral-900/50">
-          <div className="h-full bg-blue-500 rounded-r-full" style={{ width: `${progressPercent}%` }} />
+          <div
+            className="h-full bg-blue-500 rounded-r-full"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
         {!isEditMode && (
-          <Link href={`/reader/${comic.id}`} className="absolute inset-0 z-10" onClick={(e) => e.stopPropagation()} aria-label={`Read ${comic.title}`} />
+          <Link
+            href={`/reader/${comic.id}`}
+            className="absolute inset-0 z-10"
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Read ${comic.title}`}
+          />
         )}
       </div>
 
@@ -348,15 +370,15 @@ export function DashboardComicCard({
         <p className="text-xs text-neutral-500 font-medium">{comic.author || 'Unknown Artist'}</p>
       </div>
 
-      <MetadataModal 
-        comic={comic} 
-        isOpen={isMetadataOpen} 
-        onClose={() => setIsMetadataOpen(false)} 
+      <MetadataModal
+        comic={comic}
+        isOpen={isMetadataOpen}
+        onClose={() => setIsMetadataOpen(false)}
       />
 
-      <PremiumModal 
-        isOpen={isPremiumModalOpen} 
-        onClose={() => setIsPremiumModalOpen(false)} 
+      <PremiumModal
+        isOpen={isPremiumModalOpen}
+        onClose={() => setIsPremiumModalOpen(false)}
         featureName="Automatic Metadata Enrichment"
       />
     </div>
@@ -366,7 +388,11 @@ export function DashboardComicCard({
 /**
  * Loading skeleton for the Comic Card.
  */
-export function ComicCardSkeleton({ variant = 'dashboard' }: { variant?: 'dashboard' | 'standard' }) {
+export function ComicCardSkeleton({
+  variant = 'dashboard',
+}: {
+  variant?: 'dashboard' | 'standard';
+}) {
   if (variant === 'standard') {
     return (
       <div className="bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800 shadow-lg animate-pulse">

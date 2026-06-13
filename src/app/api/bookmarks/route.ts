@@ -1,25 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/bookmarks?comicId=... — Returns all bookmarks for a specific comic.
  */
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest, context, session) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
     const comicId = searchParams.get('comicId');
 
     if (!comicId) {
       return NextResponse.json({ error: 'Comic ID is required' }, { status: 400 });
+    }
+
+    // Verify comic ownership
+    const comic = await db.comic.findUnique({
+      where: {
+        id: comicId,
+        userId: session.user.id,
+      },
+    });
+
+    if (!comic) {
+      return NextResponse.json({ error: 'Comic not found or access denied' }, { status: 404 });
     }
 
     const bookmarks = await db.bookmark.findMany({
@@ -34,29 +39,33 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ bookmarks });
   } catch (error) {
-    console.error('[API] Bookmark GET error:', error);
+    logger.error('[API] Bookmark GET error', {}, error as Error);
     return NextResponse.json({ error: 'Failed to fetch bookmarks' }, { status: 500 });
   }
-}
+});
 
 /**
  * POST /api/bookmarks — Creates or updates a bookmark for a specific page.
  */
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, context, session) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
-
     const body = await req.json();
     const { comicId, pageNumber, label } = body;
 
     if (!comicId || pageNumber === undefined) {
       return NextResponse.json({ error: 'Comic ID and page number are required' }, { status: 400 });
+    }
+
+    // Verify comic ownership
+    const comic = await db.comic.findUnique({
+      where: {
+        id: comicId,
+        userId: session.user.id,
+      },
+    });
+
+    if (!comic) {
+      return NextResponse.json({ error: 'Comic not found or access denied' }, { status: 404 });
     }
 
     // Ensure ReadingProgress exists (required by Bookmark relation in schema)
@@ -65,14 +74,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!progress) {
-      // Find the comic to get totalPages
-      const comic = await db.comic.findUnique({ where: { id: comicId } });
-      
       progress = await db.readingProgress.create({
         data: {
           userId: session.user.id,
           comicId,
-          totalPages: comic?.pageCount || 0,
+          totalPages: comic.pageCount,
         },
       });
     }
@@ -99,24 +105,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ bookmark });
   } catch (error) {
-    console.error('[API] Bookmark POST error:', error);
+    logger.error('[API] Bookmark POST error', {}, error as Error);
     return NextResponse.json({ error: 'Failed to create bookmark' }, { status: 500 });
   }
-}
+});
 
 /**
  * PUT /api/bookmarks — Updates a bookmark label by ID.
  */
-export async function PUT(req: NextRequest) {
+export const PUT = withAuth(async (req: NextRequest, context, session) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
-
     const body = await req.json();
     const { id, label } = body;
 
@@ -136,24 +134,16 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ bookmark });
   } catch (error) {
-    console.error('[API] Bookmark PUT error:', error);
+    logger.error('[API] Bookmark PUT error', {}, error as Error);
     return NextResponse.json({ error: 'Failed to update bookmark' }, { status: 500 });
   }
-}
+});
 
 /**
  * DELETE /api/bookmarks?id=... — Deletes a bookmark by ID.
  */
-export async function DELETE(req: NextRequest) {
+export const DELETE = withAuth(async (req: NextRequest, context, session) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_EXPIRED' },
-        { status: 401 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
@@ -170,7 +160,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[API] Bookmark DELETE error:', error);
+    logger.error('[API] Bookmark DELETE error', {}, error as Error);
     return NextResponse.json({ error: 'Failed to delete bookmark' }, { status: 500 });
   }
-}
+});

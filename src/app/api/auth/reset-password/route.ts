@@ -1,31 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import crypto from 'crypto';
 import { rateLimit } from '@/lib/rate-limit';
 import { z } from 'zod';
-
-const resetSchema = z.object({
-  email: z.string().email('Invalid email format'),
-});
+import { resetPasswordRequestSchema } from '@/lib/validations';
 
 export async function POST(req: NextRequest) {
+  let email: string | undefined;
   try {
     const body = await req.json();
-    const result = resetSchema.safeParse(body);
+    const result = resetPasswordRequestSchema.safeParse(body);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 });
     }
 
     const { email: rawEmail } = result.data;
-    const email = rawEmail.toLowerCase().trim();
+    email = rawEmail.toLowerCase().trim();
 
     // Rate limiting (T-AUTH-003)
     const limiter = await rateLimit(`reset_${email}`, 3, 60 * 60 * 1000); // 3 per hour
     if (limiter.isLimited) {
       return NextResponse.json(
         { error: 'Too many reset attempts. Please try again in an hour.' },
-        { status: 429, headers: limiter.headers }
+        { status: 429, headers: limiter.headers },
       );
     }
 
@@ -33,7 +32,10 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       // Don't reveal whether the user exists
-      return NextResponse.json({ message: 'If an account exists, a reset link will be sent' }, { status: 200 });
+      return NextResponse.json(
+        { message: 'If an account exists, a reset link will be sent' },
+        { status: 200 },
+      );
     }
 
     // Generate a secure reset token
@@ -51,13 +53,13 @@ export async function POST(req: NextRequest) {
     });
 
     const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3100'}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-    console.log(`[Password Reset] Reset token generated for user`);
+    logger.info('[Password Reset] Reset token generated for user', { email });
 
     // Set up email sending via SMTP if configured
     if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
       try {
         const nodemailer = await import('nodemailer');
-        
+
         const transporter = nodemailer.createTransport({
           host: process.env.SMTP_HOST,
           port: parseInt(process.env.SMTP_PORT || '587'),
@@ -85,14 +87,21 @@ export async function POST(req: NextRequest) {
           `,
         });
       } catch (emailError) {
-        console.error('[Password Reset] Failed to send email via SMTP:', emailError);
+        logger.error(
+          '[Password Reset] Failed to send email via SMTP',
+          { email },
+          emailError as Error,
+        );
         // We still return 200 below so we don't leak user existence
       }
     }
 
-    return NextResponse.json({ message: 'If an account exists, a reset link will be sent' }, { status: 200 });
+    return NextResponse.json(
+      { message: 'If an account exists, a reset link will be sent' },
+      { status: 200 },
+    );
   } catch (error) {
-    console.error('[Password Reset] Error:', error);
+    logger.error('[Password Reset] Error', { email }, error as Error);
     return NextResponse.json({ error: 'An error occurred' }, { status: 500 });
   }
 }

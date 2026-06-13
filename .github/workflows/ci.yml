@@ -54,3 +54,11 @@ jobs:
         NEXTAUTH_URL: "http://localhost:3100"
         AUTH_SECRET: "dummy-secret-for-ci"
 
+    - name: Run Lighthouse CI
+      run: npm run perf
+      env:
+        DATABASE_URL: "file:./dev.db"
+        NEXTAUTH_SECRET: "dummy-secret-for-ci"
+        NEXTAUTH_URL: "http://localhost:3100"
+        AUTH_SECRET: "dummy-secret-for-ci"
+

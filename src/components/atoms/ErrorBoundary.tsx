@@ -2,6 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface Props {
   children: ReactNode;
@@ -25,7 +26,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error(`[ErrorBoundary] Error in ${this.props.name || 'Component'}:`, error, errorInfo);
+    logger.error(
+      `[ErrorBoundary] Error in ${this.props.name || 'Component'}:`,
+      { componentStack: errorInfo.componentStack },
+      error,
+    );
   }
 
   private handleReset = () => {
@@ -43,9 +48,12 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="w-20 h-20 bg-red-100 rounded-3xl flex items-center justify-center text-red-600 mb-6 shadow-lg shadow-red-200/50">
             <AlertTriangle size={40} strokeWidth={2.5} />
           </div>
-          <h3 className="text-2xl font-black text-red-900 tracking-tighter italic">Something went wrong</h3>
+          <h3 className="text-2xl font-black text-red-900 tracking-tighter italic">
+            Something went wrong
+          </h3>
           <p className="text-red-600/60 max-w-md mt-2 font-medium">
-            The {this.props.name || 'view'} failed to load correctly. This has been logged for investigation.
+            The {this.props.name || 'view'} failed to load correctly. This has been logged for
+            investigation.
           </p>
           <button
             onClick={this.handleReset}
@@ -55,9 +63,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </button>
           {process.env.NODE_ENV === 'development' && (
             <div className="mt-8 p-4 bg-white/80 rounded-xl text-left max-w-2xl overflow-auto border border-red-100 shadow-sm">
-               <code className="text-[10px] text-red-800 font-mono">
-                 {this.state.error?.stack}
-               </code>
+              <code className="text-[10px] text-red-800 font-mono">{this.state.error?.stack}</code>
             </div>
           )}
         </div>

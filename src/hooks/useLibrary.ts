@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { evictCachedComic } from '@/lib/idb';
 import { PaginatedLibraryResponseDTO } from '@/types';
 import { useAuthCallback } from './useAuthCallback';
@@ -16,17 +16,17 @@ interface UseLibraryOptions {
 
 export function useLibrary(options: UseLibraryOptions = {}) {
   const { handleAuthError } = useAuthCallback();
-  const { 
-    page = 1, 
-    limit = 20, 
-    search = '', 
-    series = '', 
+  const {
+    page = 1,
+    limit = 20,
+    search = '',
+    series = '',
     sortBy = 'recent',
     yearStart = null,
     yearEnd = null,
-    readStatus = 'all'
+    readStatus = 'all',
   } = options;
-  
+
   return useQuery<PaginatedLibraryResponseDTO>({
     queryKey: ['library', page, limit, search, series, sortBy, yearStart, yearEnd, readStatus],
     queryFn: async () => {
@@ -36,12 +36,12 @@ export function useLibrary(options: UseLibraryOptions = {}) {
         search,
         series,
         sortBy,
-        readStatus
+        readStatus,
       });
-      
+
       if (yearStart !== null) params.set('yearStart', yearStart.toString());
       if (yearEnd !== null) params.set('yearEnd', yearEnd.toString());
-      
+
       const res = await fetch(`/api/library?${params.toString()}`);
       if (!res.ok) {
         await handleAuthError(res);
@@ -50,6 +50,7 @@ export function useLibrary(options: UseLibraryOptions = {}) {
       return res.json();
     },
     staleTime: 5 * 60 * 1000, // 5 minutes, as per GEMINI.md
+    placeholderData: keepPreviousData, // Prevent loading state flashes on search/pagination
   });
 }
 
@@ -63,18 +64,18 @@ export function useDeleteComic() {
       const res = await fetch(`/api/library/${comicId}`, {
         method: 'DELETE',
       });
-      
+
       if (!res.ok) {
         const wasAuthError = await handleAuthError(res);
         if (wasAuthError) throw new Error('Unauthorized');
-        
+
         const error = await res.json();
         throw new Error(error.error || 'Failed to delete comic');
       }
 
       // 2. Delete from local IndexedDB
       await evictCachedComic(comicId);
-      
+
       return comicId;
     },
     onSuccess: () => {
@@ -99,7 +100,7 @@ export function useUpdateComic() {
       if (!res.ok) {
         const wasAuthError = await handleAuthError(res);
         if (wasAuthError) throw new Error('Unauthorized');
-        
+
         const error = await res.json();
         throw new Error(error.error || 'Failed to update comic');
       }
@@ -114,9 +115,11 @@ export function useUpdateComic() {
           if (!oldData) return oldData;
           return {
             ...oldData,
-            data: oldData.data.map((c) => (c.id === updatedComic.id ? { ...c, ...updatedComic } : c)),
+            data: oldData.data.map((c) =>
+              c.id === updatedComic.id ? { ...c, ...updatedComic } : c,
+            ),
           };
-        }
+        },
       );
       // Also invalidate to be sure
       queryClient.invalidateQueries({ queryKey: ['library'] });
