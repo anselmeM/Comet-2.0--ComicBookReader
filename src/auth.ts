@@ -23,7 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
     async jwt({ token, user, trigger, session }) {
       // First, invoke the base authConfig jwt callback
-      let updatedToken = await authConfig.callbacks?.jwt?.({ token, user, trigger, session }) || token;
+      const updatedToken = await authConfig.callbacks?.jwt?.({ token, user, trigger, session }) || token;
       
       // If we have a userId, fetch the latest plan and role from the database to keep session in sync
       if (updatedToken?.userId) {
