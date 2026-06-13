@@ -63,7 +63,6 @@ export default function PricingPage() {
         'Cloud Comic Sync (S3/R2)',
         'Automatic Metadata Enrichment',
         'Cross-device File Restoration',
-        'Early Access to Guided View',
         'Ad-free Experience',
         'Priority Support',
       ],
@@ -240,7 +239,6 @@ export default function PricingPage() {
                   free="Manual Trigger"
                   premium="Unlimited Auto"
                 />
-                <ComparisonRow label="Guided View Tech" free="Standard" premium="Early Access" />
                 <ComparisonRow
                   label="Multiple Devices"
                   free="Restricted Sync"
