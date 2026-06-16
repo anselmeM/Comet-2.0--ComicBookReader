@@ -73,7 +73,7 @@ export const DashboardView = ({
     const stats: Record<string, { count: number; lastRead: number; comic: DashboardComic }> = {};
 
     comics.forEach((comic) => {
-      if (comic.author && (comic.progress?.lastPage ?? 0) > 0) {
+      if (comic.author && comic.progress) {
         if (!stats[comic.author]) {
           stats[comic.author] = { count: 0, lastRead: 0, comic };
         }
@@ -89,7 +89,7 @@ export const DashboardView = ({
 
   const featuredComic = dynamicFeaturedComic;
   const continueComic =
-    comics.find((c) => (c.progress?.lastPage ?? 0) > 0) || comics[1] || comics[0];
+    comics.find((c) => c.progress !== null && c.progress !== undefined) || comics[0];
   const isFeaturedFav = !!featuredComic?.isFavorite;
   const isContinueFav = !!continueComic?.isFavorite;
 
