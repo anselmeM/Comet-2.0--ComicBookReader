@@ -12,6 +12,7 @@ import { Prisma } from '@prisma/client';
 import { PaginatedLibraryResponseDTO } from '@/types/schemas';
 import { rateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
+import { parseComicFilename } from '@/lib/metadata-parser';
 
 /**
  * GET /api/library — Returns the authenticated user's comic library
@@ -132,8 +133,21 @@ export const GET = withAuth(async (_req: Request, context, session) => {
       skip: skip,
     });
 
+    const mappedComics = comics.map((c) => {
+      if (!c.series) {
+        const parsed = parseComicFilename(c.title);
+        return {
+          ...c,
+          series: parsed.series,
+          issue: c.issue ?? parsed.issue,
+          year: c.year ?? parsed.year,
+        };
+      }
+      return c;
+    });
+
     const response: PaginatedLibraryResponseDTO = {
-      data: comics as any, // Cast required as Prisma generated type slightly differs from DTO
+      data: mappedComics as any, // Cast required as Prisma generated type slightly differs from DTO
       pagination: {
         page,
         limit,
@@ -202,6 +216,8 @@ export const POST = withAuth(async (_req: Request, context, session) => {
       return NextResponse.json(existing, { status: 200 });
     }
 
+    const parsedMeta = parseComicFilename(title);
+
     // Create the comic record
     const comic = await db.comic.create({
       data: {
@@ -209,6 +225,9 @@ export const POST = withAuth(async (_req: Request, context, session) => {
         filehash,
         pageCount,
         coverUrl,
+        series: parsedMeta.series,
+        issue: parsedMeta.issue,
+        year: parsedMeta.year,
         userId: session.user.id,
       },
     });

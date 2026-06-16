@@ -6,6 +6,7 @@ import { invalidateCache } from '@/lib/cache';
 import { logger } from '@/lib/logger';
 
 import { UpdateComicRequestSchema } from '@/types/schemas';
+import { parseComicFilename } from '@/lib/metadata-parser';
 
 /**
  * GET /api/comics/[id] — Returns metadata for a single comic, including reading progress.
@@ -24,6 +25,13 @@ export const GET = withAuth(
 
     if (!comic) {
       return NextResponse.json({ error: 'Comic not found' }, { status: 404 });
+    }
+
+    if (!comic.series) {
+      const parsed = parseComicFilename(comic.title);
+      comic.series = parsed.series;
+      if (comic.issue === null) comic.issue = parsed.issue;
+      if (comic.year === null) comic.year = parsed.year;
     }
 
     return NextResponse.json(comic, { status: 200 });

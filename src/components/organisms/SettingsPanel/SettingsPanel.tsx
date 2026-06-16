@@ -385,14 +385,14 @@ export function SettingsPanel() {
               <span className="text-blue-400">{(session?.user as any)?.plan || 'FREE'}</span>
             </h3>
             <p className="text-neutral-400 text-sm">
-              {(session?.user as any)?.plan === 'PRO'
+              {(session?.user as any)?.plan === 'PREMIUM'
                 ? 'You are on the Cloud Voyager tier with full cloud sync.'
                 : 'Upgrade to Cloud Voyager to unlock cloud backups and seamless sync.'}
             </p>
           </div>
 
           <div className="shrink-0">
-            {(session?.user as any)?.plan === 'PRO' ? (
+            {(session?.user as any)?.plan === 'PREMIUM' ? (
               <button
                 onClick={handlePortal}
                 disabled={isSubscriptionLoading}

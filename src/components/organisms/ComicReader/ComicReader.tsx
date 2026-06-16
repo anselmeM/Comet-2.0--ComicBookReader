@@ -12,6 +12,10 @@ import { useSession } from 'next-auth/react';
 import { Panel } from '@/types';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { logger } from '@/lib/logger';
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
+import { useComicParser } from '@/hooks/useComicParser';
+import { UploadCloud, Loader2, ArrowLeft } from 'lucide-react';
 
 interface ComicReaderProps {
   comicId: string;
@@ -20,6 +24,42 @@ interface ComicReaderProps {
 export function ComicReader({ comicId }: ComicReaderProps) {
   const { comic, metadata, loading, error, errorType, is404 } = useComicPages(comicId);
   const { data: session } = useSession();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { parseComic, isParsing, progress: parseProgress, error: parseError } = useComicParser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleReImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await parseComic(file, { skipServerPOST: true, existingComicId: comicId });
+      await queryClient.invalidateQueries({
+        queryKey: ['comic-pages', comicId, session?.user?.id],
+      });
+    } catch (err) {
+      logger.error('Failed to re-import comic', {}, err instanceof Error ? err : undefined);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      try {
+        await parseComic(file, { skipServerPOST: true, existingComicId: comicId });
+        await queryClient.invalidateQueries({
+          queryKey: ['comic-pages', comicId, session?.user?.id],
+        });
+      } catch (err) {
+        logger.error('Failed to re-import comic', {}, err instanceof Error ? err : undefined);
+      }
+    }
+  };
 
   const mode = useReaderStore((state) => state.mode);
   const currentPage = useReaderStore((state) => state.currentPage);
@@ -286,10 +326,106 @@ export function ComicReader({ comicId }: ComicReaderProps) {
     let message = errorMessage || 'Failed to initialize comic stream.';
 
     if (errorType === 'cache') {
-      title = 'Comic Not Available';
-      message =
-        'The comic could not be loaded from the local storage. Please try importing the file again.';
-    } else if (errorType === 'auth') {
+      return (
+        <div className="flex h-screen items-center justify-center bg-black p-8 text-center text-white">
+          <div className="max-w-md w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-8 space-y-6 shadow-2xl">
+            <div className="text-amber-500 flex justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-16 w-16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight">Comic Not Available Offline</h2>
+              <p className="text-sm text-neutral-400">
+                The local copy of{' '}
+                <span className="text-white font-semibold">{metadata?.title || 'this comic'}</span>{' '}
+                is missing from your browser cache.
+              </p>
+            </div>
+
+            {isParsing ? (
+              <div className="p-6 bg-black/40 rounded-2xl border border-neutral-800/80 space-y-4">
+                <div className="flex items-center justify-center gap-3 text-blue-400">
+                  <Loader2 className="animate-spin w-5 h-5" />
+                  <span className="font-semibold text-sm capitalize">
+                    {parseProgress?.phase === 'hashing' ? 'Reading file...' : 'Extracting pages...'}
+                  </span>
+                </div>
+                {parseProgress && (
+                  <div className="space-y-2">
+                    <div className="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-blue-500 h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${Math.round((parseProgress.page / parseProgress.total) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-neutral-500 font-mono">
+                      <span>{Math.round((parseProgress.page / parseProgress.total) * 100)}%</span>
+                      <span>
+                        {parseProgress.page} / {parseProgress.total}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-neutral-800 hover:border-blue-500/50 bg-black/20 hover:bg-blue-500/5 p-8 rounded-2xl cursor-pointer transition-all duration-300 group flex flex-col items-center gap-3"
+              >
+                <UploadCloud className="text-neutral-500 group-hover:text-blue-400 transition-colors w-10 h-10" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-neutral-300">
+                    Click to browse or drag & drop file
+                  </p>
+                  <p className="text-xs text-neutral-500">Supports .cbz, .cbr, .zip</p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".cbz,.cbr,.zip"
+                  onChange={handleReImport}
+                  className="hidden"
+                />
+              </div>
+            )}
+
+            {parseError && (
+              <p className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 p-3 rounded-xl">
+                {parseError}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                onClick={() => router.push('/library')}
+                className="flex items-center justify-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors py-2 cursor-pointer"
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Library</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (errorType === 'auth') {
       title = 'Authentication Required';
       message = 'You need to be logged in to view this comic.';
     } else if (is404) {
@@ -298,12 +434,12 @@ export function ComicReader({ comicId }: ComicReaderProps) {
     }
 
     return (
-      <div className="flex h-screen items-center justify-center bg-black p-8 text-center">
-        <div className="max-w-md">
-          <div className="text-red-500 mb-4">
+      <div className="flex h-screen items-center justify-center bg-black p-8 text-center text-white">
+        <div className="max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-8 space-y-6 shadow-2xl">
+          <div className="text-red-500 flex justify-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-16 w-16 mx-auto"
+              className="h-16 w-16"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -316,8 +452,19 @@ export function ComicReader({ comicId }: ComicReaderProps) {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold mb-2 text-white">{title}</h2>
-          <p className="opacity-80 text-gray-300">{message}</p>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+            <p className="text-sm text-neutral-400">{message}</p>
+          </div>
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={() => router.push('/library')}
+              className="flex items-center justify-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Library</span>
+            </button>
+          </div>
         </div>
       </div>
     );
