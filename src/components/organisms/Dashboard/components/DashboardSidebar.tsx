@@ -46,7 +46,7 @@ export function DashboardSidebar({ isOpen, activeView, onNavClick }: DashboardSi
     <motion.aside
       initial={false}
       animate={{ width: isOpen ? 320 : 120 }}
-      className="bg-white border-r border-neutral-50 flex flex-col py-14 shrink-0 transition-all duration-500"
+      className="bg-white border-r border-neutral-50 flex flex-col py-14 shrink-0 transition-all duration-500 overflow-y-auto"
     >
       <div className="px-14 mb-20 flex items-center gap-4">
         <div className="w-12 h-12 bg-blue-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/30 font-black rotate-6 hover:rotate-0 transition-transform cursor-pointer text-2xl">
