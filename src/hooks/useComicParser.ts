@@ -54,6 +54,7 @@ export function useComicParser() {
         await setCachedComic(
           {
             comicId: localComicId,
+            title: file.name.replace(/\.(cbz|cbr|zip)$/i, ''),
             pages,
             coverUrl: pages.length > 0 ? URL.createObjectURL(pages[0].blob) : '',
             cachedAt: Date.now(),

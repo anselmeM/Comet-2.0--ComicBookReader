@@ -108,13 +108,13 @@ export function ComicLibrary() {
         {fetchError && <div className="text-red-400">Failed to load library.</div>}
 
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
               <ComicCardSkeleton key={i} variant="standard" />
             ))}
           </div>
         ) : comics && comics.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {comics.map((comic) => (
               <DashboardComicCard key={comic.id} comic={comic} variant="standard" />
             ))}

@@ -3,8 +3,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useStorage } from '@/hooks/useStorage';
+import { evictCachedComic } from '@/lib/idb';
 import { useReaderStore } from '@/stores/readerStore';
 import type { ReaderMode } from '@/stores/readerStore';
+import { useSubscription } from '@/hooks/useSubscription';
 import NextImage from 'next/image';
 import {
   Trash2,
@@ -20,6 +22,8 @@ import {
   File,
   AlignRight,
   ChevronLeft,
+  CreditCard,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
@@ -42,6 +46,7 @@ export function SettingsPanel() {
 
   // User profile state
   const { data: session, update: updateSession } = useSession();
+  const { handlePortal, isLoading: isSubscriptionLoading } = useSubscription();
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [name, setName] = useState(session?.user?.name || '');
@@ -167,6 +172,13 @@ export function SettingsPanel() {
     ) {
       await clearCache();
       alert('Cache cleared!');
+    }
+  };
+
+  const handleEvictSingle = async (comicId: string) => {
+    if (confirm('Remove this comic from local storage?')) {
+      await evictCachedComic(comicId, session?.user?.id);
+      await refresh();
     }
   };
 
@@ -359,6 +371,53 @@ export function SettingsPanel() {
         </div>
       </section>
 
+      {/* Subscription & Billing */}
+      <section className="space-y-6">
+        <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
+          <CreditCard className="text-neutral-400" />
+          Subscription & Billing
+        </h2>
+
+        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 flex flex-col sm:flex-row justify-between items-center gap-6">
+          <div>
+            <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+              Current Plan:{' '}
+              <span className="text-blue-400">{(session?.user as any)?.plan || 'FREE'}</span>
+            </h3>
+            <p className="text-neutral-400 text-sm">
+              {(session?.user as any)?.plan === 'PRO'
+                ? 'You are on the Cloud Voyager tier with full cloud sync.'
+                : 'Upgrade to Cloud Voyager to unlock cloud backups and seamless sync.'}
+            </p>
+          </div>
+
+          <div className="shrink-0">
+            {(session?.user as any)?.plan === 'PRO' ? (
+              <button
+                onClick={handlePortal}
+                disabled={isSubscriptionLoading}
+                className="flex items-center gap-2 bg-neutral-800 border border-neutral-700 text-white px-6 py-3 rounded-xl hover:bg-neutral-700 transition-all disabled:opacity-50"
+              >
+                {isSubscriptionLoading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <CreditCard size={18} />
+                )}
+                <span>Manage Billing</span>
+              </button>
+            ) : (
+              <Link
+                href="/pricing"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-500 hover:to-purple-500 transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+              >
+                <Sparkles size={18} />
+                <span className="font-bold">Upgrade Plan</span>
+              </Link>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Storage Management */}
       <section className="space-y-6">
         <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
@@ -446,6 +505,57 @@ export function SettingsPanel() {
                 </button>
               </div>
             </div>
+
+            {/* Individual Comic Storage List */}
+            {info.cachedComics && info.cachedComics.length > 0 && (
+              <div className="mt-8 pt-6 border-t border-neutral-800/50">
+                <h4 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">
+                  Downloaded Comics
+                </h4>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {info.cachedComics
+                    .sort((a, b) => b.sizeBytes - a.sizeBytes)
+                    .map((comic) => (
+                      <div
+                        key={comic.comicId}
+                        className="flex items-center justify-between p-3 bg-neutral-900/50 border border-neutral-800 rounded-xl hover:bg-neutral-800 transition-colors"
+                      >
+                        <div className="flex items-center gap-4 min-w-0">
+                          {comic.coverUrl ? (
+                            <div className="w-10 h-14 rounded bg-neutral-800 overflow-hidden shrink-0 border border-neutral-700">
+                              <img
+                                src={comic.coverUrl}
+                                alt="Cover"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-14 rounded bg-neutral-800 flex items-center justify-center shrink-0 border border-neutral-700">
+                              <BookOpen size={16} className="text-neutral-600" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-white truncate w-full">
+                              {comic.title || 'Unknown Title'}
+                            </p>
+                            <p className="text-xs text-neutral-500 font-mono">
+                              {formatBytes(comic.sizeBytes)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleEvictSingle(comic.comicId)}
+                          className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors shrink-0 ml-4"
+                          title="Remove from device"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>

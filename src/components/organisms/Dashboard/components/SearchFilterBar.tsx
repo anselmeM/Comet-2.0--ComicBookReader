@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { SortAsc, ChevronDown, BookOpen, Calendar, Hash, X } from 'lucide-react';
+import { SortAsc, ChevronDown, BookOpen, Calendar, Hash, X, CloudOff } from 'lucide-react';
 
 interface SearchFilterBarProps {
   sortBy: string | undefined;
@@ -13,6 +13,8 @@ interface SearchFilterBarProps {
   onYearStartChange: (year: number | null) => void;
   yearEnd: number | null | undefined;
   onYearEndChange: (year: number | null) => void;
+  isOfflineOnly?: boolean;
+  onOfflineOnlyChange?: (val: boolean) => void;
   onReset: () => void;
 }
 
@@ -25,7 +27,9 @@ export function SearchFilterBar({
   onYearStartChange,
   yearEnd,
   onYearEndChange,
-  onReset
+  isOfflineOnly,
+  onOfflineOnlyChange,
+  onReset,
 }: SearchFilterBarProps) {
   return (
     <motion.div
@@ -41,8 +45,8 @@ export function SearchFilterBar({
             <SortAsc size={12} /> Sort By
           </label>
           <div className="relative">
-            <select 
-              value={sortBy || 'recent'} 
+            <select
+              value={sortBy || 'recent'}
               onChange={(e) => onSortChange(e.target.value)}
               className="w-full bg-neutral-50 border border-neutral-100 rounded-xl py-3 px-4 text-sm font-bold text-neutral-800 outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none cursor-pointer"
             >
@@ -57,7 +61,10 @@ export function SearchFilterBar({
               <option value="rating_desc">Rating (High to Low)</option>
               <option value="rating_asc">Rating (Low to High)</option>
             </select>
-            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 pointer-events-none" size={16} />
+            <ChevronDown
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 pointer-events-none"
+              size={16}
+            />
           </div>
         </div>
 
@@ -72,8 +79,8 @@ export function SearchFilterBar({
                 key={status}
                 onClick={() => onReadStatusChange(status)}
                 className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
-                  (readStatus || 'all') === status 
-                    ? 'bg-white text-blue-600 shadow-sm' 
+                  (readStatus || 'all') === status
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-neutral-400 hover:text-neutral-600'
                 }`}
               >
@@ -90,27 +97,52 @@ export function SearchFilterBar({
           </label>
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
-              <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" size={14} />
-              <input 
-                type="number" 
-                placeholder="From Year" 
-                value={yearStart || ''} 
-                onChange={(e) => onYearStartChange(e.target.value ? parseInt(e.target.value) : null)}
+              <Hash
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300"
+                size={14}
+              />
+              <input
+                type="number"
+                placeholder="From Year"
+                value={yearStart || ''}
+                onChange={(e) =>
+                  onYearStartChange(e.target.value ? parseInt(e.target.value) : null)
+                }
                 className="w-full bg-neutral-50 border border-neutral-100 rounded-xl py-3 pl-10 pr-4 text-sm font-bold text-neutral-800 outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
             <div className="w-4 h-px bg-neutral-200" />
             <div className="relative flex-1">
-              <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" size={14} />
-              <input 
-                type="number" 
-                placeholder="To Year" 
-                value={yearEnd || ''} 
+              <Hash
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300"
+                size={14}
+              />
+              <input
+                type="number"
+                placeholder="To Year"
+                value={yearEnd || ''}
                 onChange={(e) => onYearEndChange(e.target.value ? parseInt(e.target.value) : null)}
                 className="w-full bg-neutral-50 border border-neutral-100 rounded-xl py-3 pl-10 pr-4 text-sm font-bold text-neutral-800 outline-none focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
-            <button 
+
+            {onOfflineOnlyChange && (
+              <button
+                onClick={() => onOfflineOnlyChange(!isOfflineOnly)}
+                className={`p-3 rounded-xl transition-all border flex items-center justify-center ${
+                  isOfflineOnly
+                    ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm'
+                    : 'bg-neutral-50 text-neutral-400 border-neutral-100 hover:bg-neutral-100'
+                }`}
+                title={
+                  isOfflineOnly ? 'Showing offline comics only' : 'Filter by offline availability'
+                }
+              >
+                <CloudOff size={20} />
+              </button>
+            )}
+
+            <button
               onClick={onReset}
               className="p-3 bg-neutral-100 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 rounded-xl transition-all"
               title="Reset all filters"

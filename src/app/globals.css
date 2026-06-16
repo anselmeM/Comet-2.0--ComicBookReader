@@ -74,6 +74,14 @@ body {
   transition: background-color 300ms, color 300ms;
 }
 
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* ── Tailwind Utilities ───────────────────────────────────────────────────── */
 @theme inline {
   --color-comet-bg:       var(--color-bg);

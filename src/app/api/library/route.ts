@@ -40,6 +40,9 @@ export const GET = withAuth(async (_req: Request, context, session) => {
       : null;
     const yearEnd = searchParams.get('yearEnd') ? parseInt(searchParams.get('yearEnd')!) : null;
     const readStatus = searchParams.get('readStatus') || 'all'; // all, unread, reading, completed
+    const includeIds = searchParams.get('includeIds')
+      ? searchParams.get('includeIds')!.split(',')
+      : null;
 
     // Check Cache (T-INF-004)
     const cacheKey = genCacheKey(session.user.id, 'library', {
@@ -51,6 +54,7 @@ export const GET = withAuth(async (_req: Request, context, session) => {
       yearStart,
       yearEnd,
       readStatus,
+      includeIds: includeIds ? includeIds.join(',') : null,
     });
     const cachedData = await getCache<PaginatedLibraryResponseDTO>(cacheKey);
     if (cachedData) {
@@ -64,6 +68,10 @@ export const GET = withAuth(async (_req: Request, context, session) => {
 
     // Build where clause
     const where: Prisma.ComicWhereInput = { userId: session.user.id };
+
+    if (includeIds) {
+      where.id = { in: includeIds };
+    }
 
     if (search) {
       const isPostgres = process.env.DATABASE_URL?.startsWith('postgres') || false;

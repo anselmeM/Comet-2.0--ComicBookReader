@@ -30,6 +30,7 @@ export default function LibraryPage() {
   const [yearStart, setYearStart] = useState<number | null>(null);
   const [yearEnd, setYearEnd] = useState<number | null>(null);
   const [readStatus, setReadStatus] = useState('all');
+  const [isOfflineOnly, setIsOfflineOnly] = useState(false);
   const [localComicIds, setLocalComicIds] = useState<Set<string>>(new Set());
 
   const {
@@ -45,6 +46,7 @@ export default function LibraryPage() {
     yearStart,
     yearEnd,
     readStatus,
+    includeIds: isOfflineOnly ? Array.from(localComicIds) : undefined,
   });
 
   const deleteMutation = useDeleteComic();
@@ -227,6 +229,8 @@ export default function LibraryPage() {
         onYearEndChange={setYearEnd}
         readStatus={readStatus}
         onReadStatusChange={setReadStatus}
+        isOfflineOnly={isOfflineOnly}
+        onOfflineOnlyChange={setIsOfflineOnly}
       />
     </>
   );

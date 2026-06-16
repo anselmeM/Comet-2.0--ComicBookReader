@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { LogOut, Settings } from 'lucide-react';
 import { signOut as nextAuthSignOut, useSession } from 'next-auth/react';
 import { navItems } from '@/lib/__mocks__/dashboard';
-import { Sparkles } from 'lucide-react';
 import { deleteUserDB, deleteLegacyDB } from '@/lib/idb';
 import { logger } from '@/lib/logger';
 
@@ -17,7 +16,6 @@ interface DashboardSidebarProps {
 }
 
 const bottomNavItems = [
-  { name: 'Pricing', icon: Sparkles, id: 'pricing' },
   { name: 'Settings', icon: Settings, id: 'settings' },
   { name: 'Log out', icon: LogOut, id: 'logout' },
 ];

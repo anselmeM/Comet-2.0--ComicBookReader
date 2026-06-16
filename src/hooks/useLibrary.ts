@@ -12,6 +12,7 @@ interface UseLibraryOptions {
   yearStart?: number | null;
   yearEnd?: number | null;
   readStatus?: string;
+  includeIds?: string[];
 }
 
 export function useLibrary(options: UseLibraryOptions = {}) {
@@ -25,10 +26,22 @@ export function useLibrary(options: UseLibraryOptions = {}) {
     yearStart = null,
     yearEnd = null,
     readStatus = 'all',
+    includeIds,
   } = options;
 
   return useQuery<PaginatedLibraryResponseDTO>({
-    queryKey: ['library', page, limit, search, series, sortBy, yearStart, yearEnd, readStatus],
+    queryKey: [
+      'library',
+      page,
+      limit,
+      search,
+      series,
+      sortBy,
+      yearStart,
+      yearEnd,
+      readStatus,
+      includeIds,
+    ],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -41,6 +54,7 @@ export function useLibrary(options: UseLibraryOptions = {}) {
 
       if (yearStart !== null) params.set('yearStart', yearStart.toString());
       if (yearEnd !== null) params.set('yearEnd', yearEnd.toString());
+      if (includeIds && includeIds.length > 0) params.set('includeIds', includeIds.join(','));
 
       const res = await fetch(`/api/library?${params.toString()}`);
       if (!res.ok) {

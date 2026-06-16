@@ -1,11 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getCacheTotalSizeBytes, clearAllParsedComics } from '@/lib/idb';
+import {
+  getCacheTotalSizeBytes,
+  clearAllParsedComics,
+  getAllCachedComicsMetadata,
+} from '@/lib/idb';
+import type { CachedComic } from '@/types';
 import { logger } from '@/lib/logger';
 
 interface StorageInfo {
   usage: number;
   quota: number;
   idbCustomUsage: number;
+  cachedComics: Omit<CachedComic, 'pages'>[];
   loading: boolean;
 }
 
@@ -17,6 +23,7 @@ export function useStorage() {
     usage: 0,
     quota: 0,
     idbCustomUsage: 0,
+    cachedComics: [],
     loading: true,
   });
 
@@ -27,12 +34,14 @@ export function useStorage() {
       try {
         const { usage, quota } = await navigator.storage.estimate();
         const idbSize = await getCacheTotalSizeBytes();
+        const comics = await getAllCachedComicsMetadata();
 
         if (isMounted.current) {
           setInfo({
             usage: usage || 0,
             quota: quota || 0,
             idbCustomUsage: idbSize,
+            cachedComics: comics,
             loading: false,
           });
         }

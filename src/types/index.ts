@@ -10,9 +10,9 @@
 /** The 4 reading modes supported by ComicReader */
 export type ReaderMode =
   | 'single-vertical' // Mobile: 1 page, scroll down
-  | 'dual-spread'     // Desktop ≥1024px: 2 pages side-by-side
-  | 'manga-rtl'       // User toggle: 2-page spread, RTL order
-  | 'guided-view';    // User toggle: auto-zoom between detected panels
+  | 'dual-spread' // Desktop ≥1024px: 2 pages side-by-side
+  | 'manga-rtl' // User toggle: 2-page spread, RTL order
+  | 'guided-view'; // User toggle: auto-zoom between detected panels
 
 // ────────────────────────────────────────────────────
 // Guided View / Panel Detection
@@ -90,8 +90,10 @@ export interface ComicPage {
 }
 
 /** Messages sent TO the comicParser worker */
-export type WorkerInboundMessage =
-  | { type: 'PARSE'; payload: { buffer: ArrayBuffer; filename: string } };
+export type WorkerInboundMessage = {
+  type: 'PARSE';
+  payload: { buffer: ArrayBuffer; filename: string };
+};
 
 /** Messages received FROM the comicParser worker */
 export type WorkerOutboundMessage =
@@ -106,9 +108,10 @@ export type WorkerOutboundMessage =
 /** A cached comic entry stored in IndexedDB */
 export interface CachedComic {
   comicId: string;
-  pages: ComicPage[];   // Array of page objects with dimensions
-  coverUrl: string;     // Cover image as ObjectURL or base64
-  cachedAt: number;    // Unix timestamp
+  title?: string; // Optional for backwards compatibility
+  pages: ComicPage[]; // Array of page objects with dimensions
+  coverUrl: string; // Cover image as ObjectURL or base64
+  cachedAt: number; // Unix timestamp
   lastAccessedAt: number;
   sizeBytes: number;
 }

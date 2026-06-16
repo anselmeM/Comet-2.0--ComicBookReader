@@ -51,7 +51,7 @@ interface DashboardComicCardProps {
   onNotification?: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   onRestoreFromCloud?: (id: string, title: string) => Promise<void>;
   isFav?: boolean;
-  onToggleFav?: () => void;
+  onToggleFav?: () => void | Promise<void>;
   isEditMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (id: string) => void;
@@ -81,6 +81,7 @@ export function DashboardComicCard({
   const deleteMutation = useDeleteComic();
   const [isMetadataOpen, setIsMetadataOpen] = React.useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = React.useState(false);
+  const [isTogglingFav, setIsTogglingFav] = React.useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -97,9 +98,15 @@ export function DashboardComicCard({
     }
   };
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggleFav?.();
+    if (!onToggleFav || isTogglingFav) return;
+    try {
+      setIsTogglingFav(true);
+      await onToggleFav();
+    } finally {
+      setIsTogglingFav(false);
+    }
   };
 
   const handleEnrich = async (e: React.MouseEvent) => {
@@ -204,7 +211,7 @@ export function DashboardComicCard({
           </div>
 
           <div className="p-4">
-            <h3 className="text-white font-medium text-sm line-clamp-1 group-hover:text-blue-400 transition-colors">
+            <h3 className="text-white font-medium text-sm line-clamp-2 group-hover:text-blue-400 transition-colors">
               {comic.title}
             </h3>
             <div className="flex justify-between items-center mt-1">
@@ -268,11 +275,16 @@ export function DashboardComicCard({
         <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={handleFavoriteClick}
-            className="p-1.5 bg-white/90 rounded-xl shadow-lg hover:bg-white text-neutral-600 transition-all"
+            disabled={isTogglingFav}
+            className="p-1.5 bg-white/90 rounded-xl shadow-lg hover:bg-white text-neutral-600 transition-all disabled:opacity-50"
             title={isFav ? 'Remove from favorites' : 'Add to favorites'}
             aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
           >
-            <Heart size={16} className={`${isFav ? 'text-red-500 fill-red-500' : ''}`} />
+            {isTogglingFav ? (
+              <Loader2 size={16} className="animate-spin text-neutral-400" />
+            ) : (
+              <Heart size={16} className={`${isFav ? 'text-red-500 fill-red-500' : ''}`} />
+            )}
           </button>
 
           <button
@@ -366,8 +378,10 @@ export function DashboardComicCard({
       </div>
 
       <div className="p-4 flex flex-col gap-1">
-        <h3 className="text-sm font-bold text-neutral-800 line-clamp-1 mb-0.5">{comic.title}</h3>
-        <p className="text-xs text-neutral-500 font-medium">{comic.author || 'Unknown Artist'}</p>
+        <h3 className="text-sm font-bold text-neutral-800 line-clamp-2 mb-0.5">{comic.title}</h3>
+        <p className="text-xs text-neutral-500 font-medium line-clamp-1">
+          {comic.author || 'Unknown Artist'}
+        </p>
       </div>
 
       <MetadataModal
