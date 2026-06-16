@@ -176,93 +176,91 @@ export function DashboardLayout(props: DashboardLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-pink-100 flex items-center justify-center p-4 md:p-12 font-sans text-neutral-800 selection:bg-blue-500 selection:text-white">
-      <div className="bg-white w-full max-w-[1400px] h-[850px] rounded-[2.5rem] shadow-[0_50px_100px_-30px_rgba(0,0,0,0.1)] flex overflow-hidden border border-white relative">
-        <DashboardSidebar
-          isOpen={isSidebarOpen}
-          activeView={activeView}
-          onNavClick={handleNavClick}
-          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+    <div className="h-screen w-screen flex bg-neutral-50 font-sans text-neutral-800 selection:bg-blue-500 selection:text-white overflow-hidden">
+      <DashboardSidebar
+        isOpen={isSidebarOpen}
+        activeView={activeView}
+        onNavClick={handleNavClick}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+      />
+
+      <main className="flex-1 flex flex-col bg-white overflow-hidden relative">
+        <DashboardHeader
+          searchQuery={searchQuery || ''}
+          onSearchChange={onSearchChange || (() => {})}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
+          onUploadClick={() => fileInputRef.current?.click()}
+          unreadCount={unreadCount}
+          showNotifications={showNotifications}
+          setShowNotifications={setShowNotifications}
+          onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+          session={session}
+          handlePortal={handlePortal}
+          handleCheckout={handleCheckout}
+          isSubscriptionLoading={isSubscriptionLoading}
+        />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".cbz,.cbr"
+          className="hidden"
+          onChange={async (e) => {
+            if (e.target.files?.[0]) await onFileSelect?.(e.target.files[0]);
+          }}
         />
 
-        <main className="flex-1 flex flex-col bg-[#FAFBFF] overflow-hidden relative">
-          <DashboardHeader
-            searchQuery={searchQuery || ''}
-            onSearchChange={onSearchChange || (() => {})}
-            showFilters={showFilters}
-            setShowFilters={setShowFilters}
-            onUploadClick={() => fileInputRef.current?.click()}
-            unreadCount={unreadCount}
-            showNotifications={showNotifications}
-            setShowNotifications={setShowNotifications}
-            onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-            session={session}
-            handlePortal={handlePortal}
-            handleCheckout={handleCheckout}
-            isSubscriptionLoading={isSubscriptionLoading}
-          />
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".cbz,.cbr"
-            className="hidden"
-            onChange={async (e) => {
-              if (e.target.files?.[0]) await onFileSelect?.(e.target.files[0]);
-            }}
-          />
+        <AnimatePresence>
+          {showFilters && (
+            <SearchFilterBar
+              sortBy={sortBy}
+              onSortChange={onSortChange || (() => {})}
+              readStatus={readStatus}
+              onReadStatusChange={onReadStatusChange || (() => {})}
+              yearStart={yearStart}
+              onYearStartChange={onYearStartChange || (() => {})}
+              yearEnd={yearEnd}
+              onYearEndChange={onYearEndChange || (() => {})}
+              isOfflineOnly={isOfflineOnly}
+              onOfflineOnlyChange={onOfflineOnlyChange}
+              onReset={handleResetFilters}
+            />
+          )}
+        </AnimatePresence>
 
-          <AnimatePresence>
-            {showFilters && (
-              <SearchFilterBar
-                sortBy={sortBy}
-                onSortChange={onSortChange || (() => {})}
-                readStatus={readStatus}
-                onReadStatusChange={onReadStatusChange || (() => {})}
-                yearStart={yearStart}
-                onYearStartChange={onYearStartChange || (() => {})}
-                yearEnd={yearEnd}
-                onYearEndChange={onYearEndChange || (() => {})}
-                isOfflineOnly={isOfflineOnly}
-                onOfflineOnlyChange={onOfflineOnlyChange}
-                onReset={handleResetFilters}
+        <div className="flex-1 overflow-y-auto px-12 py-12 scroll-smooth">
+          <AnimatePresence mode="wait">
+            {searchResults ? (
+              <SearchResultsView
+                results={searchResults}
+                onClearSearch={() => onSearchChange?.('')}
+                onSearchChange={onSearchChange || (() => {})}
+                setActiveView={setActiveView}
+                isEditMode={isEditMode}
+                selectedIds={selectedIds}
+                onToggleSelect={(id) =>
+                  setSelectedIds((prev) =>
+                    prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+                  )
+                }
+                onToggleFavorite={toggleFavorite}
               />
+            ) : (
+              <motion.div
+                key={activeView}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <ErrorBoundary key={activeView} name={activeView}>
+                  {renderActiveView()}
+                </ErrorBoundary>
+              </motion.div>
             )}
           </AnimatePresence>
-
-          <div className="flex-1 overflow-y-auto px-12 py-12 scroll-smooth">
-            <AnimatePresence mode="wait">
-              {searchResults ? (
-                <SearchResultsView
-                  results={searchResults}
-                  onClearSearch={() => onSearchChange?.('')}
-                  onSearchChange={onSearchChange || (() => {})}
-                  setActiveView={setActiveView}
-                  isEditMode={isEditMode}
-                  selectedIds={selectedIds}
-                  onToggleSelect={(id) =>
-                    setSelectedIds((prev) =>
-                      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-                    )
-                  }
-                  onToggleFavorite={toggleFavorite}
-                />
-              ) : (
-                <motion.div
-                  key={activeView}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -30 }}
-                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <ErrorBoundary key={activeView} name={activeView}>
-                    {renderActiveView()}
-                  </ErrorBoundary>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
