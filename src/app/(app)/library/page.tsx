@@ -92,6 +92,8 @@ export default function LibraryPage() {
         ? {
             lastPage: comic.progress.lastPage,
             totalPages: comic.progress.totalPages,
+            totalTimeSpent: comic.progress.totalTimeSpent,
+            lastReadAt: comic.progress.lastReadAt,
           }
         : undefined,
     }));

@@ -10,6 +10,8 @@ export interface ReadingProgressDTO {
   totalPages: number;
   zoomLevel: number;
   readStatus: 'UNREAD' | 'READING' | 'COMPLETED';
+  totalTimeSpent?: number;
+  lastReadAt?: string | null;
 }
 
 export interface ComicDTO {
@@ -49,6 +51,8 @@ export function mapProgressToDTO(progress: any | null): ReadingProgressDTO | nul
         ? progress.zoomLevel
         : Number(progress.zoomLevel.toString()),
     readStatus: progress.readStatus as 'UNREAD' | 'READING' | 'COMPLETED',
+    totalTimeSpent: progress.totalTimeSpent,
+    lastReadAt: progress.lastReadAt ? progress.lastReadAt.toISOString() : null,
   };
 }
 

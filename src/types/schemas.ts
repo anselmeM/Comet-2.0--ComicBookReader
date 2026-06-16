@@ -13,6 +13,8 @@ export const ReadingProgressSchema = z.object({
   zoomLevel: z.number().optional().default(1.0),
   readStatus: z.enum(['UNREAD', 'READING', 'COMPLETED']).optional(),
   timeDelta: z.number().int().min(0).optional(),
+  totalTimeSpent: z.number().int().optional(),
+  lastReadAt: z.string().or(z.date()).nullable().optional(),
 });
 
 export const ComicDTOSchema = z.object({

@@ -140,3 +140,57 @@ export function useUpdateComic() {
     },
   });
 }
+
+export function useResetProgress() {
+  const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
+
+  return useMutation({
+    mutationFn: async (comicId: string) => {
+      const res = await fetch(`/api/comics/${comicId}/progress`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to reset progress');
+      }
+
+      return comicId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+      queryClient.invalidateQueries({ queryKey: ['userStats'] });
+    },
+  });
+}
+
+export function useClearAllHistory() {
+  const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
+
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/comics/progress', {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to clear history');
+      }
+
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+      queryClient.invalidateQueries({ queryKey: ['userStats'] });
+    },
+  });
+}

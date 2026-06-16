@@ -42,6 +42,8 @@ export interface DashboardComic {
   progress?: {
     lastPage: number;
     totalPages: number;
+    totalTimeSpent?: number;
+    lastReadAt?: string | null;
   } | null;
 }
 

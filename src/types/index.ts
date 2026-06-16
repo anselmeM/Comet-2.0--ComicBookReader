@@ -59,6 +59,8 @@ export interface ReadingProgressDTO {
   totalPages: number;
   zoomLevel: number;
   readStatus: 'UNREAD' | 'READING' | 'COMPLETED';
+  totalTimeSpent?: number;
+  lastReadAt?: string | null;
 }
 
 /** Payload sent when adding a comic to the library */
