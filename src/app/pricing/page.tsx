@@ -246,7 +246,7 @@ export default function PricingPage() {
         <div className="flex flex-col items-center gap-6 mb-16 z-20">
           <div className="relative flex items-center justify-center gap-4">
             {/* Toggle Switch */}
-            <div className="relative flex p-1 rounded-full bg-neutral-900 border border-neutral-800 shadow-inner">
+            <div className="relative flex p-1 rounded-full bg-comet-surface border border-comet-border shadow-inner">
               <button
                 onClick={() => setBillingInterval('monthly')}
                 className={`relative z-10 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${
@@ -303,7 +303,7 @@ export default function PricingPage() {
                 setCurrency(e.target.value);
                 setIsManualCurrency(true);
               }}
-              className="bg-neutral-900 border border-neutral-800 text-comet-text rounded px-2.5 py-1 text-xs font-bold focus:border-comet-accent focus:ring-1 focus:ring-comet-accent outline-none cursor-pointer transition-all"
+              className="bg-comet-surface border border-comet-border text-comet-text rounded px-2.5 py-1 text-xs font-bold focus:border-comet-accent focus:ring-1 focus:ring-comet-accent outline-none cursor-pointer transition-all"
             >
               {Object.values(CURRENCY_CONFIGS).map((cfg) => (
                 <option key={cfg.code} value={cfg.code}>
@@ -329,8 +329,8 @@ export default function PricingPage() {
               transition={{ delay: idx * 0.1 }}
               className={`relative flex flex-col p-10 rounded-[3rem] border-2 transition-all ${
                 tier.highlight
-                  ? 'bg-neutral-900 border-comet-accent shadow-[0_20px_50px_rgba(124,106,247,0.15)] scale-105 z-20'
-                  : 'bg-neutral-900/40 border-neutral-900 backdrop-blur-xl z-10'
+                  ? 'bg-comet-surface border-comet-accent shadow-[0_20px_50px_rgba(124,106,247,0.15)] scale-105 z-20'
+                  : 'bg-comet-surface/40 border-comet-border backdrop-blur-xl z-10'
               }`}
             >
               {tier.highlight && (
@@ -359,7 +359,7 @@ export default function PricingPage() {
                 {tier.features.map((feature) => (
                   <div key={feature} className="flex items-start gap-3">
                     <div
-                      className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${tier.highlight ? 'bg-comet-accent text-white' : 'bg-neutral-800 text-comet-muted'}`}
+                      className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${tier.highlight ? 'bg-comet-accent text-white' : 'bg-comet-surface text-comet-muted border border-comet-border/50'}`}
                     >
                       <Check size={12} strokeWidth={4} />
                     </div>
@@ -375,7 +375,7 @@ export default function PricingPage() {
                   className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-95 shadow-xl flex items-center justify-center gap-3 ${
                     tier.highlight
                       ? 'bg-comet-accent text-white hover:bg-comet-accent-hover shadow-comet-accent/20 disabled:bg-comet-accent/50 disabled:scale-100 disabled:pointer-events-none'
-                      : 'bg-white text-black hover:bg-neutral-100 shadow-white/5 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:scale-100 disabled:pointer-events-none'
+                      : 'bg-comet-text text-comet-bg hover:opacity-90 shadow-sm disabled:bg-comet-surface disabled:text-comet-muted disabled:scale-100 disabled:pointer-events-none'
                   }`}
                 >
                   {isLoading ? (
@@ -393,7 +393,7 @@ export default function PricingPage() {
               ) : tier.disabled ? (
                 <button
                   disabled
-                  className="w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest bg-neutral-800 text-neutral-500 border border-neutral-700/50 shadow-inner flex items-center justify-center gap-3 cursor-not-allowed"
+                  className="w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest bg-comet-surface text-comet-muted border border-comet-border shadow-inner flex items-center justify-center gap-3 cursor-not-allowed"
                 >
                   {tier.cta}
                   <Check size={18} />
@@ -404,7 +404,7 @@ export default function PricingPage() {
                   className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-95 shadow-xl text-center flex items-center justify-center gap-3 ${
                     tier.highlight
                       ? 'bg-comet-accent text-white hover:bg-comet-accent-hover shadow-comet-accent/20'
-                      : 'bg-white text-black hover:bg-neutral-100 shadow-white/5'
+                      : 'bg-comet-text text-comet-bg hover:opacity-90 shadow-sm'
                   }`}
                 >
                   {tier.cta}
@@ -426,7 +426,7 @@ export default function PricingPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-neutral-800">
+                <tr className="border-b border-comet-border">
                   <th className="py-6 px-4 text-sm font-black uppercase tracking-widest text-comet-muted">
                     Feature
                   </th>
@@ -496,7 +496,7 @@ export default function PricingPage() {
         </section>
       </main>
 
-      <footer className="relative z-10 border-t border-neutral-900 bg-neutral-900/20 py-12 text-center text-sm text-comet-muted">
+      <footer className="relative z-10 border-t border-comet-border bg-comet-surface/20 py-12 text-center text-sm text-comet-muted">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-comet-accent/20 border border-comet-accent/30">
@@ -513,7 +513,7 @@ export default function PricingPage() {
 
 function ComparisonRow({ label, free, premium }: { label: string; free: string; premium: string }) {
   return (
-    <tr className="border-b border-neutral-900/50 hover:bg-white/5 transition-colors">
+    <tr className="border-b border-comet-border/50 hover:bg-comet-surface/30 transition-colors">
       <td className="py-5 px-4 text-sm font-semibold">{label}</td>
       <td className="py-5 px-4 text-sm text-center text-comet-muted">{free}</td>
       <td className="py-5 px-4 text-sm text-center font-bold text-white">{premium}</td>
@@ -523,7 +523,7 @@ function ComparisonRow({ label, free, premium }: { label: string; free: string; 
 
 function FAQItem({ question, answer }: { question: string; answer: string }) {
   return (
-    <div className="p-8 rounded-[2rem] bg-neutral-900/40 border border-neutral-900">
+    <div className="p-8 rounded-[2rem] bg-comet-surface/40 border border-comet-border">
       <h4 className="text-lg font-bold mb-4 text-white">{question}</h4>
       <p className="text-comet-muted leading-relaxed">{answer}</p>
     </div>
