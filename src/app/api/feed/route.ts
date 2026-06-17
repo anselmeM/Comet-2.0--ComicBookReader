@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
 import { getCache, setCache, genCacheKey } from '@/lib/cache';
 import { logger } from '@/lib/logger';
@@ -10,9 +10,9 @@ import { logger } from '@/lib/logger';
  */
 export async function GET() {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse || !session?.user?.id) {
+      return errorResponse || NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Try to get from cache first (1 minute TTL)

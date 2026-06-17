@@ -16,7 +16,7 @@ export const authConfig: NextAuthConfig = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   providers: [], // Providers are added in auth.ts
   callbacks: {
@@ -29,7 +29,10 @@ export const authConfig: NextAuthConfig = {
       const isOnOnboarding = nextUrl.pathname.startsWith('/onboarding');
 
       // Bypass auth for E2E tests
-      if (process.env.NODE_ENV !== 'production' && request.cookies.get('__COMET_TEST_BYPASS')) {
+      if (
+        (process.env.NODE_ENV !== 'production' || process.env.COMET_LOAD_TEST === 'true') &&
+        request.cookies.get('__COMET_TEST_BYPASS')
+      ) {
         return true;
       }
 

@@ -24,9 +24,13 @@ import {
   ChevronLeft,
   CreditCard,
   Sparkles,
+  Download,
+  Upload,
+  Keyboard,
 } from 'lucide-react';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 function formatBytes(bytes: number, decimals = 2) {
   if (!+bytes) return '0 Bytes';
@@ -38,14 +42,155 @@ function formatBytes(bytes: number, decimals = 2) {
 }
 
 export function SettingsPanel() {
-  const { info, clearCache, refresh } = useStorage();
+  // User profile state
+  const { data: session, update: updateSession } = useSession();
+  const { info, clearCache, refresh } = useStorage(session?.user?.id);
   const mode = useReaderStore((state) => state.mode);
   const setMode = useReaderStore((state) => state.setMode);
   const brightness = useReaderStore((state) => state.brightness);
   const setBrightness = useReaderStore((state) => state.setBrightness);
 
-  // User profile state
-  const { data: session, update: updateSession } = useSession();
+  // Client-side cache limit configuration
+  const cacheLimitGB = useSettingsStore((state) => state.cacheLimitGB);
+  const setCacheLimitGB = useSettingsStore((state) => state.setCacheLimitGB);
+
+  // Backup / Import state
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const backupInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard cheat sheet active key highlight state
+  const [activeShortcut, setActiveShortcut] = useState<string | null>(null);
+
+  const shortcuts = [
+    {
+      key: 'Page Navigation',
+      keys: ['Space', '◀', '▶', 'a', 'A', 'd', 'D', 'ArrowRight', 'ArrowLeft'],
+      label: 'Page Turns',
+      desc: 'Space / ArrowRight / D to go forward; ArrowLeft / A to go backward.',
+    },
+    {
+      key: 'Fullscreen Toggle',
+      keys: ['F', 'f'],
+      label: 'Fullscreen Toggle',
+      desc: 'F key toggles the PWA fullscreen view.',
+    },
+    {
+      key: 'Bookmarks Toggle',
+      keys: ['B', 'b'],
+      label: 'Toggle Bookmark',
+      desc: 'B key bookmarks/unbookmarks current page.',
+    },
+    {
+      key: 'Zoom Controls',
+      keys: ['+', '-', '0', '='],
+      label: 'Zoom Controls',
+      desc: '+ / - to zoom in/out, 0 to reset zoom.',
+    },
+  ];
+
+  const handleExportBackup = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetch('/api/user/backup');
+      if (!res.ok) throw new Error('Failed to fetch backup from server');
+
+      const serverData = await res.json();
+
+      // Bundle local Zustand storage settings
+      const readerStorage =
+        typeof window !== 'undefined' ? localStorage.getItem('comet-reader-storage') : null;
+      const settingsStorage =
+        typeof window !== 'undefined' ? localStorage.getItem('comet-settings-storage') : null;
+
+      const fullBackup = {
+        ...serverData,
+        clientSettings: {
+          reader: readerStorage ? JSON.parse(readerStorage)?.state : null,
+          settings: settingsStorage ? JSON.parse(settingsStorage)?.state : null,
+        },
+      };
+
+      const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `comet-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      logger.error('Export backup error:', {}, e instanceof Error ? e : undefined);
+      alert(e instanceof Error ? e.message : 'Error exporting backup');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (
+      !confirm(
+        'Are you sure you want to import this backup? This will overwrite your settings, streaks, and reading history.',
+      )
+    ) {
+      if (backupInputRef.current) backupInputRef.current.value = '';
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      // 1. Restore client-side settings if present
+      if (data.clientSettings) {
+        if (data.clientSettings.settings) {
+          localStorage.setItem(
+            'comet-settings-storage',
+            JSON.stringify({ state: data.clientSettings.settings, version: 0 }),
+          );
+        }
+        if (data.clientSettings.reader) {
+          localStorage.setItem(
+            'comet-reader-storage',
+            JSON.stringify({ state: data.clientSettings.reader, version: 0 }),
+          );
+        }
+      }
+
+      // 2. Upload to server to restore DB settings, streaks, reading history, and metadata
+      const response = await fetch('/api/user/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json();
+        throw new Error(errorBody.error || 'Failed to upload backup to server');
+      }
+
+      const result = await response.json();
+      alert(
+        `Backup imported successfully! Restored settings and updated progress for ${result.comicsRestoredCount} comics.`,
+      );
+
+      // Force reload to apply all client and server settings
+      window.location.reload();
+    } catch (err) {
+      logger.error('Import backup error:', {}, err instanceof Error ? err : undefined);
+      alert(err instanceof Error ? err.message : 'Failed to import backup file');
+    } finally {
+      setIsImporting(false);
+      if (backupInputRef.current) backupInputRef.current.value = '';
+    }
+  };
+
   const { handlePortal, isLoading: isSubscriptionLoading } = useSubscription();
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -454,56 +599,103 @@ export function SettingsPanel() {
                 </div>
               </div>
 
-              <div className="text-right space-y-1">
-                <span className="text-neutral-500 text-xs font-bold uppercase tracking-wider text-right block">
-                  Storage Health
-                </span>
-                <div
-                  className={`text-sm font-bold flex items-center gap-2 ${
-                    info.idbCustomUsage / info.quota > 0.8 ? 'text-amber-400' : 'text-emerald-400'
-                  }`}
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full animate-pulse ${
-                      info.idbCustomUsage / info.quota > 0.8
-                        ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'
-                        : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
-                    }`}
-                  />
-                  {info.idbCustomUsage / info.quota > 0.8 ? 'Near Capacity' : 'Healthy'}
-                </div>
-              </div>
+              {/* Storage Health */}
+              {(() => {
+                const limitBytes = cacheLimitGB * 1024 * 1024 * 1024;
+                const isNearLimit = info.idbCustomUsage / limitBytes > 0.8;
+                return (
+                  <div className="text-right space-y-1">
+                    <span className="text-neutral-500 text-xs font-bold uppercase tracking-wider text-right block">
+                      Storage Health
+                    </span>
+                    <div
+                      className={`text-sm font-bold flex items-center gap-2 ${
+                        isNearLimit ? 'text-amber-400' : 'text-emerald-400'
+                      }`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full animate-pulse ${
+                          isNearLimit
+                            ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'
+                            : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
+                        }`}
+                      />
+                      {isNearLimit ? 'Near Capacity' : 'Healthy'}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Progress Bar Container */}
-            <div className="relative w-full h-4 bg-black/40 rounded-full border border-white/5 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                  info.idbCustomUsage / info.quota > 0.8
-                    ? 'bg-gradient-to-r from-amber-500 to-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
-                    : 'bg-gradient-to-r from-blue-600 via-indigo-500 to-comet-blue shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                }`}
-                style={{
-                  width:
-                    info.quota > 0
-                      ? `${Math.max(2, (info.idbCustomUsage / info.quota) * 100)}%`
-                      : '0%',
-                }}
-              />
-            </div>
+            {(() => {
+              const limitBytes = cacheLimitGB * 1024 * 1024 * 1024;
+              const usagePercent = Math.min(100, (info.idbCustomUsage / limitBytes) * 100);
+              const isNearLimit = usagePercent > 80;
+              return (
+                <>
+                  <div className="relative w-full h-4 bg-black/40 rounded-full border border-white/5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                        isNearLimit
+                          ? 'bg-gradient-to-r from-amber-500 to-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                          : 'bg-gradient-to-r from-blue-600 via-indigo-500 to-comet-blue shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                      }`}
+                      style={{
+                        width: `${Math.max(2, usagePercent)}%`,
+                      }}
+                    />
+                  </div>
 
-            <div className="flex justify-between items-center text-xs text-neutral-500">
-              <span>Limit: {info.quota > 0 ? formatBytes(info.quota) : 'Unlimited'}</span>
-              <div className="flex items-center gap-3">
-                <span>* Estimated usage for parsed pages.</span>
-                <button
-                  onClick={refresh}
-                  className="text-comet-blue hover:text-white transition-colors flex items-center gap-1 font-bold"
+                  <div className="flex justify-between items-center text-xs text-neutral-500">
+                    <span>
+                      Limit: {formatBytes(limitBytes)} (Browser Quota:{' '}
+                      {info.quota > 0 ? formatBytes(info.quota) : 'Unlimited'})
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <span>* Estimated usage for parsed pages.</span>
+                      <button
+                        onClick={refresh}
+                        className="text-comet-blue hover:text-white transition-colors flex items-center gap-1 font-bold"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+
+            {/* Cache Limit Slider */}
+            <div className="mt-6 pt-6 border-t border-neutral-800/50 space-y-4">
+              <div className="flex justify-between items-center">
+                <label
+                  htmlFor="cache-limit-slider"
+                  className="text-sm font-semibold text-neutral-300"
                 >
-                  <RefreshCw className="w-3 h-3" />
-                  Refresh
-                </button>
+                  Auto-Cache Budget
+                </label>
+                <span className="text-white font-mono font-bold text-sm bg-neutral-800 px-3 py-1 rounded-lg border border-neutral-700">
+                  {cacheLimitGB.toFixed(1)} GB
+                </span>
               </div>
+              <div className="flex items-center gap-4">
+                <input
+                  id="cache-limit-slider"
+                  type="range"
+                  min="0.5"
+                  max="10.0"
+                  step="0.5"
+                  value={cacheLimitGB}
+                  onChange={(e) => setCacheLimitGB(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+              </div>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                Comet will automatically evict the least recently read comics when cached comic
+                files exceed this limit to keep your local storage clean.
+              </p>
             </div>
 
             {/* Individual Comic Storage List */}
@@ -556,6 +748,240 @@ export function SettingsPanel() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* Data Backup & Restore */}
+      <section className="space-y-6">
+        <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
+          <Download className="text-neutral-400" />
+          Backup & Portability
+        </h2>
+
+        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 space-y-6">
+          <div>
+            <h3 className="text-lg font-bold text-white mb-2">Import / Export Local Data</h3>
+            <p className="text-neutral-400 text-sm max-w-xl leading-relaxed">
+              Backup your entire reading history, streaks, bookmarks, custom metadata, and reader
+              configurations. Save the portable JSON file on your computer to restore your state
+              anytime or migrate to a new device.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 pt-2">
+            <button
+              onClick={handleExportBackup}
+              disabled={isExporting}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-neutral-800 hover:bg-neutral-750 border border-neutral-700 text-white rounded-xl active:scale-95 transition-all font-medium disabled:opacity-50 cursor-pointer"
+            >
+              {isExporting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Download className="w-5 h-5" />
+              )}
+              <span>Export Portable JSON</span>
+            </button>
+
+            <button
+              onClick={() => backupInputRef.current?.click()}
+              disabled={isImporting}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl active:scale-95 transition-all font-medium disabled:opacity-50 cursor-pointer"
+            >
+              {isImporting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Upload className="w-5 h-5" />
+              )}
+              <span>Import Portable JSON</span>
+            </button>
+            <input
+              type="file"
+              ref={backupInputRef}
+              onChange={handleImportBackup}
+              accept=".json"
+              className="hidden"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Keyboard Shortcuts Cheat Sheet */}
+      <section className="space-y-6">
+        <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
+          <Keyboard className="text-neutral-400" />
+          Interactive Keyboard Cheat Sheet
+        </h2>
+
+        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 space-y-8">
+          <div>
+            <h3 className="text-lg font-bold text-white mb-2">Desktop Shortcuts</h3>
+            <p className="text-neutral-400 text-sm">
+              Hover over a keycap on the mockup to view its associated reading action, or hover over
+              an action list item to see the keycaps light up.
+            </p>
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            {/* Visual Keyboard Mockup */}
+            <div className="w-full lg:w-3/5 bg-neutral-950 border border-neutral-800/80 rounded-2xl p-6 shadow-2xl overflow-x-auto custom-scrollbar flex flex-col gap-2 min-w-[500px]">
+              {(() => {
+                const keyboardRows = [
+                  [
+                    { label: 'Esc', width: 'w-10' },
+                    { label: '1' },
+                    { label: '2' },
+                    { label: '3' },
+                    { label: '4' },
+                    { label: '5' },
+                    { label: '6' },
+                    { label: '7' },
+                    { label: '8' },
+                    { label: '9' },
+                    { label: '0' },
+                    { label: '-' },
+                    { label: '+' },
+                    { label: 'Del', width: 'w-10' },
+                  ],
+                  [
+                    { label: 'Tab', width: 'w-10' },
+                    { label: 'Q' },
+                    { label: 'W' },
+                    { label: 'E' },
+                    { label: 'R' },
+                    { label: 'T' },
+                    { label: 'Y' },
+                    { label: 'U' },
+                    { label: 'I' },
+                    { label: 'O' },
+                    { label: 'P' },
+                    { label: '[' },
+                    { label: ']' },
+                    { label: '\\', width: 'w-10' },
+                  ],
+                  [
+                    { label: 'Caps', width: 'w-12' },
+                    { label: 'A' },
+                    { label: 'S' },
+                    { label: 'D' },
+                    { label: 'F' },
+                    { label: 'G' },
+                    { label: 'H' },
+                    { label: 'J' },
+                    { label: 'K' },
+                    { label: 'L' },
+                    { label: ';' },
+                    { label: "'" },
+                    { label: 'Enter', width: 'w-12' },
+                  ],
+                  [
+                    { label: 'Shift', width: 'w-16' },
+                    { label: 'Z' },
+                    { label: 'X' },
+                    { label: 'C' },
+                    { label: 'V' },
+                    { label: 'B' },
+                    { label: 'N' },
+                    { label: 'M' },
+                    { label: ',' },
+                    { label: '.' },
+                    { label: '/' },
+                    { label: '▲', width: 'w-9' },
+                  ],
+                  [
+                    { label: 'Ctrl', width: 'w-9' },
+                    { label: 'Opt', width: 'w-9' },
+                    { label: 'Cmd', width: 'w-9' },
+                    { label: 'Space', width: 'w-36' },
+                    { label: '◀', width: 'w-9' },
+                    { label: '▼', width: 'w-9' },
+                    { label: '▶', width: 'w-9' },
+                  ],
+                ];
+
+                return keyboardRows.map((row, rowIndex) => (
+                  <div key={rowIndex} className="flex justify-start gap-1">
+                    {row.map((key) => {
+                      const widthClass = key.width || 'w-9';
+                      const keyLabel = key.label;
+
+                      // Highlight key if it belongs to activeShortcut
+                      let isHighlighted = false;
+                      if (activeShortcut) {
+                        const activeItem = shortcuts.find((s) => s.key === activeShortcut);
+                        if (activeItem?.keys.includes(keyLabel)) {
+                          isHighlighted = true;
+                        }
+                      }
+
+                      return (
+                        <div
+                          key={keyLabel}
+                          onMouseEnter={() => {
+                            const found = shortcuts.find((s) => s.keys.includes(keyLabel));
+                            if (found) {
+                              setActiveShortcut(found.key);
+                            }
+                          }}
+                          onMouseLeave={() => setActiveShortcut(null)}
+                          className={`h-9 flex items-center justify-center rounded-md border font-mono text-[10px] select-none transition-all duration-200 cursor-pointer ${widthClass} ${
+                            isHighlighted
+                              ? 'bg-blue-500/25 border-blue-500 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.5)] scale-105 z-10'
+                              : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:border-neutral-700 hover:text-white hover:bg-neutral-850'
+                          }`}
+                        >
+                          {keyLabel}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ));
+              })()}
+            </div>
+
+            {/* Shortcut Descriptions List */}
+            <div className="w-full lg:w-2/5 space-y-3">
+              {shortcuts.map((shortcut) => {
+                const isActive = activeShortcut === shortcut.key;
+                return (
+                  <div
+                    key={shortcut.key}
+                    onMouseEnter={() => setActiveShortcut(shortcut.key)}
+                    onMouseLeave={() => setActiveShortcut(null)}
+                    className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+                      isActive
+                        ? 'bg-blue-500/5 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.05)]'
+                        : 'bg-neutral-900/50 border-neutral-800/80'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span
+                        className={`text-sm font-semibold transition-colors duration-200 ${isActive ? 'text-blue-400' : 'text-white'}`}
+                      >
+                        {shortcut.label}
+                      </span>
+                      <div className="flex gap-1">
+                        {shortcut.keys
+                          .filter((k) => k.length <= 5)
+                          .map((k) => (
+                            <kbd
+                              key={k}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+                                isActive
+                                  ? 'bg-blue-500/20 border-blue-400/40 text-blue-400'
+                                  : 'bg-neutral-800 border-neutral-700 text-neutral-400'
+                              }`}
+                            >
+                              {k}
+                            </kbd>
+                          ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-neutral-450 leading-relaxed">{shortcut.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>

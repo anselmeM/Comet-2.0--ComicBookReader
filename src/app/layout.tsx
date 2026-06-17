@@ -5,6 +5,7 @@ import { NetworkStatusIndicator } from '@/components/atoms/NetworkStatusIndicato
 import { PWAUpdater } from '@/components/atoms/PWAUpdater';
 import { ThemeManager } from '@/components/atoms/ThemeManager';
 import { SyncManagerInit } from '@/components/atoms/SyncManagerInit';
+import { headers } from 'next/headers';
 import './globals.css';
 
 const inter = Inter({
@@ -51,11 +52,8 @@ export const viewport: Viewport = {
   themeColor: '#0a0a0f',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const nonce = (await headers()).get('x-nonce') || undefined;
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="bg-comet-bg text-comet-text antialiased">

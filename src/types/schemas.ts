@@ -91,7 +91,22 @@ export const UploadSchema = z.object({
 
 export const ProfileUpdateSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(50).optional(),
-  image: z.string().url('Invalid image URL').or(z.literal('')).optional(),
+  image: z
+    .string()
+    .url('Invalid image URL')
+    .refine(
+      (url) => {
+        try {
+          const parsed = new URL(url);
+          return ['https:', 'http:'].includes(parsed.protocol);
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Only http:// and https:// protocols allowed' },
+    )
+    .or(z.literal(''))
+    .optional(),
   defaultReadingMode: z
     .enum(['single-page', 'single-vertical', 'dual-spread', 'manga-rtl'])
     .optional(),

@@ -18,7 +18,7 @@ interface StorageInfo {
 /**
  * Hook to monitor PWA storage quotas and local IndexedDB usage.
  */
-export function useStorage() {
+export function useStorage(userId?: string) {
   const [info, setInfo] = useState<StorageInfo>({
     usage: 0,
     quota: 0,
@@ -33,8 +33,8 @@ export function useStorage() {
     if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.estimate) {
       try {
         const { usage, quota } = await navigator.storage.estimate();
-        const idbSize = await getCacheTotalSizeBytes();
-        const comics = await getAllCachedComicsMetadata();
+        const idbSize = await getCacheTotalSizeBytes(userId);
+        const comics = await getAllCachedComicsMetadata(userId);
 
         if (isMounted.current) {
           setInfo({
@@ -52,7 +52,7 @@ export function useStorage() {
         }
       }
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -69,7 +69,7 @@ export function useStorage() {
   }, [refresh]);
 
   const clearCache = async () => {
-    await clearAllParsedComics();
+    await clearAllParsedComics(userId);
     await refresh();
   };
 

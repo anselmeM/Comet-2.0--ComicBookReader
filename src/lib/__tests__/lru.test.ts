@@ -11,6 +11,25 @@ vi.mock('@/lib/idb', () => ({
 describe('lru.ts (LRU Cache Eviction Policy)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    const store: Record<string, string> = {
+      'comet-settings-storage': JSON.stringify({
+        state: { cacheLimitGB: 0.5 }, // 500MB limit for testing
+      }),
+    };
+
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => store[key] || null,
+      setItem: (key: string, value: string) => {
+        store[key] = value;
+      },
+      removeItem: (key: string) => {
+        delete store[key];
+      },
+      clear: () => {
+        for (const k in store) delete store[k];
+      },
+    });
   });
 
   it('should not evict any comics if total size is within budget', async () => {

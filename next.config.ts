@@ -35,7 +35,7 @@ const nextConfig: NextConfig = {
   // Only enable in development
   turbopack: {
     root: process.cwd(),
-  } ,
+  },
 
   // Image optimization
   images: {
@@ -61,48 +61,40 @@ const nextConfig: NextConfig = {
 
   // Security Headers
   async headers() {
-    const isDev = process.env.NODE_ENV === 'development';
-    const connectSrc = `connect-src 'self' https://comicvine.gamespot.com https://api.stripe.com${isDev ? ' http://localhost:3101 ws://localhost:*' : ''};`;
-    const csp = `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https://comicvine.gamespot.com https://images.unsplash.com https://i.pravatar.cc https://www.transparenttextures.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self' blob:; ${connectSrc}${isDev ? '' : ' upgrade-insecure-requests;'}`;
-
     return [
       {
         source: '/(.*)',
         headers: [
           {
             key: 'X-DNS-Prefetch-Control',
-            value: 'on'
+            value: 'on',
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload'
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
           {
             key: 'X-XSS-Protection',
-            value: '1; mode=block'
+            value: '1; mode=block',
           },
           {
             key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
+            value: 'SAMEORIGIN',
           },
           {
             key: 'X-Content-Type-Options',
-            value: 'nosniff'
+            value: 'nosniff',
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin'
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: csp
+            value: 'origin-when-cross-origin',
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()'
-          }
-        ]
-      }
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
     ];
   },
 };

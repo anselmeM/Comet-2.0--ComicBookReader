@@ -1,0 +1,62 @@
+config:
+  target: "http://localhost:3100"
+  phases:
+    - duration: 20
+      arrivalRate: 2
+      name: "Warm up"
+    - duration: 30
+      arrivalRate: 2
+      rampTo: 15
+      name: "Ramp up load"
+    - duration: 30
+      arrivalRate: 25
+      name: "Sustained high load"
+  defaults:
+    cookie:
+      __COMET_TEST_BYPASS: "true"
+    headers:
+      Content-Type: "application/json"
+scenarios:
+  - name: "Dashboard & Library browsing"
+    flow:
+      - get:
+          url: "/api/health"
+      - get:
+          url: "/api/feed"
+      - get:
+          url: "/api/library"
+      - think: 1
+      - get:
+          url: "/api/library?search=Spider"
+  - name: "Read and save progress"
+    flow:
+      - get:
+          url: "/api/comics/comic-load-1"
+      - think: 2
+      - put:
+          url: "/api/comics/comic-load-1/progress"
+          json:
+            lastPage: 5
+            totalPages: 30
+            zoomLevel: 1.0
+            timeDelta: 10
+      - think: 1
+      - put:
+          url: "/api/comics/comic-load-1/progress"
+          json:
+            lastPage: 12
+            totalPages: 30
+            zoomLevel: 1.0
+            timeDelta: 15
+  - name: "Read another comic"
+    flow:
+      - get:
+          url: "/api/comics/comic-load-3"
+      - think: 1
+      - put:
+          url: "/api/comics/comic-load-3/progress"
+          json:
+            lastPage: 3
+            totalPages: 30
+            zoomLevel: 1.2
+            timeDelta: 5
