@@ -13,6 +13,7 @@ import { PaginatedLibraryResponseDTO } from '@/types/schemas';
 import { rateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
 import { parseComicFilename } from '@/lib/metadata-parser';
+import { createNotification } from '@/lib/notifications';
 
 /**
  * GET /api/library — Returns the authenticated user's comic library
@@ -230,6 +231,15 @@ export const POST = withAuth(async (_req: Request, context, session) => {
         year: parsedMeta.year,
         userId: session.user.id,
       },
+    });
+
+    // Trigger notification for newly added comic
+    await createNotification({
+      userId: session.user.id,
+      type: 'NEW_CONTENT',
+      title: 'Comic Added',
+      message: `"${title}" has been successfully added to your library.`,
+      link: '/library',
     });
 
     return NextResponse.json(comic, { status: 201 });

@@ -9,6 +9,10 @@ vi.mock('@/auth', () => ({
   auth: vi.fn(),
 }));
 
+vi.mock('@/lib/notifications', () => ({
+  createNotification: vi.fn(),
+}));
+
 vi.mock('@/lib/db', () => ({
   db: {
     comic: {

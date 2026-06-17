@@ -11,6 +11,10 @@ vi.mock('@/auth', () => ({
   auth: vi.fn() as any,
 }));
 
+vi.mock('@/lib/notifications', () => ({
+  createNotification: vi.fn(),
+}));
+
 // More precise type for the session we use in the app
 type CometSession = Session & {
   user: { id: string; plan: string; hasCompletedOnboarding: boolean };

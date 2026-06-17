@@ -95,6 +95,7 @@ export function useDeleteComic() {
     onSuccess: () => {
       // Invalidate library query to refresh the grid
       queryClient.invalidateQueries({ queryKey: ['library'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 }
@@ -164,6 +165,7 @@ export function useResetProgress() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library'] });
       queryClient.invalidateQueries({ queryKey: ['userStats'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 }
@@ -191,6 +193,7 @@ export function useClearAllHistory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library'] });
       queryClient.invalidateQueries({ queryKey: ['userStats'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 }

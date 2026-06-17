@@ -11,6 +11,7 @@ import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { UpdateProgressRequestSchema } from '@/types/schemas';
 import { invalidateCache } from '@/lib/cache';
+import { createNotification } from '@/lib/notifications';
 
 /**
  * GET /api/comics/[id]/progress — Fetches reading progress for a comic
@@ -173,6 +174,31 @@ export const PUT = withAuth(
 
       // Invalidate library cache for this user since reading progress changed
       await invalidateCache(`comet:u:${session.user.id}:library`, true);
+
+      // Trigger notifications for completion and streak
+      const wasCompleted = currentProgress?.readStatus === 'COMPLETED';
+      const isNewlyCompleted = !wasCompleted && readStatus === 'COMPLETED';
+      const streakExtended = newStreak > user.readingStreak;
+
+      if (isNewlyCompleted) {
+        await createNotification({
+          userId: session.user.id,
+          type: 'SYSTEM_ALERT',
+          title: 'Comic Completed!',
+          message: `Congratulations! You have finished reading "${comic.title}".`,
+          link: '/library',
+        });
+      }
+
+      if (streakExtended) {
+        await createNotification({
+          userId: session.user.id,
+          type: 'SYSTEM_ALERT',
+          title: 'Reading Streak Extended!',
+          message: `You extended your daily reading streak to ${newStreak} days! 🔥`,
+          link: '/library',
+        });
+      }
 
       return NextResponse.json(progress, { status: 200 });
     } catch (err: unknown) {

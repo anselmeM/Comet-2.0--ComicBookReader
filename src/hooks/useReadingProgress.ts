@@ -63,6 +63,7 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
     onSuccess: () => {
       // Invalidate related queries to keep UI in sync
       queryClient.invalidateQueries({ queryKey: ['library'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       if (comicId) {
         queryClient.invalidateQueries({ queryKey: ['comic', comicId] });
       }
