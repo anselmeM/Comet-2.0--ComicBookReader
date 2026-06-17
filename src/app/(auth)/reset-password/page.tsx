@@ -9,10 +9,10 @@ import { ArrowLeft, Lock, Loader2, CheckCircle } from 'lucide-react';
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const token = searchParams.get('token');
   const email = searchParams.get('email');
-  
+
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -34,8 +34,8 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (newPassword.length < 12) {
+      setError('Password must be at least 12 characters');
       return;
     }
 
@@ -69,7 +69,7 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-4 relative overflow-hidden">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
@@ -98,13 +98,13 @@ function ResetPasswordForm() {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-md relative z-10"
       >
-        <Link 
+        <Link
           href="/login"
           className="flex items-center gap-2 text-zinc-400 hover:text-white mb-8 transition-colors"
         >
@@ -113,20 +113,18 @@ function ResetPasswordForm() {
         </Link>
 
         <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 p-8 rounded-3xl shadow-2xl">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
             className="text-center mb-8"
           >
             <h1 className="text-3xl font-bold text-white mb-2">Reset Password</h1>
-            <p className="text-zinc-400">
-              Enter your new password below
-            </p>
+            <p className="text-zinc-400">Enter your new password below</p>
           </motion.div>
 
           {error && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm"
@@ -138,11 +136,17 @@ function ResetPasswordForm() {
           {token && email ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-zinc-300 mb-2">
+                <label
+                  htmlFor="newPassword"
+                  className="block text-sm font-medium text-zinc-300 mb-2"
+                >
                   New Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
+                  <Lock
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+                    size={20}
+                  />
                   <input
                     id="newPassword"
                     type="password"
@@ -150,18 +154,24 @@ function ResetPasswordForm() {
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    minLength={8}
+                    minLength={12}
                     className="w-full pl-12 pr-4 py-3 bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-comet-accent/50 focus:border-comet-accent/50 transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-zinc-300 mb-2">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-zinc-300 mb-2"
+                >
                   Confirm New Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={20} />
+                  <Lock
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+                    size={20}
+                  />
                   <input
                     id="confirmPassword"
                     type="password"
@@ -169,7 +179,7 @@ function ResetPasswordForm() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    minLength={8}
+                    minLength={12}
                     className="w-full pl-12 pr-4 py-3 bg-zinc-800/50 border border-zinc-700/50 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-comet-accent/50 focus:border-comet-accent/50 transition-all"
                   />
                 </div>
@@ -203,11 +213,13 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-black">
-        <Loader2 className="animate-spin text-comet-accent" size={40} />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-black">
+          <Loader2 className="animate-spin text-comet-accent" size={40} />
+        </div>
+      }
+    >
       <ResetPasswordForm />
     </Suspense>
   );

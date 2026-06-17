@@ -98,7 +98,7 @@ function RegisterForm() {
   // Compute password validation using useMemo instead of useEffect
   const passwordValidation = useMemo(
     () => ({
-      length: password.length >= 8,
+      length: password.length >= 12,
       uppercase: /[A-Z]/.test(password),
       lowercase: /[a-z]/.test(password),
       number: /[0-9]/.test(password),
@@ -286,7 +286,7 @@ function RegisterForm() {
                 placeholder="Create a password"
                 className="block w-full pl-11 pr-12 py-3 bg-zinc-950/50 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
                 required
-                minLength={8}
+                minLength={12}
                 disabled={loading}
               />
               <button
@@ -309,7 +309,7 @@ function RegisterForm() {
               >
                 <p className="text-xs text-zinc-500 mb-2 font-medium">Password must contain:</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <RequirementItem met={passwordValidation.length} text="8+ characters" />
+                  <RequirementItem met={passwordValidation.length} text="12+ characters" />
                   <RequirementItem met={passwordValidation.uppercase} text="Uppercase letter" />
                   <RequirementItem met={passwordValidation.lowercase} text="Lowercase letter" />
                   <RequirementItem met={passwordValidation.number} text="Number" />
