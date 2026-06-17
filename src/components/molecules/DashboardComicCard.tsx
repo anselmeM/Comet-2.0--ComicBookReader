@@ -16,6 +16,8 @@ import {
   CloudOff,
   Trash2,
   BookOpen,
+  Check,
+  AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -57,6 +59,10 @@ interface DashboardComicCardProps {
   isEditMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (id: string) => void;
+  density?: 'compact' | 'default' | 'large';
+  showPageCount?: boolean;
+  showYear?: boolean;
+  showProgress?: boolean;
 }
 
 /**
@@ -73,6 +79,10 @@ export function DashboardComicCard({
   isEditMode,
   isSelected,
   onToggleSelect,
+  density = 'default',
+  showPageCount = true,
+  showYear = true,
+  showProgress = true,
 }: DashboardComicCardProps) {
   const { setNodeRef, transform, transition, isDragging } = useSortable({
     id: comic.id,
@@ -151,6 +161,54 @@ export function DashboardComicCard({
     }
   };
 
+  // Sync Badge Renderer
+  const renderSyncBadge = () => {
+    if (isEditMode) return null;
+    const badgeBase =
+      'absolute top-2 left-2 z-20 flex items-center gap-1 backdrop-blur-md text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md shadow-md text-white';
+
+    if (comic.syncStatus === 'SYNCED') {
+      return (
+        <div className={`${badgeBase} bg-green-500/80`}>
+          <Check size={9} strokeWidth={3} />
+          <span>Synced</span>
+        </div>
+      );
+    }
+    if (comic.syncStatus === 'PENDING') {
+      return (
+        <div className={`${badgeBase} bg-amber-500/80 animate-pulse`}>
+          <Loader2 size={9} className="animate-spin" />
+          <span>Syncing</span>
+        </div>
+      );
+    }
+    if (comic.syncStatus === 'ERROR') {
+      return (
+        <div className={`${badgeBase} bg-red-500/80`}>
+          <AlertCircle size={9} />
+          <span>Error</span>
+        </div>
+      );
+    }
+    // LOCAL (Offline-only)
+    return (
+      <div className={`${badgeBase} bg-zinc-800/85 text-zinc-300`}>
+        <CloudOff size={9} />
+        <span>Offline</span>
+      </div>
+    );
+  };
+
+  // Density Classes
+  const paddingClass = density === 'compact' ? 'p-2' : density === 'large' ? 'p-6' : 'p-4';
+  const titleSizeClass =
+    density === 'compact' ? 'text-xs' : density === 'large' ? 'text-base' : 'text-sm';
+  const authorSizeClass =
+    density === 'compact' ? 'text-[10px]' : density === 'large' ? 'text-sm' : 'text-xs';
+  const gapClass = density === 'compact' ? 'gap-0.5' : 'gap-1';
+  const cardRadius = density === 'compact' ? 'rounded-2xl' : 'rounded-3xl';
+
   // Variant: Standard (Dark mode library style)
   if (variant === 'standard') {
     return (
@@ -177,6 +235,8 @@ export function DashboardComicCard({
                 <BookOpen size={48} strokeWidth={1} />
               </div>
             )}
+
+            {renderSyncBadge()}
 
             <div className="absolute bottom-0 left-0 w-full h-1 bg-black/40">
               <div className="h-full bg-blue-500" style={{ width: `${progressPercent}%` }} />
@@ -212,18 +272,24 @@ export function DashboardComicCard({
             </div>
           </div>
 
-          <div className="p-4">
-            <h3 className="text-white font-medium text-sm line-clamp-2 group-hover:text-blue-400 transition-colors">
+          <div className={paddingClass}>
+            <h3
+              className={`${titleSizeClass} text-white font-medium line-clamp-2 group-hover:text-blue-400 transition-colors`}
+            >
               {comic.title}
             </h3>
-            <div className="flex justify-between items-center mt-1">
-              <span className="text-xs text-neutral-500">{comic.pageCount} pages</span>
-              {progressPercent > 0 && (
-                <span className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter">
-                  {progressPercent === 100 ? 'Finished' : `${progressPercent}% Read`}
-                </span>
-              )}
-            </div>
+
+            {(showPageCount || showYear || showProgress) && (
+              <div className="flex justify-between items-center mt-1 text-[10px] font-bold text-neutral-500 uppercase tracking-tighter">
+                {showPageCount && <span>{comic.pageCount} pgs</span>}
+                {showYear && comic.year && <span>{comic.year}</span>}
+                {showProgress && progressPercent > 0 && (
+                  <span className="text-blue-500 font-black">
+                    {progressPercent === 100 ? 'Done' : `${progressPercent}%`}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </Link>
 
@@ -249,7 +315,7 @@ export function DashboardComicCard({
       style={style}
       role={isEditMode ? 'button' : 'region'}
       tabIndex={isEditMode ? 0 : undefined}
-      className={`group relative flex flex-col bg-white rounded-3xl overflow-hidden shadow-lg border transition-all cursor-pointer ${
+      className={`group relative flex flex-col bg-white overflow-hidden shadow-lg border transition-all cursor-pointer ${cardRadius} ${
         isDragging ? 'opacity-50 scale-105 z-50' : 'hover:shadow-xl hover:-translate-y-1'
       } ${
         isSelected
@@ -272,6 +338,8 @@ export function DashboardComicCard({
           )}
         </div>
       )}
+
+      {renderSyncBadge()}
 
       {!isEditMode && (
         <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -325,12 +393,6 @@ export function DashboardComicCard({
         </div>
       )}
 
-      {!isEditMode && comic.syncStatus === 'SYNCED' && (
-        <div className="absolute bottom-14 right-2 z-20 p-1.5 bg-blue-500/80 backdrop-blur-md rounded-lg text-white shadow-sm border border-white/20">
-          <Cloud size={12} />
-        </div>
-      )}
-
       {comic.syncStatus === 'SYNCED' && !comic.isLocallyAvailable && (
         <div className="absolute inset-0 z-10 bg-slate-900/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 text-center gap-4">
           <CloudOff size={40} className="text-white/40" />
@@ -379,11 +441,32 @@ export function DashboardComicCard({
         )}
       </div>
 
-      <div className="p-4 flex flex-col gap-1">
-        <h3 className="text-sm font-bold text-neutral-800 line-clamp-2 mb-0.5">{comic.title}</h3>
-        <p className="text-xs text-neutral-500 font-medium line-clamp-1">
+      <div className={`${paddingClass} flex flex-col ${gapClass}`}>
+        <h3 className={`${titleSizeClass} font-bold text-neutral-800 line-clamp-2 mb-0.5`}>
+          {comic.title}
+        </h3>
+        <p className={`${authorSizeClass} text-neutral-500 font-medium line-clamp-1`}>
           {comic.author || 'Unknown Artist'}
         </p>
+
+        {/* Dynamic Detail Toggles */}
+        {(showPageCount || showYear || showProgress) && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+            {showPageCount && <span>{comic.pageCount} Pages</span>}
+            {showPageCount && showYear && comic.year && <span className="text-neutral-300">•</span>}
+            {showYear && comic.year && <span>{comic.year}</span>}
+            {showProgress && progressPercent > 0 && (
+              <>
+                {(showPageCount || (showYear && comic.year)) && (
+                  <span className="text-neutral-300">•</span>
+                )}
+                <span className="text-blue-500 font-black">
+                  {progressPercent === 100 ? 'Read' : `${progressPercent}%`}
+                </span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <MetadataModal
