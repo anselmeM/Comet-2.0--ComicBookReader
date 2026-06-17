@@ -252,7 +252,7 @@ export default function PricingPage() {
                 className={`relative z-10 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${
                   billingInterval === 'monthly'
                     ? 'text-white font-extrabold'
-                    : 'text-comet-muted hover:text-white'
+                    : 'text-comet-muted hover:text-comet-text'
                 }`}
               >
                 {billingInterval === 'monthly' && (
@@ -269,7 +269,7 @@ export default function PricingPage() {
                 className={`relative z-10 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${
                   billingInterval === 'annual'
                     ? 'text-white font-extrabold'
-                    : 'text-comet-muted hover:text-white'
+                    : 'text-comet-muted hover:text-comet-text'
                 }`}
               >
                 {billingInterval === 'annual' && (
@@ -502,7 +502,7 @@ export default function PricingPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-comet-accent/20 border border-comet-accent/30">
               <Rocket className="text-comet-accent" size={16} aria-hidden="true" />
             </div>
-            <span className="text-lg font-bold text-white">Comet</span>
+            <span className="text-lg font-bold text-comet-text">Comet</span>
           </div>
           <p>&copy; 2026 Comet — The Speed of Light Comic Reader.</p>
         </div>
@@ -516,7 +516,7 @@ function ComparisonRow({ label, free, premium }: { label: string; free: string; 
     <tr className="border-b border-comet-border/50 hover:bg-comet-surface/30 transition-colors">
       <td className="py-5 px-4 text-sm font-semibold">{label}</td>
       <td className="py-5 px-4 text-sm text-center text-comet-muted">{free}</td>
-      <td className="py-5 px-4 text-sm text-center font-bold text-white">{premium}</td>
+      <td className="py-5 px-4 text-sm text-center font-bold text-comet-text">{premium}</td>
     </tr>
   );
 }
@@ -524,7 +524,7 @@ function ComparisonRow({ label, free, premium }: { label: string; free: string; 
 function FAQItem({ question, answer }: { question: string; answer: string }) {
   return (
     <div className="p-8 rounded-[2rem] bg-comet-surface/40 border border-comet-border">
-      <h4 className="text-lg font-bold mb-4 text-white">{question}</h4>
+      <h4 className="text-lg font-bold mb-4 text-comet-text">{question}</h4>
       <p className="text-comet-muted leading-relaxed">{answer}</p>
     </div>
   );
