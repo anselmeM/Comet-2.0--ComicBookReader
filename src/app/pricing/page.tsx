@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -14,6 +15,7 @@ import {
   Globe,
   Laptop,
   Smartphone,
+  Loader2,
 } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 
@@ -31,16 +33,114 @@ const staggerContainer = {
   },
 };
 
+interface CurrencyConfig {
+  code: string;
+  symbol: string;
+  monthlyPrice: string;
+  annualPrice: string;
+  annualBilledPrice: string;
+  countryName: string;
+}
+
+const CURRENCY_CONFIGS: Record<string, CurrencyConfig> = {
+  USD: {
+    code: 'USD',
+    symbol: '$',
+    monthlyPrice: '4.99',
+    annualPrice: '3.99',
+    annualBilledPrice: '47.88',
+    countryName: 'United States',
+  },
+  CAD: {
+    code: 'CAD',
+    symbol: 'C$',
+    monthlyPrice: '6.99',
+    annualPrice: '5.49',
+    annualBilledPrice: '65.88',
+    countryName: 'Canada',
+  },
+  GBP: {
+    code: 'GBP',
+    symbol: '£',
+    monthlyPrice: '4.49',
+    annualPrice: '3.59',
+    annualBilledPrice: '43.08',
+    countryName: 'United Kingdom',
+  },
+  EUR: {
+    code: 'EUR',
+    symbol: '€',
+    monthlyPrice: '4.99',
+    annualPrice: '3.99',
+    annualBilledPrice: '47.88',
+    countryName: 'Europe',
+  },
+};
+
+const COUNTRY_TO_CURRENCY: Record<string, string> = {
+  US: 'USD',
+  CA: 'CAD',
+  GB: 'GBP',
+  AT: 'EUR',
+  BE: 'EUR',
+  CY: 'EUR',
+  EE: 'EUR',
+  FI: 'EUR',
+  FR: 'EUR',
+  DE: 'EUR',
+  GR: 'EUR',
+  IE: 'EUR',
+  IT: 'EUR',
+  LV: 'EUR',
+  LT: 'EUR',
+  LU: 'EUR',
+  MT: 'EUR',
+  NL: 'EUR',
+  PT: 'EUR',
+  SK: 'EUR',
+  SI: 'EUR',
+  ES: 'EUR',
+};
+
+const DEFAULT_PRICING = CURRENCY_CONFIGS.USD;
+
 export default function PricingPage() {
   const { data: session } = useSession();
   const shouldReduceMotion = useReducedMotion();
   const isReduced = !!shouldReduceMotion;
-  const { handleCheckout, isLoading } = useSubscription();
+  const { handleCheckout, handlePortal, isLoading } = useSubscription();
+
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
+  const [currency, setCurrency] = useState<string>('USD');
+  const [isManualCurrency, setIsManualCurrency] = useState(false);
+  const [isGeoLoaded, setIsGeoLoaded] = useState(false);
+
+  useEffect(() => {
+    async function detectLocale() {
+      try {
+        const res = await fetch('/api/stripe/locale');
+        if (res.ok) {
+          const data = await res.json();
+          const countryCode = data.country;
+          const currencyCode = COUNTRY_TO_CURRENCY[countryCode] || 'USD';
+          setCurrency(currencyCode);
+          setIsGeoLoaded(true);
+        }
+      } catch (error) {
+        console.error('Failed to detect country locale:', error);
+      }
+    }
+    detectLocale();
+  }, []);
+
+  const config = CURRENCY_CONFIGS[currency] || DEFAULT_PRICING;
+  const { symbol } = config;
 
   const tiers = [
     {
       name: 'Free Reader',
-      price: '$0',
+      price: `${symbol}0`,
+      period: '',
       description: 'Perfect for casual readers managing a local collection.',
       features: [
         'Unlimited Local Storage (IndexedDB)',
@@ -49,14 +149,20 @@ export default function PricingPage() {
         'Basic Search & Filtering',
         'Ad-supported experience',
       ],
-      cta: session ? 'Current Plan' : 'Get Started',
+      cta: session && session.user?.plan !== 'PREMIUM' ? 'Current Plan' : 'Get Started',
+      action: null,
       href: '/register',
       highlight: false,
+      disabled: !!(session && session.user?.plan !== 'PREMIUM'),
     },
     {
       name: 'Cloud Voyager',
-      price: '$4.99',
+      price: `${symbol}${billingInterval === 'annual' ? config.annualPrice : config.monthlyPrice}`,
       period: '/month',
+      billedAnnually:
+        billingInterval === 'annual'
+          ? `billed as ${symbol}${config.annualBilledPrice}/year`
+          : undefined,
       description: 'For the serious collector who reads everywhere.',
       features: [
         'Everything in Free',
@@ -67,9 +173,13 @@ export default function PricingPage() {
         'Priority Support',
       ],
       cta: session?.user?.plan === 'PREMIUM' ? 'Manage Plan' : 'Upgrade to Premium',
-      action: session?.user?.plan === 'PREMIUM' ? null : handleCheckout,
+      action:
+        session?.user?.plan === 'PREMIUM'
+          ? () => handlePortal()
+          : () => handleCheckout(billingInterval),
       href: '/register',
       highlight: true,
+      disabled: false,
     },
   ];
 
@@ -103,7 +213,7 @@ export default function PricingPage() {
           initial="initial"
           animate="animate"
           variants={staggerContainer}
-          className="text-center mb-20"
+          className="text-center mb-16"
         >
           <motion.div
             variants={fadeIn}
@@ -125,12 +235,89 @@ export default function PricingPage() {
 
           <motion.p
             variants={fadeIn}
-            className="mx-auto max-w-2xl text-lg text-comet-muted md:text-xl font-medium"
+            className="mx-auto max-w-2xl text-lg text-comet-muted md:text-xl font-medium animate-fade-in"
           >
             Whether you&apos;re a local hero or a galactic explorer, we have a plan built for your
             reading speed.
           </motion.p>
         </motion.div>
+
+        {/* ── Billing Cycle & Localized Currency Selectors ────────────────── */}
+        <div className="flex flex-col items-center gap-6 mb-16 z-20">
+          <div className="relative flex items-center justify-center gap-4">
+            {/* Toggle Switch */}
+            <div className="relative flex p-1 rounded-full bg-neutral-900 border border-neutral-800 shadow-inner">
+              <button
+                onClick={() => setBillingInterval('monthly')}
+                className={`relative z-10 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${
+                  billingInterval === 'monthly'
+                    ? 'text-white font-extrabold'
+                    : 'text-comet-muted hover:text-white'
+                }`}
+              >
+                {billingInterval === 'monthly' && (
+                  <motion.div
+                    layoutId="billing-pill"
+                    className="absolute inset-0 bg-comet-accent rounded-full -z-10 shadow-lg"
+                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  />
+                )}
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingInterval('annual')}
+                className={`relative z-10 px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${
+                  billingInterval === 'annual'
+                    ? 'text-white font-extrabold'
+                    : 'text-comet-muted hover:text-white'
+                }`}
+              >
+                {billingInterval === 'annual' && (
+                  <motion.div
+                    layoutId="billing-pill"
+                    className="absolute inset-0 bg-comet-accent rounded-full -z-10 shadow-lg"
+                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  />
+                )}
+                Annual
+              </button>
+            </div>
+
+            {/* Discount Badge */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-extrabold tracking-wider text-emerald-400 uppercase shadow-sm animate-pulse"
+            >
+              Save ~20%
+            </motion.div>
+          </div>
+
+          {/* Region / Currency Indicator & Manual Selector */}
+          <div className="flex items-center gap-2 text-xs font-medium text-comet-muted">
+            <Globe size={13} className="text-comet-accent" />
+            <span>Prices shown in</span>
+            <select
+              value={currency}
+              onChange={(e) => {
+                setCurrency(e.target.value);
+                setIsManualCurrency(true);
+              }}
+              className="bg-neutral-900 border border-neutral-800 text-comet-text rounded px-2.5 py-1 text-xs font-bold focus:border-comet-accent focus:ring-1 focus:ring-comet-accent outline-none cursor-pointer transition-all"
+            >
+              {Object.values(CURRENCY_CONFIGS).map((cfg) => (
+                <option key={cfg.code} value={cfg.code}>
+                  {cfg.code} ({cfg.symbol}) — {cfg.countryName}
+                </option>
+              ))}
+            </select>
+            {isGeoLoaded && !isManualCurrency && (
+              <span className="text-[10px] uppercase font-black bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/10 shadow-sm animate-fade-in">
+                Geo-detected
+              </span>
+            )}
+          </div>
+        </div>
 
         {/* ── Pricing Cards ─────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
@@ -158,6 +345,11 @@ export default function PricingPage() {
                   <span className="text-5xl font-black tracking-tighter">{tier.price}</span>
                   {tier.period && <span className="text-comet-muted font-bold">{tier.period}</span>}
                 </div>
+                {tier.billedAnnually && (
+                  <div className="text-xs text-emerald-400 font-extrabold mt-2 uppercase tracking-wide">
+                    {tier.billedAnnually}
+                  </div>
+                )}
                 <p className="mt-4 text-comet-muted font-medium leading-relaxed">
                   {tier.description}
                 </p>
@@ -179,15 +371,32 @@ export default function PricingPage() {
               {tier.action ? (
                 <button
                   onClick={tier.action}
-                  disabled={isLoading}
+                  disabled={isLoading || tier.disabled}
                   className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-95 shadow-xl flex items-center justify-center gap-3 ${
                     tier.highlight
-                      ? 'bg-comet-accent text-white hover:bg-comet-accent-hover shadow-comet-accent/20'
-                      : 'bg-white text-black hover:bg-neutral-100 shadow-white/5'
+                      ? 'bg-comet-accent text-white hover:bg-comet-accent-hover shadow-comet-accent/20 disabled:bg-comet-accent/50 disabled:scale-100 disabled:pointer-events-none'
+                      : 'bg-white text-black hover:bg-neutral-100 shadow-white/5 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:scale-100 disabled:pointer-events-none'
                   }`}
                 >
-                  {isLoading ? 'Processing...' : tier.cta}
-                  <ArrowRight size={18} />
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="animate-spin text-current" size={18} />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      {tier.cta}
+                      <ArrowRight size={18} />
+                    </>
+                  )}
+                </button>
+              ) : tier.disabled ? (
+                <button
+                  disabled
+                  className="w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest bg-neutral-800 text-neutral-500 border border-neutral-700/50 shadow-inner flex items-center justify-center gap-3 cursor-not-allowed"
+                >
+                  {tier.cta}
+                  <Check size={18} />
                 </button>
               ) : (
                 <Link

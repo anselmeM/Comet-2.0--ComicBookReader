@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { validateSession } from '@/lib/auth-utils';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
@@ -10,7 +10,7 @@ const absoluteUrl = (path: string) =>
 /**
  * GET /api/stripe/checkout — Creates a Stripe Checkout session.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const { session, errorResponse } = await validateSession();
     if (errorResponse) return errorResponse;
@@ -22,8 +22,13 @@ export async function GET() {
       },
     });
 
-    // Determine the price ID (This should ideally come from env or config)
-    const priceId = process.env.STRIPE_PREMIUM_PRICE_ID;
+    // Determine the price ID based on interval parameter (monthly/annual)
+    const { searchParams } = new URL(request.url);
+    const interval = searchParams.get('interval') || 'monthly';
+    const priceId =
+      interval === 'annual'
+        ? process.env.STRIPE_PREMIUM_PRICE_ID_ANNUAL
+        : process.env.STRIPE_PREMIUM_PRICE_ID;
 
     // Dev mode bypass: immediately update user to PREMIUM if billing is not configured or uses dummy key
     const isDev = process.env.NODE_ENV === 'development';
@@ -35,12 +40,15 @@ export async function GET() {
         where: { id: session.user.id },
         data: { plan: 'PREMIUM' },
       });
-      logger.info('[Stripe Dev Bypass] Upgraded user to PREMIUM', { email: session.user.email });
+      logger.info('[Stripe Dev Bypass] Upgraded user to PREMIUM', {
+        email: session.user.email,
+        interval,
+      });
       return NextResponse.json({ url: absoluteUrl('/settings?success=true') });
     }
 
     if (!priceId) {
-      logger.error('STRIPE_PREMIUM_PRICE_ID is not configured');
+      logger.error(`Stripe price configuration error for interval: ${interval}`);
       return NextResponse.json({ error: 'Billing configuration error' }, { status: 500 });
     }
 

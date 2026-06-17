@@ -7,10 +7,10 @@ export function useSubscription() {
   const [isLoading, setIsLoading] = useState(false);
   const { triggerNotification } = useNotification();
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (interval: 'monthly' | 'annual' = 'monthly') => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/stripe/checkout');
+      const res = await fetch(`/api/stripe/checkout?interval=${interval}`);
       const data = await res.json();
 
       if (data.url) {
