@@ -3,6 +3,9 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import Credentials from 'next-auth/providers/credentials';
+import Google from 'next-auth/providers/google';
+import Discord from 'next-auth/providers/discord';
+import GitHub from 'next-auth/providers/github';
 import { authConfig } from './auth.config';
 import { logger } from '@/lib/logger';
 
@@ -52,6 +55,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   providers: [
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+    Discord({
+      clientId: process.env.AUTH_DISCORD_ID,
+      clientSecret: process.env.AUTH_DISCORD_SECRET,
+    }),
+    GitHub({
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+    }),
     Credentials({
       name: 'Credentials',
       credentials: {
