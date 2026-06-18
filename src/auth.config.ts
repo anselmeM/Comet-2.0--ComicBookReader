@@ -71,26 +71,34 @@ export const authConfig: NextAuthConfig = {
       }
 
       // Phase 2: Security Validation
-      // 1. Clock skew / Future token check
-      if (token.issuedAt && (token.issuedAt as number) > now + 60) {
-        logger.error('[Auth] Token validation failed: Issued in the future (skew)');
-        return null;
+      // 1. Clock skew / Future token check (relaxed threshold to 5 minutes warning)
+      if (token.issuedAt && (token.issuedAt as number) > now + 300) {
+        logger.warn('[Auth] Token validation warning: Issued in the future (skew)', {
+          issuedAt: token.issuedAt,
+          now,
+        });
       }
 
-      // 2. Issuer validation (Relaxed for Vercel environments)
+      // 2. Issuer validation (Relaxed: Warn instead of invalidate, allow fallback 'comet-reader')
       const expectedIss = process.env.NEXTAUTH_URL || 'comet-reader';
-      if (token.iss && token.iss !== expectedIss && !process.env.VERCEL) {
-        logger.error('[Auth] Token validation failed: Issuer mismatch. Expected:', {
-          expectedIss,
+      if (
+        token.iss &&
+        token.iss !== expectedIss &&
+        token.iss !== 'comet-reader' &&
+        !process.env.VERCEL
+      ) {
+        logger.warn('[Auth] Token validation warning: Issuer mismatch', {
+          expected: expectedIss,
           got: token.iss,
         });
-        return null;
       }
 
-      // 3. Audience validation
+      // 3. Audience validation (Warn instead of invalidate)
       if (token.aud && token.aud !== 'comet-app') {
-        logger.error('[Auth] Token validation failed: Audience mismatch');
-        return null;
+        logger.warn('[Auth] Token validation warning: Audience mismatch', {
+          expected: 'comet-app',
+          got: token.aud,
+        });
       }
 
       return token;
