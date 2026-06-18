@@ -50,22 +50,30 @@ export async function loginAction(prevState: any, formData: FormData) {
     }
 
     // Handle custom lockout error
-    if (error.message?.includes('Account locked')) {
-      return { error: error.message };
+    const errorMessage = error.message || '';
+    const errorCauseMessage = error.cause?.message || error.cause?.err?.message || '';
+    if (errorMessage.includes('Account locked') || errorCauseMessage.includes('Account locked')) {
+      return { error: errorMessage || errorCauseMessage };
     }
 
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case 'CredentialsSignin':
-          return { error: 'Invalid email or password.' };
-        default:
-          return { error: 'Something went wrong. Please try again.' };
-      }
+    // NextAuth v5 credentials check
+    if (
+      error instanceof AuthError ||
+      error.name === 'AuthError' ||
+      error.type === 'CredentialsSignin' ||
+      errorMessage.includes('CredentialsSignin') ||
+      errorCauseMessage.includes('CredentialsSignin')
+    ) {
+      return { error: 'Invalid email or password.' };
     }
 
     // Very important: Re-throw the error if it's a redirect,
     // as Next.js uses errors for redirects.
-    if (error.message === 'NEXT_REDIRECT' || error.digest?.startsWith('NEXT_REDIRECT')) {
+    if (
+      errorMessage === 'NEXT_REDIRECT' ||
+      error.digest?.startsWith('NEXT_REDIRECT') ||
+      errorMessage.includes('NEXT_REDIRECT')
+    ) {
       throw error;
     }
 
