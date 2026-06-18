@@ -93,19 +93,21 @@ export const ProfileUpdateSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(50).optional(),
   image: z
     .string()
-    .url('Invalid image URL')
     .refine(
-      (url) => {
+      (val) => {
+        if (val === '') return true;
+        // Accept base64 data URIs (from file upload)
+        if (val.startsWith('data:image/')) return true;
+        // Accept http/https URLs
         try {
-          const parsed = new URL(url);
+          const parsed = new URL(val);
           return ['https:', 'http:'].includes(parsed.protocol);
         } catch {
           return false;
         }
       },
-      { message: 'Only http:// and https:// protocols allowed' },
+      { message: 'Must be a valid image URL or base64 data URI' },
     )
-    .or(z.literal(''))
     .optional(),
   defaultReadingMode: z
     .enum(['single-page', 'single-vertical', 'dual-spread', 'manga-rtl'])

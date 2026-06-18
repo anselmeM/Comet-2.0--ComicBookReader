@@ -51,7 +51,11 @@ export default function OnboardingClient() {
         defaultReadingMode: readingMode,
         theme: theme,
       });
-      await update();
+      await update({
+        defaultReadingMode: readingMode,
+        theme: theme,
+        hasCompletedOnboarding: true,
+      });
       router.push('/library');
     } catch (error) {
       logger.error(

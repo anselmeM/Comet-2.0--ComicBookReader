@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function SettingsPage() {
   return (
-    <main className="min-h-screen bg-black pt-20">
+    <main className="min-h-screen bg-comet-bg text-comet-text pt-20 transition-colors duration-300">
       <SettingsPanel />
     </main>
   );

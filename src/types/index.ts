@@ -7,8 +7,9 @@
 // Reading Modes
 // ────────────────────────────────────────────────────
 
-/** The 4 reading modes supported by ComicReader */
+/** The 5 reading modes supported by ComicReader */
 export type ReaderMode =
+  | 'single-page' // Desktop/Tablet: 1 page centered
   | 'single-vertical' // Mobile: 1 page, scroll down
   | 'dual-spread' // Desktop ≥1024px: 2 pages side-by-side
   | 'manga-rtl' // User toggle: 2-page spread, RTL order

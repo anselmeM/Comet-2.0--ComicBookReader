@@ -258,7 +258,7 @@ export function SettingsPanel() {
       });
 
       if (response.ok) {
-        await updateSession();
+        await updateSession({ name });
         alert('Profile updated!');
       } else {
         const data = await response.json();
@@ -276,11 +276,14 @@ export function SettingsPanel() {
     setMode(newMode);
 
     try {
-      await fetch('/api/user/profile', {
+      const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ defaultReadingMode: newMode }),
       });
+      if (response.ok) {
+        await updateSession({ defaultReadingMode: newMode });
+      }
     } catch (error) {
       logger.error(
         'Failed to save reading preference:',
@@ -298,7 +301,7 @@ export function SettingsPanel() {
         body: JSON.stringify({ theme: newTheme }),
       });
       if (response.ok) {
-        await updateSession();
+        await updateSession({ theme: newTheme });
       }
     } catch (error) {
       logger.error(
@@ -328,28 +331,28 @@ export function SettingsPanel() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-12 pb-24 text-comet-text">
+    <div className="max-w-4xl mx-auto p-6 space-y-12 pb-24 text-comet-text transition-colors duration-300">
       <header className="flex items-center gap-6">
         <Link
           href="/library"
-          className="p-4 bg-neutral-900 border border-neutral-800 rounded-2xl hover:bg-neutral-800 transition-all text-neutral-400 hover:text-blue-500 shadow-sm"
+          className="p-4 bg-comet-surface border border-comet-border rounded-2xl hover:bg-comet-surface-2 transition-all text-comet-muted hover:text-comet-accent shadow-sm"
         >
           <ChevronLeft size={24} />
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-white mb-1">Settings</h1>
-          <p className="text-neutral-400">Manage your reading preferences and offline storage.</p>
+          <h1 className="text-3xl font-bold text-comet-text mb-1">Settings</h1>
+          <p className="text-comet-muted">Manage your reading preferences and offline storage.</p>
         </div>
       </header>
 
       {/* User Profile Section */}
       <section className="space-y-6">
-        <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
-          <User className="text-neutral-400" />
+        <h2 className="text-xl font-semibold text-comet-text flex items-center gap-2 border-b border-comet-border pb-2">
+          <User className="text-comet-muted" />
           Profile
         </h2>
 
-        <div className="p-6 bg-neutral-900 border border-neutral-800 rounded-2xl space-y-8">
+        <div className="p-6 bg-comet-surface border border-comet-border rounded-2xl space-y-8">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="relative">
               {session?.user?.image ? (
@@ -358,18 +361,18 @@ export function SettingsPanel() {
                   alt={name || session.user.name || 'User'}
                   width={96}
                   height={96}
-                  className="w-24 h-24 rounded-full object-cover border-2 border-neutral-700"
+                  className="w-24 h-24 rounded-full object-cover border-2 border-comet-border"
                   unoptimized
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold border-2 border-neutral-700">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold border-2 border-comet-border">
                   {(name || session?.user?.name || 'U').charAt(0).toUpperCase()}
                 </div>
               )}
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="absolute bottom-0 right-0 p-2 bg-blue-500 rounded-full text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
+                className="absolute bottom-0 right-0 p-2 bg-comet-accent rounded-full text-white hover:bg-comet-accent-hover transition-colors disabled:opacity-50"
                 title="Change profile picture"
               >
                 {isUploading ? (
@@ -388,19 +391,19 @@ export function SettingsPanel() {
             </div>
 
             <div className="flex-1 text-center sm:text-left">
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-comet-text">
                 {name || session?.user?.name || 'User'}
               </h3>
-              <p className="text-neutral-400 text-sm">{session?.user?.email}</p>
+              <p className="text-comet-muted text-sm">{session?.user?.email}</p>
             </div>
           </div>
 
           <form
             onSubmit={handleProfileUpdate}
-            className="space-y-4 pt-4 border-t border-neutral-800"
+            className="space-y-4 pt-4 border-t border-comet-border"
           >
             <div className="space-y-2">
-              <label htmlFor="display-name" className="block text-sm font-medium text-neutral-300">
+              <label htmlFor="display-name" className="block text-sm font-medium text-comet-text">
                 Display Name
               </label>
               <div className="flex gap-2">
@@ -409,13 +412,13 @@ export function SettingsPanel() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 bg-comet-surface-2 border border-comet-border rounded-xl px-4 py-2 text-comet-text focus:outline-none focus:ring-2 focus:ring-comet-accent"
                   placeholder="Enter your name"
                 />
                 <button
                   type="submit"
                   disabled={isSaving || name === session?.user?.name}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 bg-comet-accent text-white px-4 py-2 rounded-xl hover:bg-comet-accent-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   <span>Save</span>
@@ -428,14 +431,14 @@ export function SettingsPanel() {
 
       {/* Reading Preferences */}
       <section className="space-y-6">
-        <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
-          <BookOpen className="text-neutral-400" />
+        <h2 className="text-xl font-semibold text-comet-text flex items-center gap-2 border-b border-comet-border pb-2">
+          <BookOpen className="text-comet-muted" />
           Reading Preferences
         </h2>
 
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-3">
+            <label className="block text-sm font-medium text-comet-text mb-3">
               Default Reading Mode
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -451,8 +454,8 @@ export function SettingsPanel() {
                   onClick={() => saveReadingPreference(item.id as ReaderMode)}
                   className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
                     mode === item.id
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
-                      : 'border-neutral-800 bg-neutral-900 text-neutral-400 hover:border-neutral-600 hover:text-white'
+                      ? 'border-comet-accent bg-comet-accent/10 text-comet-accent shadow-[0_0_10px_rgba(124,106,247,0.1)]'
+                      : 'border-comet-border bg-comet-surface text-comet-muted hover:border-comet-accent hover:text-comet-text'
                   }`}
                 >
                   {item.icon}
@@ -463,10 +466,10 @@ export function SettingsPanel() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-3">
+            <label className="block text-sm font-medium text-comet-text mb-3">
               Brightness Filter
             </label>
-            <div className="p-6 bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md">
+            <div className="p-6 bg-comet-surface border border-comet-border rounded-2xl max-w-md">
               <div className="flex items-center gap-4">
                 <input
                   type="range"
@@ -475,21 +478,21 @@ export function SettingsPanel() {
                   step="0.05"
                   value={brightness}
                   onChange={(e) => setBrightness(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-2 bg-comet-surface-2 rounded-lg appearance-none cursor-pointer accent-comet-accent"
                   aria-label="Screen brightness"
                 />
-                <span className="text-white font-mono min-w-[3rem] text-right">
+                <span className="text-comet-text font-mono min-w-[3rem] text-right">
                   {Math.round(brightness * 100)}%
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 mt-4">
+              <p className="text-xs text-comet-muted mt-4">
                 Adjusts the brightness of the reader viewport.
               </p>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-3">App Theme</label>
+            <label className="block text-sm font-medium text-comet-text mb-3">App Theme</label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 { id: 'dark', label: 'Dark', bg: 'bg-zinc-950', border: 'border-zinc-800' },
@@ -501,14 +504,13 @@ export function SettingsPanel() {
                   type="button"
                   onClick={() => saveThemePreference(item.id)}
                   className={`flex items-center flex-col gap-3 p-4 rounded-xl border transition-all ${
-                    (session?.user as any)?.theme === item.id ||
-                    (!session?.user && item.id === 'dark')
-                      ? 'border-blue-500 ring-2 ring-blue-500/20'
-                      : 'border-neutral-800 bg-neutral-900'
+                    session?.user?.theme === item.id || (!session?.user && item.id === 'dark')
+                      ? 'border-comet-accent ring-2 ring-comet-accent/20'
+                      : 'border-comet-border bg-comet-surface'
                   }`}
                 >
                   <div className={`w-full h-12 rounded-lg ${item.bg} ${item.border} border`} />
-                  <span className="font-medium text-neutral-300">{item.label}</span>
+                  <span className="font-medium text-comet-muted">{item.label}</span>
                 </button>
               ))}
             </div>
@@ -518,18 +520,18 @@ export function SettingsPanel() {
 
       {/* Subscription & Billing */}
       <section className="space-y-6">
-        <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
-          <CreditCard className="text-neutral-400" />
+        <h2 className="text-xl font-semibold text-comet-text flex items-center gap-2 border-b border-comet-border pb-2">
+          <CreditCard className="text-comet-muted" />
           Subscription & Billing
         </h2>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 flex flex-col sm:flex-row justify-between items-center gap-6">
+        <div className="bg-comet-surface border border-comet-border rounded-2xl p-8 flex flex-col sm:flex-row justify-between items-center gap-6">
           <div>
-            <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-comet-text mb-1 flex items-center gap-2">
               Current Plan:{' '}
-              <span className="text-blue-400">{(session?.user as any)?.plan || 'FREE'}</span>
+              <span className="text-comet-accent">{(session?.user as any)?.plan || 'FREE'}</span>
             </h3>
-            <p className="text-neutral-400 text-sm">
+            <p className="text-comet-muted text-sm">
               {(session?.user as any)?.plan === 'PREMIUM'
                 ? 'You are on the Cloud Voyager tier with full cloud sync.'
                 : 'Upgrade to Cloud Voyager to unlock cloud backups and seamless sync.'}
@@ -541,7 +543,7 @@ export function SettingsPanel() {
               <button
                 onClick={handlePortal}
                 disabled={isSubscriptionLoading}
-                className="flex items-center gap-2 bg-neutral-800 border border-neutral-700 text-white px-6 py-3 rounded-xl hover:bg-neutral-700 transition-all disabled:opacity-50"
+                className="flex items-center gap-2 bg-comet-surface-2 border border-comet-border text-comet-text px-6 py-3 rounded-xl hover:bg-comet-surface transition-all disabled:opacity-50"
               >
                 {isSubscriptionLoading ? (
                   <Loader2 size={18} className="animate-spin" />
@@ -565,16 +567,16 @@ export function SettingsPanel() {
 
       {/* Storage Management */}
       <section className="space-y-6">
-        <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
-          <HardDrive className="text-neutral-400" />
+        <h2 className="text-xl font-semibold text-comet-text flex items-center gap-2 border-b border-comet-border pb-2">
+          <HardDrive className="text-comet-muted" />
           Offline Storage
         </h2>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 shadow-inner overflow-hidden relative">
+        <div className="bg-comet-surface border border-comet-border rounded-2xl p-8 shadow-inner overflow-hidden relative">
           <div className="flex flex-col md:flex-row justify-between md:items-center gap-8 mb-8">
             <div className="space-y-1">
-              <h3 className="text-xl font-bold text-white">Local Library Cache</h3>
-              <p className="text-neutral-400 text-sm max-w-lg">
+              <h3 className="text-xl font-bold text-comet-text">Local Library Cache</h3>
+              <p className="text-comet-muted text-sm max-w-lg">
                 Comics you open are parsed and stored locally for instant, offline access.
               </p>
             </div>
@@ -591,10 +593,10 @@ export function SettingsPanel() {
           <div className="space-y-4">
             <div className="flex justify-between items-end">
               <div className="space-y-1">
-                <span className="text-neutral-500 text-xs font-bold uppercase tracking-wider">
+                <span className="text-comet-muted text-xs font-bold uppercase tracking-wider">
                   Used Space
                 </span>
-                <div className="text-3xl font-black text-white">
+                <div className="text-3xl font-black text-comet-text">
                   {info.loading ? '...' : formatBytes(info.idbCustomUsage)}
                 </div>
               </div>
@@ -605,7 +607,7 @@ export function SettingsPanel() {
                 const isNearLimit = info.idbCustomUsage / limitBytes > 0.8;
                 return (
                   <div className="text-right space-y-1">
-                    <span className="text-neutral-500 text-xs font-bold uppercase tracking-wider text-right block">
+                    <span className="text-comet-muted text-xs font-bold uppercase tracking-wider text-right block">
                       Storage Health
                     </span>
                     <div
@@ -647,7 +649,7 @@ export function SettingsPanel() {
                     />
                   </div>
 
-                  <div className="flex justify-between items-center text-xs text-neutral-500">
+                  <div className="flex justify-between items-center text-xs text-comet-muted">
                     <span>
                       Limit: {formatBytes(limitBytes)} (Browser Quota:{' '}
                       {info.quota > 0 ? formatBytes(info.quota) : 'Unlimited'})
@@ -656,7 +658,7 @@ export function SettingsPanel() {
                       <span>* Estimated usage for parsed pages.</span>
                       <button
                         onClick={refresh}
-                        className="text-comet-blue hover:text-white transition-colors flex items-center gap-1 font-bold"
+                        className="text-comet-accent hover:text-comet-text transition-colors flex items-center gap-1 font-bold"
                       >
                         <RefreshCw className="w-3 h-3" />
                         Refresh
@@ -668,15 +670,15 @@ export function SettingsPanel() {
             })()}
 
             {/* Cache Limit Slider */}
-            <div className="mt-6 pt-6 border-t border-neutral-800/50 space-y-4">
+            <div className="mt-6 pt-6 border-t border-comet-border space-y-4">
               <div className="flex justify-between items-center">
                 <label
                   htmlFor="cache-limit-slider"
-                  className="text-sm font-semibold text-neutral-300"
+                  className="text-sm font-semibold text-comet-text"
                 >
                   Auto-Cache Budget
                 </label>
-                <span className="text-white font-mono font-bold text-sm bg-neutral-800 px-3 py-1 rounded-lg border border-neutral-700">
+                <span className="text-comet-text font-mono font-bold text-sm bg-comet-surface-2 px-3 py-1 rounded-lg border border-comet-border">
                   {cacheLimitGB.toFixed(1)} GB
                 </span>
               </div>
@@ -689,10 +691,10 @@ export function SettingsPanel() {
                   step="0.5"
                   value={cacheLimitGB}
                   onChange={(e) => setCacheLimitGB(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-2 bg-comet-surface-2 rounded-lg appearance-none cursor-pointer accent-comet-accent"
                 />
               </div>
-              <p className="text-xs text-neutral-500 leading-relaxed">
+              <p className="text-xs text-comet-muted leading-relaxed">
                 Comet will automatically evict the least recently read comics when cached comic
                 files exceed this limit to keep your local storage clean.
               </p>
@@ -700,8 +702,8 @@ export function SettingsPanel() {
 
             {/* Individual Comic Storage List */}
             {info.cachedComics && info.cachedComics.length > 0 && (
-              <div className="mt-8 pt-6 border-t border-neutral-800/50">
-                <h4 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4">
+              <div className="mt-8 pt-6 border-t border-comet-border">
+                <h4 className="text-sm font-semibold text-comet-muted uppercase tracking-wider mb-4">
                   Downloaded Comics
                 </h4>
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
@@ -710,11 +712,11 @@ export function SettingsPanel() {
                     .map((comic) => (
                       <div
                         key={comic.comicId}
-                        className="flex items-center justify-between p-3 bg-neutral-900/50 border border-neutral-800 rounded-xl hover:bg-neutral-800 transition-colors"
+                        className="flex items-center justify-between p-3 bg-comet-surface/50 border border-comet-border rounded-xl hover:bg-comet-surface-2 transition-colors"
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           {comic.coverUrl ? (
-                            <div className="w-10 h-14 rounded bg-neutral-800 overflow-hidden shrink-0 border border-neutral-700">
+                            <div className="w-10 h-14 rounded bg-comet-surface-2 overflow-hidden shrink-0 border border-comet-border">
                               <img
                                 src={comic.coverUrl}
                                 alt="Cover"
@@ -722,15 +724,15 @@ export function SettingsPanel() {
                               />
                             </div>
                           ) : (
-                            <div className="w-10 h-14 rounded bg-neutral-800 flex items-center justify-center shrink-0 border border-neutral-700">
-                              <BookOpen size={16} className="text-neutral-600" />
+                            <div className="w-10 h-14 rounded bg-comet-surface-2 flex items-center justify-center shrink-0 border border-comet-border">
+                              <BookOpen size={16} className="text-comet-muted" />
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-white truncate w-full">
+                            <p className="text-sm font-medium text-comet-text truncate w-full">
                               {comic.title || 'Unknown Title'}
                             </p>
-                            <p className="text-xs text-neutral-500 font-mono">
+                            <p className="text-xs text-comet-muted font-mono">
                               {formatBytes(comic.sizeBytes)}
                             </p>
                           </div>
@@ -738,7 +740,7 @@ export function SettingsPanel() {
 
                         <button
                           onClick={() => handleEvictSingle(comic.comicId)}
-                          className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors shrink-0 ml-4"
+                          className="p-2 text-comet-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors shrink-0 ml-4"
                           title="Remove from device"
                         >
                           <Trash2 size={16} />
@@ -754,15 +756,15 @@ export function SettingsPanel() {
 
       {/* Data Backup & Restore */}
       <section className="space-y-6">
-        <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
-          <Download className="text-neutral-400" />
+        <h2 className="text-xl font-semibold text-comet-text flex items-center gap-2 border-b border-comet-border pb-2">
+          <Download className="text-comet-muted" />
           Backup & Portability
         </h2>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 space-y-6">
+        <div className="bg-comet-surface border border-comet-border rounded-2xl p-8 space-y-6">
           <div>
-            <h3 className="text-lg font-bold text-white mb-2">Import / Export Local Data</h3>
-            <p className="text-neutral-400 text-sm max-w-xl leading-relaxed">
+            <h3 className="text-lg font-bold text-comet-text mb-2">Import / Export Local Data</h3>
+            <p className="text-comet-muted text-sm max-w-xl leading-relaxed">
               Backup your entire reading history, streaks, bookmarks, custom metadata, and reader
               configurations. Save the portable JSON file on your computer to restore your state
               anytime or migrate to a new device.
@@ -773,7 +775,7 @@ export function SettingsPanel() {
             <button
               onClick={handleExportBackup}
               disabled={isExporting}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-neutral-800 hover:bg-neutral-750 border border-neutral-700 text-white rounded-xl active:scale-95 transition-all font-medium disabled:opacity-50 cursor-pointer"
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-comet-surface-2 hover:bg-comet-surface border border-comet-border text-comet-text rounded-xl active:scale-95 transition-all font-medium disabled:opacity-50 cursor-pointer"
             >
               {isExporting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -786,7 +788,7 @@ export function SettingsPanel() {
             <button
               onClick={() => backupInputRef.current?.click()}
               disabled={isImporting}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl active:scale-95 transition-all font-medium disabled:opacity-50 cursor-pointer"
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-comet-accent hover:bg-comet-accent-hover text-white rounded-xl active:scale-95 transition-all font-medium disabled:opacity-50 cursor-pointer"
             >
               {isImporting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -808,15 +810,15 @@ export function SettingsPanel() {
 
       {/* Keyboard Shortcuts Cheat Sheet */}
       <section className="space-y-6">
-        <h2 className="text-xl font-semibold text-white flex items-center gap-2 border-b border-neutral-800 pb-2">
-          <Keyboard className="text-neutral-400" />
+        <h2 className="text-xl font-semibold text-comet-text flex items-center gap-2 border-b border-comet-border pb-2">
+          <Keyboard className="text-comet-muted" />
           Interactive Keyboard Cheat Sheet
         </h2>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 space-y-8">
+        <div className="bg-comet-surface border border-comet-border rounded-2xl p-8 space-y-8">
           <div>
-            <h3 className="text-lg font-bold text-white mb-2">Desktop Shortcuts</h3>
-            <p className="text-neutral-400 text-sm">
+            <h3 className="text-lg font-bold text-comet-text mb-2">Desktop Shortcuts</h3>
+            <p className="text-comet-muted text-sm">
               Hover over a keycap on the mockup to view its associated reading action, or hover over
               an action list item to see the keycaps light up.
             </p>
@@ -824,7 +826,7 @@ export function SettingsPanel() {
 
           <div className="flex flex-col lg:flex-row gap-8 items-start">
             {/* Visual Keyboard Mockup */}
-            <div className="w-full lg:w-3/5 bg-neutral-950 border border-neutral-800/80 rounded-2xl p-6 shadow-2xl overflow-x-auto custom-scrollbar flex flex-col gap-2 min-w-[500px]">
+            <div className="w-full lg:w-3/5 bg-comet-surface-2 border border-comet-border rounded-2xl p-6 shadow-2xl overflow-x-auto custom-scrollbar flex flex-col gap-2 min-w-[500px]">
               {(() => {
                 const keyboardRows = [
                   [
@@ -926,8 +928,8 @@ export function SettingsPanel() {
                           onMouseLeave={() => setActiveShortcut(null)}
                           className={`h-9 flex items-center justify-center rounded-md border font-mono text-[10px] select-none transition-all duration-200 cursor-pointer ${widthClass} ${
                             isHighlighted
-                              ? 'bg-blue-500/25 border-blue-500 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.5)] scale-105 z-10'
-                              : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:border-neutral-700 hover:text-white hover:bg-neutral-850'
+                              ? 'bg-comet-accent/25 border-comet-accent text-comet-accent shadow-[0_0_12px_rgba(124,106,247,0.5)] scale-105 z-10'
+                              : 'bg-comet-surface border-comet-border text-comet-muted hover:border-comet-accent hover:text-comet-text hover:bg-comet-surface-2'
                           }`}
                         >
                           {keyLabel}
@@ -950,13 +952,13 @@ export function SettingsPanel() {
                     onMouseLeave={() => setActiveShortcut(null)}
                     className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
                       isActive
-                        ? 'bg-blue-500/5 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.05)]'
-                        : 'bg-neutral-900/50 border-neutral-800/80'
+                        ? 'bg-comet-accent/5 border-comet-accent/30 shadow-[0_0_15px_rgba(124,106,247,0.05)]'
+                        : 'bg-comet-surface/50 border-comet-border'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span
-                        className={`text-sm font-semibold transition-colors duration-200 ${isActive ? 'text-blue-400' : 'text-white'}`}
+                        className={`text-sm font-semibold transition-colors duration-200 ${isActive ? 'text-comet-accent' : 'text-comet-text'}`}
                       >
                         {shortcut.label}
                       </span>
@@ -968,8 +970,8 @@ export function SettingsPanel() {
                               key={k}
                               className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
                                 isActive
-                                  ? 'bg-blue-500/20 border-blue-400/40 text-blue-400'
-                                  : 'bg-neutral-800 border-neutral-700 text-neutral-400'
+                                  ? 'bg-comet-accent/20 border-comet-accent/40 text-comet-accent'
+                                  : 'bg-comet-surface-2 border-comet-border text-comet-muted'
                               }`}
                             >
                               {k}
