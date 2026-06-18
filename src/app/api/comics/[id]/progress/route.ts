@@ -136,9 +136,10 @@ export const PUT = withAuth(
         // if diffDays === 0, streak remains unchanged
       }
 
-      // 5. Run database updates in a transaction
-      const [progress] = await db.$transaction([
-        db.readingProgress.upsert({
+      // 5. Run database updates in an interactive transaction
+      const progress = await db.$transaction(async (tx) => {
+        // Upsert progress
+        const p = await tx.readingProgress.upsert({
           where: { comicId },
           update: {
             lastPage: body.lastPage,
@@ -158,19 +159,64 @@ export const PUT = withAuth(
             totalTimeSpent: validatedTimeDelta,
             lastReadAt: now,
           },
-        }),
-        db.comic.update({
+        });
+
+        // Update comic lastReadAt
+        await tx.comic.update({
           where: { id: comicId },
           data: { lastReadAt: now },
-        }),
-        db.user.update({
+        });
+
+        // Update user streak
+        await tx.user.update({
           where: { id: session.user.id },
           data: {
             readingStreak: newStreak,
             lastReadDate: now,
           },
-        }),
-      ]);
+        });
+
+        // Calculate pages read delta
+        const pagesReadDelta = currentProgress
+          ? Math.max(0, body.lastPage - currentProgress.lastPage)
+          : body.lastPage + 1;
+
+        if (pagesReadDelta > 0 || validatedTimeDelta > 0) {
+          const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+          // Find if there is a recent session for this user and comic
+          const recentSession = await tx.readingSession.findFirst({
+            where: {
+              userId: session.user.id,
+              comicId,
+              createdAt: { gte: thirtyMinutesAgo },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+
+          if (recentSession) {
+            await tx.readingSession.update({
+              where: { id: recentSession.id },
+              data: {
+                pagesRead: { increment: pagesReadDelta },
+                durationSeconds: { increment: validatedTimeDelta },
+              },
+            });
+          } else {
+            await tx.readingSession.create({
+              data: {
+                userId: session.user.id,
+                comicId,
+                pagesRead: pagesReadDelta,
+                durationSeconds: validatedTimeDelta,
+                createdAt: now,
+              },
+            });
+          }
+        }
+
+        return p;
+      });
 
       // Invalidate library cache for this user since reading progress changed
       await invalidateCache(`comet:u:${session.user.id}:library`, true);

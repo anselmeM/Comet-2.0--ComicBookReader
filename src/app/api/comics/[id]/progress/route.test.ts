@@ -28,7 +28,17 @@ vi.mock('@/lib/db', () => ({
       upsert: vi.fn(),
       delete: vi.fn(),
     },
-    $transaction: vi.fn((promises) => Promise.all(promises)),
+    readingSession: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    $transaction: vi.fn((arg) => {
+      if (typeof arg === 'function') {
+        return arg(db);
+      }
+      return Promise.all(arg);
+    }),
   },
 }));
 

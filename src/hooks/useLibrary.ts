@@ -197,3 +197,50 @@ export function useClearAllHistory() {
     },
   });
 }
+
+export function useUpdateProgress() {
+  const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
+
+  return useMutation({
+    mutationFn: async ({
+      comicId,
+      lastPage,
+      totalPages,
+      readStatus,
+    }: {
+      comicId: string;
+      lastPage: number;
+      totalPages: number;
+      readStatus: string;
+    }) => {
+      const res = await fetch(`/api/comics/${comicId}/progress`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lastPage,
+          totalPages,
+          zoomLevel: 1.0,
+          readStatus,
+          timeDelta: 0,
+        }),
+      });
+
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update progress');
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library'] });
+      queryClient.invalidateQueries({ queryKey: ['userStats'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['reading-clubs'] });
+    },
+  });
+}

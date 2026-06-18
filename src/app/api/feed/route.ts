@@ -66,6 +66,16 @@ export async function GET() {
             issue: true,
           },
         },
+        reactions: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -86,6 +96,12 @@ export async function GET() {
         issue: progress.comic.issue,
         type: isCompleted ? 'FINISHED' : 'READING',
         timestamp: progress.updatedAt,
+        reactions: progress.reactions.map((r) => ({
+          id: r.id,
+          userId: r.userId,
+          userName: r.user.name,
+          reactionType: r.reactionType,
+        })),
       };
     });
 

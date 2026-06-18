@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, useMotionValue } from 'framer-motion';
+import { motion, useMotionValue, animate } from 'framer-motion';
 import { useGesture } from '@use-gesture/react';
 import { useReaderStore } from '@/stores/readerStore';
 
@@ -12,7 +12,7 @@ interface ReaderViewportProps {
 export function ReaderViewport({ children }: ReaderViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [resizeKey, setResizeKey] = useState(0);
-  
+
   // State from store
   const zoomLevel = useReaderStore((state) => state.zoomLevel);
   const setZoomLevel = useReaderStore((state) => state.setZoomLevel);
@@ -24,12 +24,15 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
   const toggleMenu = useReaderStore((state) => state.toggleMenu);
   const nextPage = useReaderStore((state) => state.nextPage);
   const prevPage = useReaderStore((state) => state.prevPage);
-  
+
+  const panSpeed = useReaderStore((state) => state.panSpeed);
+  const panEase = useReaderStore((state) => state.panEase);
+
   // Motion values
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const scale = useMotionValue(zoomLevel);
-  
+
   // Update scale when zoomLevel changes
   useEffect(() => {
     if (!isGuidedViewEnabled) {
@@ -39,6 +42,10 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
 
   // Guided View Automated Panning
   useEffect(() => {
+    let animScale: any;
+    let animX: any;
+    let animY: any;
+
     if (isGuidedViewEnabled && containerRef.current) {
       const panels = pagePanels[currentPage] || [];
       const panel = panels[guidedStep];
@@ -46,21 +53,31 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
       if (!panel) return;
 
       const { width: viewW, height: viewH } = containerRef.current.getBoundingClientRect();
-      
-      const imgElement = containerRef.current.querySelector('img');
-      if (!imgElement) return;
 
-      const imgRect = imgElement.getBoundingClientRect();
-      
+      const mediaElement =
+        containerRef.current.querySelector('canvas') || containerRef.current.querySelector('img');
+      if (!mediaElement) return;
+
+      const mediaRect = mediaElement.getBoundingClientRect();
+
+      const naturalWidth =
+        (mediaElement as HTMLCanvasElement).width ||
+        (mediaElement as HTMLImageElement).naturalWidth ||
+        800;
+      const naturalHeight =
+        (mediaElement as HTMLCanvasElement).height ||
+        (mediaElement as HTMLImageElement).naturalHeight ||
+        1200;
+
       // Scale required to make the panel fill ~85% of the viewport
-      const scaleW = (viewW * 0.85) / (panel.width * (imgRect.width / imgElement.naturalWidth));
-      const scaleH = (viewH * 0.85) / (panel.height * (imgRect.height / imgElement.naturalHeight));
+      const scaleW = (viewW * 0.85) / (panel.width * (mediaRect.width / naturalWidth));
+      const scaleH = (viewH * 0.85) / (panel.height * (mediaRect.height / naturalHeight));
       const targetScale = Math.min(scaleW, scaleH, 4); // Max 4x zoom
 
       // Calculate centering offset
       // Coordinates are relative to natural image
-      const panelCenterX = (panel.x + panel.width / 2) * (imgRect.width / imgElement.naturalWidth);
-      const panelCenterY = (panel.y + panel.height / 2) * (imgRect.height / imgElement.naturalHeight);
+      const panelCenterX = (panel.x + panel.width / 2) * (mediaRect.width / naturalWidth);
+      const panelCenterY = (panel.y + panel.height / 2) * (mediaRect.height / naturalHeight);
 
       const viewCenterX = viewW / 2;
       const viewCenterY = viewH / 2;
@@ -69,23 +86,42 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
       const targetX = (viewCenterX - panelCenterX) * targetScale;
       const targetY = (viewCenterY - panelCenterY) * targetScale;
 
-      scale.set(targetScale);
-      x.set(targetX);
-      y.set(targetY);
+      animScale = animate(scale, targetScale, { duration: panSpeed, ease: panEase as any });
+      animX = animate(x, targetX, { duration: panSpeed, ease: panEase as any });
+      animY = animate(y, targetY, { duration: panSpeed, ease: panEase as any });
     } else {
-      scale.set(zoomLevel);
-      x.set(0);
-      y.set(0);
+      animScale = animate(scale, zoomLevel, { duration: panSpeed, ease: panEase as any });
+      animX = animate(x, 0, { duration: panSpeed, ease: panEase as any });
+      animY = animate(y, 0, { duration: panSpeed, ease: panEase as any });
     }
-  }, [isGuidedViewEnabled, guidedStep, currentPage, pagePanels, mode, x, y, scale, zoomLevel, resizeKey]);
+
+    return () => {
+      animScale?.stop();
+      animX?.stop();
+      animY?.stop();
+    };
+  }, [
+    isGuidedViewEnabled,
+    guidedStep,
+    currentPage,
+    pagePanels,
+    mode,
+    x,
+    y,
+    scale,
+    zoomLevel,
+    resizeKey,
+    panSpeed,
+    panEase,
+  ]);
 
   // Handle window resizing to keep panel centered
   useEffect(() => {
     if (!isGuidedViewEnabled) return;
-    
+
     const handleResize = () => {
       setTimeout(() => {
-        setResizeKey(prev => prev + 1);
+        setResizeKey((prev) => prev + 1);
       }, 100);
     };
 
@@ -107,7 +143,7 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
           }
           return;
         }
-        
+
         // Regular pan when zoomed in or guided view enabled
         if (!intentional || (scale.get() <= 1 && !isGuidedViewEnabled)) return;
         x.set(dx);
@@ -116,17 +152,21 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
       onPinch: ({ offset: [s], memo }) => {
         setZoomLevel(s);
         return memo;
-      }
+      },
     },
     {
       target: containerRef,
-      drag: { filterTaps: true, from: () => [x.get(), y.get()], swipe: { velocity: 0.5, distance: 50 } },
-      pinch: { scaleBounds: { min: 0.5, max: 5 }, from: () => [scale.get(), 0] }
-    }
+      drag: {
+        filterTaps: true,
+        from: () => [x.get(), y.get()],
+        swipe: { velocity: 0.5, distance: 50 },
+      },
+      pinch: { scaleBounds: { min: 0.5, max: 5 }, from: () => [scale.get(), 0] },
+    },
   );
 
   return (
-    <div 
+    <div
       ref={containerRef}
       onDoubleClick={() => {
         if (scale.get() > 1) {
@@ -149,7 +189,7 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
         style={{ x, y, scale }}
       >
         {children}
-        
+
         {/* Center Fold Gutter for dual-spread mode (T-READ-008) */}
         {(mode === 'dual-spread' || mode === 'manga-rtl') && currentPage > 0 && (
           <div className="absolute inset-0 pointer-events-none flex justify-center z-10">

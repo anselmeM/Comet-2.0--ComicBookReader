@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { useComicPages } from '@/hooks/useComicPages';
 import { useReaderStore } from '@/stores/readerStore';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
@@ -19,6 +19,67 @@ import { UploadCloud, Loader2, ArrowLeft } from 'lucide-react';
 
 interface ComicReaderProps {
   comicId: string;
+}
+
+interface CanvasPageRenderProps {
+  pageIndex: number;
+  page: { blob: Blob; width: number; height: number };
+  canvasCache: React.MutableRefObject<Record<number, HTMLCanvasElement>>;
+  filterString: string;
+}
+
+function CanvasPageRender({ pageIndex, page, canvasCache, filterString }: CanvasPageRenderProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    let canvas = canvasCache.current[pageIndex];
+    if (canvas) {
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.objectFit = 'contain';
+      canvas.style.filter = filterString;
+      container.appendChild(canvas);
+    } else {
+      canvas = document.createElement('canvas');
+      canvas.width = page.width || 800;
+      canvas.height = page.height || 1200;
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.objectFit = 'contain';
+      canvas.style.filter = filterString;
+      container.appendChild(canvas);
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        createImageBitmap(page.blob)
+          .then((imageBitmap) => {
+            ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
+            imageBitmap.close();
+            canvasCache.current[pageIndex] = canvas;
+          })
+          .catch((err) => {
+            logger.error(
+              `Canvas fallback render failed for page ${pageIndex}:`,
+              {},
+              err instanceof Error ? err : undefined,
+            );
+          });
+      }
+    }
+  }, [pageIndex, page, canvasCache, filterString]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="w-full h-full flex items-center justify-center max-h-full max-w-full relative"
+      style={{ aspectRatio: `${page.width}/${page.height}` }}
+    />
+  );
 }
 
 export function ComicReader({ comicId }: ComicReaderProps) {
@@ -67,6 +128,12 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   const zoomLevel = useReaderStore((state) => state.zoomLevel);
   const isGuidedViewEnabled = useReaderStore((state) => state.isGuidedViewEnabled);
 
+  // Visual scan filters
+  const sepia = useReaderStore((state) => state.sepia);
+  const contrast = useReaderStore((state) => state.contrast);
+  const grayscale = useReaderStore((state) => state.grayscale);
+  const sharpen = useReaderStore((state) => state.sharpen);
+
   const openComic = useReaderStore((state) => state.openComic);
   const nextPage = useReaderStore((state) => state.nextPage);
   const prevPage = useReaderStore((state) => state.prevPage);
@@ -81,6 +148,57 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   const { addBookmark, removeBookmark, getBookmarkForPage } = useBookmarks({ comicId });
 
   const verticalContainerRef = useRef<HTMLDivElement>(null);
+  const canvasCacheRef = useRef<Record<number, HTMLCanvasElement>>({});
+
+  // Construct GPU-accelerated CSS filter string
+  const filterString = useMemo(() => {
+    const filters = [];
+    if (sepia > 0) filters.push(`sepia(${sepia})`);
+    if (contrast !== 1.0) filters.push(`contrast(${contrast})`);
+    if (grayscale > 0) filters.push(`grayscale(${grayscale})`);
+    if (sharpen) filters.push(`url(#sharpen-filter)`);
+    return filters.length > 0 ? filters.join(' ') : 'none';
+  }, [sepia, contrast, grayscale, sharpen]);
+
+  // Clear canvas cache when comic changes or component unmounts
+  useEffect(() => {
+    canvasCacheRef.current = {};
+    return () => {
+      canvasCacheRef.current = {};
+    };
+  }, [comicId]);
+
+  // Offscreen preloader callback
+  const preRenderPage = useCallback(
+    (index: number) => {
+      if (index < 0 || !comic || index >= comic.pages.length) return;
+      if (canvasCacheRef.current[index]) return;
+
+      const page = comic.pages[index];
+      const canvas = document.createElement('canvas');
+      canvas.width = page.width || 800;
+      canvas.height = page.height || 1200;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        createImageBitmap(page.blob)
+          .then((imageBitmap) => {
+            ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
+            imageBitmap.close();
+            canvasCacheRef.current[index] = canvas;
+            logger.debug(`Pre-rendered page ${index} to cache`);
+          })
+          .catch((err) => {
+            logger.error(
+              `Pre-render failed for page ${index}:`,
+              {},
+              err instanceof Error ? err : undefined,
+            );
+          });
+      }
+    },
+    [comic],
+  );
   // Detect panels for current and next pages
   useEffect(() => {
     if (!comic || loading) return;
@@ -509,6 +627,22 @@ export function ComicReader({ comicId }: ComicReaderProps) {
         className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none"
         role="main"
       >
+        <svg
+          className="sr-only"
+          width="0"
+          height="0"
+          style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}
+        >
+          <defs>
+            <filter id="sharpen-filter">
+              <feConvolveMatrix
+                order="3 3"
+                preserveAlpha="true"
+                kernelMatrix="0 -1 0 -1 5 -1 0 -1 0"
+              />
+            </filter>
+          </defs>
+        </svg>
         <div
           ref={verticalContainerRef}
           className="comic-reader-vertical-container h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-20 flex flex-col items-center gap-4 scroll-smooth transition-all duration-300"
@@ -524,6 +658,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
                 width={page.width}
                 height={page.height}
                 alt={`Page ${idx + 1}`}
+                style={{ filter: filterString }}
                 className="comic-reader-image max-h-full max-w-full object-contain shadow-2xl rounded-sm"
               />
             </div>
@@ -538,6 +673,22 @@ export function ComicReader({ comicId }: ComicReaderProps) {
       className="comic-reader-root relative w-full h-screen bg-black overflow-hidden select-none"
       role="main"
     >
+      <svg
+        className="sr-only"
+        width="0"
+        height="0"
+        style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}
+      >
+        <defs>
+          <filter id="sharpen-filter">
+            <feConvolveMatrix
+              order="3 3"
+              preserveAlpha="true"
+              kernelMatrix="0 -1 0 -1 5 -1 0 -1 0"
+            />
+          </filter>
+        </defs>
+      </svg>
       <ReaderViewport>
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
@@ -549,13 +700,12 @@ export function ComicReader({ comicId }: ComicReaderProps) {
             className="flex items-center justify-center h-full w-full gap-1 sm:gap-4 md:gap-8 p-4"
           >
             {pagesToRender.map((item) => (
-              <BlobImage
+              <CanvasPageRender
                 key={`page-${item.index}`}
-                blob={item.page.blob}
-                width={item.page.width}
-                height={item.page.height}
-                className="max-h-full max-w-full object-contain shadow-2xl rounded-sm"
-                draggable={false}
+                pageIndex={item.index}
+                page={item.page}
+                canvasCache={canvasCacheRef}
+                filterString={filterString}
               />
             ))}
           </motion.div>

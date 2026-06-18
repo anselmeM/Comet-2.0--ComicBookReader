@@ -41,11 +41,13 @@ export interface DashboardComic {
   syncStatus?: 'LOCAL' | 'PENDING' | 'SYNCED' | 'ERROR';
   isLocallyAvailable?: boolean;
   comicVineId?: string | null;
+  addedAt?: string | Date;
   progress?: {
     lastPage: number;
     totalPages: number;
     totalTimeSpent?: number;
     lastReadAt?: string | null;
+    readStatus?: string;
   } | null;
 }
 
@@ -86,7 +88,7 @@ export function DashboardComicCard({
 }: DashboardComicCardProps) {
   const { setNodeRef, transform, transition, isDragging } = useSortable({
     id: comic.id,
-    disabled: !isEditMode || variant === 'standard',
+    disabled: variant === 'standard',
   });
 
   const enrichment = useEnrichment();
