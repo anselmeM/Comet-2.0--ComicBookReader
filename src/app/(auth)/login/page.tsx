@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { signIn, useSession } from 'next-auth/react';
-import { loginAction } from './actions';
+
 import { logger } from '@/lib/logger';
 
 function LoginForm() {
@@ -84,28 +84,28 @@ function LoginForm() {
     }
 
     try {
-      // Use Server Action instead of client-side signIn to avoid "Failed to fetch"
-      const formData = new FormData();
-      formData.append('email', email.trim().toLowerCase());
-      formData.append('password', password);
-      formData.append('callbackUrl', callbackUrl);
-
-      const result = await loginAction(null, formData);
+      const result = await signIn('credentials', {
+        email: email.trim().toLowerCase(),
+        password,
+        redirect: false,
+      });
 
       if (result?.error) {
-        setErrorMsg(result.error);
+        // NextAuth returns specific error codes or strings.
+        if (result.error === 'CredentialsSignin' || result.error.includes('CallbackRouteError')) {
+          setErrorMsg('Invalid email or password.');
+        } else if (result.error.includes('Account locked')) {
+          setErrorMsg(result.error);
+        } else {
+          setErrorMsg('An unexpected error occurred. Please try again.');
+        }
         setLoading(false);
-      } else if (result?.success && result?.redirectUrl) {
-        // Use window.location.href for a full page load to ensure session is picked up
-        window.location.href = result.redirectUrl;
+      } else if (result?.ok) {
+        // Force a hard refresh to the callback URL so session state is fully initialized
+        window.location.href = callbackUrl;
       }
-      // If success, server action will handle redirect
     } catch (err: any) {
-      // Next.js redirect "error" should be allowed to bubble up
-      if (err.message === 'NEXT_REDIRECT') {
-        throw err;
-      }
-      logger.error('[LoginForm] Sign in error:', {}, err instanceof Error ? err : undefined);
+      logger.error('[LoginForm] Client sign in error:', {}, err instanceof Error ? err : undefined);
       setErrorMsg('An unexpected error occurred. Please try again.');
       setLoading(false);
     }

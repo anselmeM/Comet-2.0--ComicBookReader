@@ -82,7 +82,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = credentials.password as string;
 
         try {
-          const user = await db.user.findUnique({ where: { email } });
+          const user = await db.user.findFirst({ where: { email } });
 
           if (!user || !user.password) {
             logger.warn(`[Auth] Login failed: User not found or no password hash for ${email}`);
