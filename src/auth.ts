@@ -82,38 +82,59 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = credentials.password as string;
 
         try {
-          const user = await db.user.findFirst({ where: { email } });
+          const users = await db.user.findMany({ where: { email } });
 
-          if (!user || !user.password) {
-            logger.warn(`[Auth] Login failed: User not found or no password hash for ${email}`);
+          if (!users || users.length === 0) {
+            logger.warn(`[Auth] Login failed: User not found for ${email}`);
             return null;
           }
 
-          // Check for account lockout
-          if (user.lockoutUntil && user.lockoutUntil > new Date()) {
-            const minutesLeft = Math.ceil((user.lockoutUntil.getTime() - Date.now()) / 60000);
+          let matchedUser = null;
+          let lockedUser = null;
+
+          // Iterate through all accounts with this email to find the one with the matching password
+          for (const user of users) {
+            if (!user.password) continue;
+
+            // Check for account lockout on each user
+            if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+              lockedUser = user;
+              continue; // Skip trying this locked account, check others
+            }
+
+            const passwordsMatch = await bcrypt.compare(password, user.password);
+
+            if (passwordsMatch) {
+              matchedUser = user;
+              break;
+            }
+          }
+
+          if (matchedUser) {
+            // Reset failed attempts on successful login
+            if (matchedUser.failedAttempts > 0 || matchedUser.lockoutUntil) {
+              await db.user.update({
+                where: { id: matchedUser.id },
+                data: { failedAttempts: 0, lockoutUntil: null },
+              });
+            }
+            logger.info(`[Auth] Login success for ${email} (ID: ${matchedUser.id})`);
+            return matchedUser;
+          }
+
+          if (lockedUser) {
+            const minutesLeft = Math.ceil(
+              (lockedUser.lockoutUntil!.getTime() - Date.now()) / 60000,
+            );
             logger.warn(
               `[Auth] Login blocked: Account locked for ${email}. ${minutesLeft}m remaining.`,
             );
             throw new Error(`Account locked. Please try again in ${minutesLeft} minutes.`);
           }
 
-          const passwordsMatch = await bcrypt.compare(password, user.password);
-
-          if (passwordsMatch) {
-            // Reset failed attempts on successful login
-            if (user.failedAttempts > 0 || user.lockoutUntil) {
-              await db.user.update({
-                where: { id: user.id },
-                data: { failedAttempts: 0, lockoutUntil: null },
-              });
-            }
-            logger.info(`[Auth] Login success for ${email}`);
-            return user;
-          }
-
-          // Handle failed attempt
-          const newFailedAttempts = user.failedAttempts + 1;
+          // Handle failed attempt for the most recently active account (or first one)
+          const targetUser = users[0];
+          const newFailedAttempts = targetUser.failedAttempts + 1;
           const MAX_ATTEMPTS = 5;
           const LOCKOUT_DURATION_MIN = 15;
 
@@ -126,7 +147,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           await db.user.update({
-            where: { id: user.id },
+            where: { id: targetUser.id },
             data: updateData,
           });
 
