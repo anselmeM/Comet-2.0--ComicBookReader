@@ -73,7 +73,13 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
     },
   });
 
-  // 1. Active Reading Timer
+  // 1. Keep track of latest values for reliable unmount sync
+  const latestValues = useRef({ currentPage, totalPages, zoomLevel, secondsSpent, comicId });
+  useEffect(() => {
+    latestValues.current = { currentPage, totalPages, zoomLevel, secondsSpent, comicId };
+  }, [currentPage, totalPages, zoomLevel, secondsSpent, comicId]);
+
+  // 2. Active Reading Timer
   useEffect(() => {
     if (!comicId) return;
 
@@ -106,9 +112,22 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
     };
   }, [comicId]);
 
-  // 2. Automatically sync progress with a 2-second debounce
+  // 3. Initial sync to guarantee it shows up in "Continue Reading" immediately
   useEffect(() => {
-    // If page hasn't changed, we still might want to sync time if enough has passed (e.g. 30s)
+    if (comicId && totalPages > 0 && lastSavedPage.current === -1) {
+      logger.info(`[Sync] Initial load sync for comic ${comicId}`);
+      mutate({
+        lastPage: currentPage,
+        totalPages,
+        zoomLevel,
+        timeDelta: 0,
+      });
+      lastSavedPage.current = currentPage;
+    }
+  }, [comicId, totalPages, currentPage, zoomLevel, mutate]);
+
+  // 4. Automatically sync progress with a 2-second debounce during active reading
+  useEffect(() => {
     const pageChanged = currentPage !== lastSavedPage.current;
     const significantTimePassed = secondsSpent >= 30;
 
@@ -132,4 +151,33 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [comicId, currentPage, totalPages, zoomLevel, secondsSpent, mutate]);
+
+  // 5. Reliable Unmount Sync (Save progress immediately when user closes the comic)
+  useEffect(() => {
+    return () => {
+      const {
+        comicId: cId,
+        currentPage: p,
+        totalPages: t,
+        zoomLevel: z,
+        secondsSpent: s,
+      } = latestValues.current;
+
+      // If we spent time reading or changed page since last save, flush to server
+      if (cId && t > 0 && (s > 0 || p !== lastSavedPage.current)) {
+        logger.info(`[Sync] Unmount flush for comic ${cId} (timeDelta: ${s}s)`);
+        const payload = { lastPage: p, totalPages: t, zoomLevel: z, timeDelta: s };
+
+        // Use keepalive fetch to ensure request fires even as page unloads
+        fetch(`/api/comics/${cId}/progress`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true,
+        }).catch((err) => {
+          logger.error('[Sync] Unmount flush failed', {}, err instanceof Error ? err : undefined);
+        });
+      }
+    };
+  }, []);
 }
