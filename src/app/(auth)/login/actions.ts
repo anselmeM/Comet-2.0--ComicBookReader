@@ -79,13 +79,21 @@ export async function loginAction(prevState: unknown, formData: FormData) {
       return { error: errorMessage || errorCauseMessage };
     }
 
-    // ─── Handle NextAuth v5 CredentialsSignin ────────────────────────
+    // ─── Handle NextAuth v5 auth errors (CredentialsSignin, CallbackRouteError) ─
+    // In NextAuth v5, failed credentials throw CallbackRouteError wrapping
+    // CredentialsSignin. The instanceof check often fails across module
+    // boundaries, so we do a case-insensitive search across the full error chain.
+    const errorFingerprint = JSON.stringify({
+      m: errorMessage,
+      n: typeof err?.name === 'string' ? err.name : '',
+      t: typeof err?.type === 'string' ? err.type : '',
+      c: errorCauseMessage,
+    }).toLowerCase();
+
     if (
       error instanceof AuthError ||
-      err?.name === 'AuthError' ||
-      err?.type === 'CredentialsSignin' ||
-      errorMessage.includes('CredentialsSignin') ||
-      errorCauseMessage.includes('CredentialsSignin')
+      errorFingerprint.includes('credentialssignin') ||
+      errorFingerprint.includes('callbackrouteerror')
     ) {
       return { error: 'Invalid email or password.' };
     }
