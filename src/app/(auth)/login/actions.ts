@@ -5,24 +5,6 @@ import { rateLimit } from '@/lib/rate-limit';
 import { headers } from 'next/headers';
 import { logger } from '@/lib/logger';
 
-/**
- * Checks if an error is a Next.js redirect (which uses thrown errors internally).
- * This MUST be checked before any other error handling to avoid swallowing redirects.
- *
- * @param error - The caught error object
- * @returns true if the error is a Next.js redirect
- */
-function isRedirectError(error: unknown): boolean {
-  if (error == null || typeof error !== 'object') return false;
-  const e = error as Record<string, unknown>;
-  // Next.js 14+/16 uses error.digest starting with 'NEXT_REDIRECT'
-  if (typeof e.digest === 'string' && e.digest.startsWith('NEXT_REDIRECT')) return true;
-  // Fallback: check error message
-  const msg = typeof e.message === 'string' ? e.message : '';
-  if (msg === 'NEXT_REDIRECT' || msg.includes('NEXT_REDIRECT')) return true;
-  return false;
-}
-
 export async function loginAction(prevState: unknown, formData: FormData) {
   try {
     // 1. Rate limiting (T-AUTH-002)
@@ -53,43 +35,19 @@ export async function loginAction(prevState: unknown, formData: FormData) {
 
     // If signIn returns without throwing, the login succeeded
     return { success: true, redirectUrl: callbackUrl };
-  } catch (error: unknown) {
-    // ─── CRITICAL: Check for Next.js redirect FIRST ───────────────────
-    // NextAuth v5 + Next.js 16 throws a redirect error on successful login.
-    // This MUST be re-thrown before any other error handling, otherwise the
-    // redirect is swallowed and the user sees "An unexpected error occurred."
-    if (isRedirectError(error)) {
-      throw error;
-    }
+  } catch (error: any) {
+    // ─── CRITICAL: Rethrow Next.js internal errors (redirects, etc) ───
+    // In Next 15+, catching a redirect error will break navigation.
+    // unstable_rethrow safely re-throws ONLY Next.js internal errors.
+    const { unstable_rethrow } = require('next/navigation');
+    unstable_rethrow(error);
 
-    const err = error as Record<string, unknown>;
-    const errorMessage = typeof err?.message === 'string' ? err.message : '';
-    const errorCauseMessage =
-      typeof (err?.cause as Record<string, unknown>)?.message === 'string'
-        ? ((err.cause as Record<string, unknown>).message as string)
-        : typeof (err?.cause as Record<string, unknown>)?.err === 'object' &&
-            typeof ((err.cause as Record<string, unknown>).err as Record<string, unknown>)
-              ?.message === 'string'
-          ? (((err.cause as Record<string, unknown>).err as Record<string, unknown>)
-              .message as string)
-          : '';
+    const errorMessage = typeof error?.message === 'string' ? error.message : '';
+    const errType = typeof error?.type === 'string' ? error.type : '';
+    const errName = typeof error?.name === 'string' ? error.name : '';
+    const errorFingerprint = `${errorMessage} ${errType} ${errName}`.toLowerCase();
 
-    // ─── Handle account lockout ──────────────────────────────────────
-    if (errorMessage.includes('Account locked') || errorCauseMessage.includes('Account locked')) {
-      return { error: errorMessage || errorCauseMessage };
-    }
-
-    // ─── Handle NextAuth v5 auth errors (CredentialsSignin, CallbackRouteError) ─
-    // In NextAuth v5, failed credentials throw CallbackRouteError wrapping
-    // CredentialsSignin. The instanceof check often fails across module
-    // boundaries, so we do a case-insensitive search across the full error chain.
-    const errorFingerprint = JSON.stringify({
-      m: errorMessage,
-      n: typeof err?.name === 'string' ? err.name : '',
-      t: typeof err?.type === 'string' ? err.type : '',
-      c: errorCauseMessage,
-    }).toLowerCase();
-
+    // ─── Handle NextAuth v5 auth errors ──────────────────────────────
     if (
       error instanceof AuthError ||
       errorFingerprint.includes('credentialssignin') ||
@@ -98,30 +56,14 @@ export async function loginAction(prevState: unknown, formData: FormData) {
       return { error: 'Invalid email or password.' };
     }
 
-    // ─── Handle custom AUTH_ERROR_ prefix (legacy path) ──────────────
-    if (errorMessage.startsWith('AUTH_ERROR_')) {
-      const authError = errorMessage.replace('AUTH_ERROR_', '');
-      if (authError === 'CredentialsSignin') {
-        return { error: 'Invalid email or password.' };
-      }
-      return { error: 'Something went wrong. Please try again.' };
+    if (errorMessage.includes('Account locked')) {
+      return { error: errorMessage };
     }
 
-    // ─── Unrecognized error — log full shape for debugging ───────────
-    const safeErrorKeys = err ? Object.keys(err) : [];
-    const errorDetails = {
-      message: errorMessage,
-      name: typeof err?.name === 'string' ? err.name : 'unknown',
-      type: typeof err?.type === 'string' ? err.type : undefined,
-      digest: typeof err?.digest === 'string' ? err.digest : undefined,
-      causeMessage: errorCauseMessage || undefined,
-      constructor: (error as object)?.constructor?.name,
-      keys: safeErrorKeys,
-    };
-
+    // ─── Log unexpected errors and return gracefully ─────────────────
     logger.error(
       '[LoginAction] Unexpected error caught. Details:',
-      errorDetails,
+      { message: errorMessage, type: errType, name: errName },
       error instanceof Error ? error : undefined,
     );
 
