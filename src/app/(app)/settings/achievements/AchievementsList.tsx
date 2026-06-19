@@ -85,11 +85,11 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
   return (
     <div className="space-y-12">
       {/* Progress Header */}
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 sm:p-8">
+      <div className="bg-comet-surface/40 border border-comet-border rounded-2xl p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <div>
-            <h2 className="text-xl font-bold text-white mb-1">Overall Progress</h2>
-            <p className="text-zinc-400 text-sm">
+            <h2 className="text-xl font-bold text-comet-text mb-1">Overall Progress</h2>
+            <p className="text-comet-muted text-sm">
               You have unlocked {earnedCount} out of {totalCount} badges.
             </p>
           </div>
@@ -98,7 +98,7 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
           </div>
         </div>
 
-        <div className="w-full bg-zinc-800 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-comet-surface-2 rounded-full h-3 overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
@@ -112,10 +112,10 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
       {sortedTiers.map((tier) => (
         <div key={tier} className="space-y-6">
           <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold tracking-tight text-white capitalize">
+            <h2 className="text-2xl font-bold tracking-tight text-comet-text capitalize">
               {tier.toLowerCase()} Tier
             </h2>
-            <div className="h-px bg-zinc-800 flex-1" />
+            <div className="h-px bg-comet-border flex-1" />
           </div>
 
           <motion.div
@@ -137,39 +137,39 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
                   className={`relative overflow-hidden rounded-2xl border p-6 flex flex-col items-center text-center transition-all duration-300 ${
                     isEarned
                       ? `bg-gradient-to-br ${tierColors[badge.tier]} bg-opacity-10 shadow-lg cursor-pointer`
-                      : 'bg-zinc-900/30 border-zinc-800 backdrop-blur-sm grayscale-[0.8]'
+                      : 'bg-comet-surface/30 border-comet-border backdrop-blur-sm grayscale-[0.8]'
                   }`}
                 >
                   <div
                     className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${
-                      isEarned ? 'bg-black/20 shadow-inner' : 'bg-zinc-800/50'
+                      isEarned ? 'bg-black/20 shadow-inner' : 'bg-comet-surface-2'
                     }`}
                   >
                     {isEarned ? (
                       <Icon className="w-8 h-8 drop-shadow-md" />
                     ) : (
-                      <Lock className="w-8 h-8 text-zinc-600" />
+                      <Lock className="w-8 h-8 text-comet-muted" />
                     )}
                   </div>
 
                   <h3
-                    className={`font-semibold text-lg mb-2 ${isEarned ? 'text-white' : 'text-zinc-500'}`}
+                    className={`font-semibold text-lg mb-2 ${isEarned ? 'text-comet-text' : 'text-comet-muted'}`}
                   >
                     {badge.name}
                   </h3>
 
-                  <p className="text-sm text-zinc-400/80 mb-6 flex-1">{badge.description}</p>
+                  <p className="text-sm text-comet-muted mb-6 flex-1">{badge.description}</p>
 
-                  <div className="mt-auto w-full flex justify-between items-center border-t border-white/5 pt-4">
+                  <div className="mt-auto w-full flex justify-between items-center border-t border-comet-border pt-4">
                     <span
                       className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-md ${
-                        isEarned ? 'bg-black/30' : 'bg-zinc-800/80 text-zinc-600'
+                        isEarned ? 'bg-black/30 text-white' : 'bg-comet-surface-2 text-comet-muted'
                       }`}
                     >
                       {badge.tier}
                     </span>
                     {earnedAt && (
-                      <span className="text-[11px] text-zinc-400 font-medium">
+                      <span className="text-[11px] text-comet-muted font-medium">
                         {new Intl.DateTimeFormat('en-US', {
                           month: 'short',
                           day: 'numeric',

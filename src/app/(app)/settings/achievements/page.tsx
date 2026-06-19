@@ -25,7 +25,7 @@ export default async function SettingsAchievementsPage() {
       <div className="mb-6">
         <Link
           href="/settings"
-          className="inline-flex items-center text-sm text-zinc-400 hover:text-white transition-colors"
+          className="inline-flex items-center text-sm text-comet-muted hover:text-comet-text transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Settings
@@ -36,8 +36,8 @@ export default async function SettingsAchievementsPage() {
           <Trophy className="w-8 h-8 text-indigo-400" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-zinc-100 tracking-tight">Achievements</h1>
-          <p className="text-zinc-400">Unlock badges by reaching reading milestones.</p>
+          <h1 className="text-3xl font-bold text-comet-text tracking-tight">Achievements</h1>
+          <p className="text-comet-muted">Unlock badges by reaching reading milestones.</p>
         </div>
       </div>
 

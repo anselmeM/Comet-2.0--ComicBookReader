@@ -71,6 +71,8 @@ body {
   min-height: 100dvh;
   /* Prevent layout shift from scrollbar appearance */
   overflow-y: scroll;
+  /* Prevent pull-to-refresh on touch devices */
+  overscroll-behavior-y: none;
   transition: background-color 300ms, color 300ms;
 }
 

@@ -245,11 +245,11 @@ export function ReaderControls({ type }: ReaderControlsProps) {
   return (
     <>
       {type === 'top' ? (
-        <div className="flex items-center justify-between w-full h-14 bg-neutral-900/90 backdrop-blur-md rounded-2xl px-4 text-white pointer-events-auto shadow-lg border border-neutral-800">
+        <div className="flex items-center justify-between w-full h-14 bg-comet-surface/90 backdrop-blur-md rounded-2xl px-4 text-comet-text pointer-events-auto shadow-lg border border-comet-border">
           <div className="flex items-center gap-1">
             <Link
               href="/library"
-              className="flex items-center gap-2 hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-neutral-800"
+              className="flex items-center gap-2 hover:text-comet-accent transition-colors p-2 rounded-lg hover:bg-comet-surface-2"
               aria-label="Return to library"
             >
               <Home size={20} />
@@ -265,7 +265,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               onClick={() =>
                 bookmarks.length > 0 ? setShowBookmarkPanel(true) : handleBookmarkToggle()
               }
-              className={`p-2 rounded-lg transition-colors relative ${bookmarked ? 'text-yellow-500 hover:text-yellow-400' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
+              className={`p-2 rounded-lg transition-colors relative ${bookmarked ? 'text-yellow-500 hover:text-yellow-400' : 'text-comet-muted hover:text-comet-text hover:bg-comet-surface-2'}`}
               title={
                 bookmarked
                   ? `Page ${currentPage + 1} bookmarked - Click for list`
@@ -283,7 +283,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             <button
               type="button"
               onClick={handleFullscreen}
-              className={`p-2 rounded-lg transition-colors ${fullscreenError ? 'text-red-400 hover:text-red-300' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
+              className={`p-2 rounded-lg transition-colors ${fullscreenError ? 'text-red-400 hover:text-red-300' : 'text-comet-muted hover:text-comet-text hover:bg-comet-surface-2'}`}
               title={isFullscreen ? 'Exit Fullscreen (F)' : fullscreenError || 'Fullscreen (F)'}
               aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             >
@@ -291,7 +291,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             </button>
             <Link
               href="/settings"
-              className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors"
+              className="p-2 text-comet-muted hover:text-comet-text hover:bg-comet-surface-2 rounded-lg transition-colors"
               aria-label="Open settings"
             >
               <Settings size={20} />
@@ -299,19 +299,19 @@ export function ReaderControls({ type }: ReaderControlsProps) {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-4 w-full bg-neutral-900/90 backdrop-blur-md p-4 rounded-3xl text-white pointer-events-auto border border-neutral-800 shadow-xl mb-4 max-w-2xl mx-auto">
+        <div className="flex flex-col gap-4 w-full bg-comet-surface/90 backdrop-blur-md p-4 rounded-3xl text-comet-text pointer-events-auto border border-comet-border shadow-xl mb-4 max-w-2xl mx-auto">
           {/* ProgressBar (Scrubber) */}
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => prevPage()}
               disabled={currentPage === 0}
-              className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all disabled:opacity-30 flex-shrink-0"
+              className="p-2 text-comet-muted hover:text-comet-text hover:bg-comet-surface-2 rounded-lg transition-all disabled:opacity-30 flex-shrink-0"
               aria-label="Previous page"
             >
               <ChevronLeft size={20} />
             </button>
-            <span className="text-xs text-neutral-400 font-mono min-w-[40px] text-center flex-shrink-0">
+            <span className="text-xs text-comet-muted font-mono min-w-[40px] text-center flex-shrink-0">
               {currentPage + 1}
             </span>
 
@@ -324,7 +324,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               }}
             >
               {comicPagesLoading ? (
-                <div className="flex-1 flex items-center justify-center text-xs text-neutral-500 animate-pulse py-4">
+                <div className="flex-1 flex items-center justify-center text-xs text-comet-muted animate-pulse py-4">
                   Loading thumbnails...
                 </div>
               ) : (
@@ -337,8 +337,8 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                       onClick={() => setPage(idx)}
                       className={`relative flex-shrink-0 w-12 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 snap-center ${
                         isActive
-                          ? 'border-blue-500 scale-105 shadow-md shadow-blue-500/30 ring-2 ring-blue-500/50'
-                          : 'border-transparent hover:border-neutral-500 opacity-60 hover:opacity-100'
+                          ? 'border-comet-accent scale-105 shadow-md shadow-comet-accent/30 ring-2 ring-comet-accent/50'
+                          : 'border-transparent hover:border-comet-muted opacity-60 hover:opacity-100'
                       }`}
                       data-filmstrip-thumb={idx}
                       title={`Go to page ${idx + 1}`}
@@ -359,14 +359,14 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               )}
             </div>
 
-            <span className="text-xs text-neutral-400 font-mono min-w-[40px] text-center flex-shrink-0">
+            <span className="text-xs text-comet-muted font-mono min-w-[40px] text-center flex-shrink-0">
               {totalPages}
             </span>
             <button
               type="button"
               onClick={() => nextPage()}
               disabled={currentPage >= totalPages - 1}
-              className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-all disabled:opacity-30 flex-shrink-0"
+              className="p-2 text-comet-muted hover:text-comet-text hover:bg-comet-surface-2 rounded-lg transition-all disabled:opacity-30 flex-shrink-0"
               aria-label="Next page"
             >
               <ChevronRight size={20} />
@@ -375,7 +375,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
 
           {/* Controls Row */}
           <div className="flex items-center justify-between mt-2 flex-wrap gap-4">
-            <div className="flex items-center gap-1 bg-neutral-800 p-1 rounded-xl">
+            <div className="flex items-center gap-1 bg-comet-surface-2 p-1 rounded-xl">
               <ModeButton
                 active={mode === 'single-page'}
                 onClick={() => setMode('single-page')}
@@ -419,11 +419,11 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               />
             </div>
 
-            <div className="flex items-center gap-1 bg-neutral-800 p-1 rounded-xl">
+            <div className="flex items-center gap-1 bg-comet-surface-2 p-1 rounded-xl">
               <button
                 type="button"
                 onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
-                className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg"
+                className="p-2 text-comet-muted hover:text-comet-text hover:bg-comet-surface rounded-lg"
                 aria-label="Zoom out"
               >
                 <ZoomOut size={18} />
@@ -431,7 +431,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               <button
                 type="button"
                 onClick={() => resetZoom()}
-                className="p-1 text-xs font-mono w-10 text-center text-neutral-400 hover:text-white hover:bg-neutral-700 rounded"
+                className="p-1 text-xs font-mono w-10 text-center text-comet-muted hover:text-comet-text hover:bg-comet-surface rounded"
                 aria-label="Reset zoom"
               >
                 {Math.round(zoomLevel * 100)}%
@@ -439,7 +439,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               <button
                 type="button"
                 onClick={() => setZoomLevel(Math.min(5, zoomLevel + 0.25))}
-                className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg"
+                className="p-2 text-comet-muted hover:text-comet-text hover:bg-comet-surface rounded-lg"
                 aria-label="Zoom in"
               >
                 <ZoomIn size={18} />
@@ -447,7 +447,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             </div>
 
             <div className="flex items-center gap-2 flex-1 max-w-[120px]">
-              <Sun size={16} className="text-neutral-400" />
+              <Sun size={16} className="text-comet-muted" />
               <input
                 type="range"
                 min={0.1}
@@ -455,7 +455,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                 step={0.1}
                 value={brightness}
                 onChange={(e) => setBrightness(parseFloat(e.target.value))}
-                className="w-full h-1 bg-neutral-700 rounded-full appearance-none accent-yellow-500 cursor-pointer"
+                className="w-full h-1 bg-comet-surface-2 rounded-full appearance-none accent-yellow-500 cursor-pointer"
                 aria-label="Screen brightness"
               />
             </div>
@@ -465,8 +465,8 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               onClick={() => setShowReaderSettings(!showReaderSettings)}
               className={`p-2 rounded-xl transition-all ${
                 showReaderSettings
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                  ? 'bg-comet-accent text-white shadow-md'
+                  : 'text-comet-muted hover:text-comet-text hover:bg-comet-surface-2'
               }`}
               title="Visual Adjustments & Guided View Settings"
               aria-label="Toggle reader settings"
@@ -478,15 +478,15 @@ export function ReaderControls({ type }: ReaderControlsProps) {
       )}
 
       {showReaderSettings && (
-        <div className="fixed inset-x-0 bottom-24 mx-auto max-w-lg bg-neutral-950/95 backdrop-blur-xl border border-neutral-800 rounded-3xl p-6 text-white shadow-2xl z-50 animate-in slide-in-from-bottom duration-300 pointer-events-auto">
-          <div className="flex items-center justify-between border-b border-neutral-800 pb-3 mb-4">
-            <h3 className="font-semibold text-sm tracking-wide uppercase text-neutral-300">
+        <div className="fixed inset-x-0 bottom-24 mx-auto max-w-lg bg-comet-surface/95 backdrop-blur-xl border border-comet-border rounded-3xl p-6 text-comet-text shadow-2xl z-50 animate-in slide-in-from-bottom duration-300 pointer-events-auto">
+          <div className="flex items-center justify-between border-b border-comet-border pb-3 mb-4">
+            <h3 className="font-semibold text-sm tracking-wide uppercase text-comet-muted">
               Reader Preferences
             </h3>
             <button
               type="button"
               onClick={() => setShowReaderSettings(false)}
-              className="text-neutral-400 hover:text-white text-xs font-medium bg-neutral-900 hover:bg-neutral-800 px-2.5 py-1 rounded-full transition-colors"
+              className="text-comet-muted hover:text-comet-text text-xs font-medium bg-comet-surface-2 hover:bg-comet-surface-2/80 px-2.5 py-1 rounded-full transition-colors"
             >
               Done
             </button>
@@ -495,13 +495,13 @@ export function ReaderControls({ type }: ReaderControlsProps) {
           <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
             {/* Visual Filters */}
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              <h4 className="text-xs font-bold text-comet-muted uppercase tracking-wider">
                 Visual Enhancements
               </h4>
 
               {/* Sepia Slider */}
               <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-neutral-300 min-w-[70px]">Sepia Overlay</span>
+                <span className="text-xs text-comet-text min-w-[70px]">Sepia Overlay</span>
                 <input
                   type="range"
                   min="0"
@@ -509,16 +509,16 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                   step="0.1"
                   value={sepia}
                   onChange={(e) => setSepia(parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-neutral-800 rounded-full appearance-none accent-blue-500 cursor-pointer"
+                  className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer"
                 />
-                <span className="text-xs font-mono text-neutral-400 w-8 text-right">
+                <span className="text-xs font-mono text-comet-muted w-8 text-right">
                   {Math.round(sepia * 100)}%
                 </span>
               </div>
 
               {/* Grayscale Slider */}
               <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-neutral-300 min-w-[70px]">Grayscale</span>
+                <span className="text-xs text-comet-text min-w-[70px]">Grayscale</span>
                 <input
                   type="range"
                   min="0"
@@ -526,16 +526,16 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                   step="0.1"
                   value={grayscale}
                   onChange={(e) => setGrayscale(parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-neutral-800 rounded-full appearance-none accent-blue-500 cursor-pointer"
+                  className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer"
                 />
-                <span className="text-xs font-mono text-neutral-400 w-8 text-right">
+                <span className="text-xs font-mono text-comet-muted w-8 text-right">
                   {Math.round(grayscale * 100)}%
                 </span>
               </div>
 
               {/* Contrast Slider */}
               <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-neutral-300 min-w-[70px]">Contrast</span>
+                <span className="text-xs text-comet-text min-w-[70px]">Contrast</span>
                 <input
                   type="range"
                   min="0.5"
@@ -543,20 +543,20 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                   step="0.1"
                   value={contrast}
                   onChange={(e) => setContrast(parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-neutral-800 rounded-full appearance-none accent-blue-500 cursor-pointer"
+                  className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer"
                 />
-                <span className="text-xs font-mono text-neutral-400 w-8 text-right">
+                <span className="text-xs font-mono text-comet-muted w-8 text-right">
                   {contrast.toFixed(1)}x
                 </span>
               </div>
 
               {/* Sharpen Toggle */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-300">Sharpen Scans (SVG filter)</span>
+                <span className="text-xs text-comet-text">Sharpen Scans (SVG filter)</span>
                 <button
                   type="button"
                   onClick={() => setSharpen(!sharpen)}
-                  className={`w-10 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${sharpen ? 'bg-blue-600' : 'bg-neutral-800'}`}
+                  className={`w-10 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${sharpen ? 'bg-comet-accent' : 'bg-comet-surface-2'}`}
                 >
                   <span
                     className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${sharpen ? 'translate-x-4' : 'translate-x-0'}`}
@@ -566,14 +566,14 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             </div>
 
             {/* Guided View Preferences */}
-            <div className="space-y-4 pt-4 border-t border-neutral-900">
-              <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+            <div className="space-y-4 pt-4 border-t border-comet-border">
+              <h4 className="text-xs font-bold text-comet-muted uppercase tracking-wider">
                 Guided View Camera
               </h4>
 
               {/* Pan Speed Slider */}
               <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-neutral-300 min-w-[70px]">Pan Duration</span>
+                <span className="text-xs text-comet-text min-w-[70px]">Pan Duration</span>
                 <input
                   type="range"
                   min="0.1"
@@ -581,20 +581,20 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                   step="0.1"
                   value={panSpeed}
                   onChange={(e) => setPanSpeed(parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-neutral-800 rounded-full appearance-none accent-blue-500 cursor-pointer"
+                  className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer"
                 />
-                <span className="text-xs font-mono text-neutral-400 w-8 text-right">
+                <span className="text-xs font-mono text-comet-muted w-8 text-right">
                   {panSpeed.toFixed(1)}s
                 </span>
               </div>
 
               {/* Easing Dropdown */}
               <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-neutral-300">Camera Easing</span>
+                <span className="text-xs text-comet-text">Camera Easing</span>
                 <select
                   value={panEase}
                   onChange={(e) => setPanEase(e.target.value)}
-                  className="bg-neutral-900 text-xs text-white border border-neutral-800 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                  className="bg-comet-surface-2 text-xs text-comet-text border border-comet-border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-comet-accent cursor-pointer"
                 >
                   <option value="linear">Linear</option>
                   <option value="easeIn">Ease In</option>
@@ -605,18 +605,18 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             </div>
 
             {/* Autoplay Section */}
-            <div className="space-y-4 pt-4 border-t border-neutral-900">
-              <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+            <div className="space-y-4 pt-4 border-t border-comet-border">
+              <h4 className="text-xs font-bold text-comet-muted uppercase tracking-wider">
                 Smart Autoplay
               </h4>
 
               {/* Autoplay Toggle */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-neutral-300">Enable Autoplay</span>
+                <span className="text-xs text-comet-text">Enable Autoplay</span>
                 <button
                   type="button"
                   onClick={() => toggleAutoplay()}
-                  className={`w-10 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${isAutoplayActive ? 'bg-blue-600' : 'bg-neutral-800'}`}
+                  className={`w-10 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${isAutoplayActive ? 'bg-comet-accent' : 'bg-comet-surface-2'}`}
                 >
                   <span
                     className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${isAutoplayActive ? 'translate-x-4' : 'translate-x-0'}`}
@@ -626,7 +626,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
 
               {/* Autoplay Delay Slider */}
               <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-neutral-300 min-w-[70px]">Page Hold</span>
+                <span className="text-xs text-comet-text min-w-[70px]">Page Hold</span>
                 <input
                   type="range"
                   min="1500"
@@ -635,9 +635,9 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                   value={autoplayDelay}
                   onChange={(e) => setAutoplayDelay(parseInt(e.target.value, 10))}
                   disabled={!isAutoplayActive}
-                  className="flex-1 h-1 bg-neutral-800 rounded-full appearance-none accent-blue-500 cursor-pointer disabled:opacity-30"
+                  className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer disabled:opacity-30"
                 />
-                <span className="text-xs font-mono text-neutral-400 w-8 text-right">
+                <span className="text-xs font-mono text-comet-muted w-8 text-right">
                   {(autoplayDelay / 1000).toFixed(1)}s
                 </span>
               </div>
@@ -674,7 +674,7 @@ function ModeButton({
     <button
       type="button"
       onClick={onClick}
-      className={`p-2 rounded-lg flex items-center justify-center transition-all ${active ? 'bg-blue-600 text-white shadow-md' : 'text-neutral-400 hover:text-white hover:bg-neutral-700'}`}
+      className={`p-2 rounded-lg flex items-center justify-center transition-all ${active ? 'bg-comet-accent text-white shadow-md' : 'text-comet-muted hover:text-comet-text hover:bg-comet-surface'}`}
       title={label}
       aria-label={`${label} reading mode`}
     >

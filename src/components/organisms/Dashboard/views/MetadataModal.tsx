@@ -151,24 +151,24 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="w-full max-w-2xl bg-neutral-900 border border-neutral-800 rounded-[2rem] shadow-2xl overflow-hidden text-white"
+            className="w-full max-w-2xl bg-comet-surface border border-comet-border rounded-[2rem] shadow-2xl overflow-hidden text-comet-text"
           >
             {/* Header */}
-            <div className="p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-950/40">
+            <div className="p-6 border-b border-comet-border flex items-center justify-between bg-comet-surface-2/40">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                <div className="w-10 h-10 bg-comet-accent rounded-xl flex items-center justify-center text-white shadow-lg shadow-comet-accent/20">
                   <Sparkles size={20} />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold tracking-tight italic">Comic Metadata Editor</h3>
-                  <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">
+                  <p className="text-[10px] font-black uppercase text-comet-muted tracking-widest">
                     Enrich your library info
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-neutral-800 rounded-xl transition-all text-neutral-400"
+                className="p-2 hover:bg-comet-surface-2 rounded-xl transition-all text-comet-muted"
                 aria-label="Close"
               >
                 <X size={24} />
@@ -176,14 +176,14 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex border-b border-neutral-800 bg-neutral-950/20 px-6 pt-2">
+            <div className="flex border-b border-comet-border bg-comet-surface-2/20 px-6 pt-2">
               <button
                 type="button"
                 onClick={() => setActiveTab('edit')}
                 className={`py-3 px-4 text-xs font-bold uppercase tracking-widest border-b-2 transition-all ${
                   activeTab === 'edit'
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-neutral-400 hover:text-white'
+                    ? 'border-comet-accent text-comet-accent'
+                    : 'border-transparent text-comet-muted hover:text-comet-text'
                 }`}
               >
                 Manual Details
@@ -193,8 +193,8 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                 onClick={() => setActiveTab('search')}
                 className={`py-3 px-4 text-xs font-bold uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 ${
                   activeTab === 'search'
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-neutral-400 hover:text-white'
+                    ? 'border-comet-accent text-comet-accent'
+                    : 'border-transparent text-comet-muted hover:text-comet-text'
                 }`}
               >
                 <Globe size={14} /> Search ComicVine
@@ -207,19 +207,19 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                 <div className="space-y-6">
                   <form onSubmit={handleSearch} className="flex gap-2">
                     <div className="relative flex-1">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 w-5 h-5" />
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-comet-muted w-5 h-5" />
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search series or issue title..."
-                        className="w-full bg-neutral-950/60 border border-neutral-800 rounded-xl py-3 pl-12 pr-4 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                        className="w-full bg-comet-bg/60 border border-comet-border rounded-xl py-3 pl-12 pr-4 text-sm text-comet-text placeholder-comet-muted focus:ring-2 focus:ring-comet-accent outline-none transition-all"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={isSearching}
-                      className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white px-6 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 transition-all"
+                      className="bg-comet-accent hover:bg-comet-accent-hover disabled:opacity-50 text-white px-6 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 transition-all"
                     >
                       {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
                     </button>
@@ -229,17 +229,17 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                   <div className="space-y-3">
                     {isSearching ? (
                       <div className="flex flex-col items-center justify-center py-12 gap-3">
-                        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-                        <p className="text-sm text-neutral-400">Searching ComicVine database...</p>
+                        <Loader2 className="w-8 h-8 text-comet-accent animate-spin" />
+                        <p className="text-sm text-comet-muted">Searching ComicVine database...</p>
                       </div>
                     ) : searchResults.length > 0 ? (
                       searchResults.map((result) => (
                         <div
                           key={result.comicVineId}
                           onClick={() => handleSelectResult(result)}
-                          className="flex items-center gap-4 p-3 bg-neutral-950/40 border border-neutral-800 rounded-2xl hover:border-indigo-500/50 hover:bg-neutral-950/80 transition-all cursor-pointer group"
+                          className="flex items-center gap-4 p-3 bg-comet-bg/40 border border-comet-border rounded-2xl hover:border-comet-accent/50 hover:bg-comet-bg/80 transition-all cursor-pointer group"
                         >
-                          <div className="w-12 aspect-[2/3] relative rounded-lg bg-neutral-800 overflow-hidden shrink-0 border border-neutral-800">
+                          <div className="w-12 aspect-[2/3] relative rounded-lg bg-comet-surface-2 overflow-hidden shrink-0 border border-comet-border">
                             {result.coverUrl ? (
                               <Image
                                 src={result.coverUrl}
@@ -252,10 +252,10 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                             ) : null}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-sm text-white truncate group-hover:text-indigo-400 transition-colors">
+                            <h4 className="font-bold text-sm text-comet-text truncate group-hover:text-comet-accent transition-colors">
                               {result.title}
                             </h4>
-                            <p className="text-xs text-neutral-400 mt-0.5">
+                            <p className="text-xs text-comet-muted mt-0.5">
                               {result.series ? `${result.series}` : 'Standalone'}
                               {result.issue !== null && ` • Issue #${result.issue}`}
                               {result.year !== null && ` • ${result.year}`}
@@ -263,14 +263,14 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                           </div>
                           <button
                             type="button"
-                            className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest group-hover:bg-indigo-500 group-hover:text-white transition-all"
+                            className="bg-comet-accent/10 text-comet-accent border border-comet-accent/20 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest group-hover:bg-comet-accent group-hover:text-white transition-all"
                           >
                             Import
                           </button>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-12 text-neutral-500">
+                      <div className="text-center py-12 text-comet-muted">
                         <Globe className="w-12 h-12 mx-auto mb-3 opacity-30" />
                         <p className="text-sm">Search to import accurate metadata and cover art.</p>
                       </div>
@@ -282,7 +282,7 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                   {/* Split Preview and Inputs */}
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* Cover Preview */}
-                    <div className="w-32 aspect-[2/3] relative rounded-2xl bg-neutral-950 border border-neutral-800 overflow-hidden shrink-0 mx-auto md:mx-0 flex items-center justify-center">
+                    <div className="w-32 aspect-[2/3] relative rounded-2xl bg-comet-bg border border-comet-border overflow-hidden shrink-0 mx-auto md:mx-0 flex items-center justify-center">
                       {formData.coverUrl ? (
                         <Image
                           src={formData.coverUrl}
@@ -293,7 +293,7 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                           unoptimized
                         />
                       ) : (
-                        <Type size={32} className="text-neutral-700" />
+                        <Type size={32} className="text-comet-muted" />
                       )}
                     </div>
 
@@ -301,55 +301,55 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                     <div className="flex-1 space-y-4">
                       {/* Title */}
                       <div className="space-y-1">
-                        <label className="text-[9px] font-black uppercase tracking-wider text-neutral-400 flex items-center gap-1.5 ml-1">
+                        <label className="text-[9px] font-black uppercase tracking-wider text-comet-muted flex items-center gap-1.5 ml-1">
                           <Type size={10} /> Comic Title
                         </label>
                         <input
                           type="text"
                           value={formData.title}
                           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                          className="w-full bg-neutral-950/60 border border-neutral-800 rounded-xl py-2.5 px-4 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                          className="w-full bg-comet-bg/60 border border-comet-border rounded-xl py-2.5 px-4 text-sm text-comet-text placeholder-comet-muted focus:ring-2 focus:ring-comet-accent outline-none transition-all"
                           required
                         />
                       </div>
 
                       {/* Series */}
                       <div className="space-y-1">
-                        <label className="text-[9px] font-black uppercase tracking-wider text-neutral-400 flex items-center gap-1.5 ml-1">
+                        <label className="text-[9px] font-black uppercase tracking-wider text-comet-muted flex items-center gap-1.5 ml-1">
                           <Sparkles size={10} /> Series Name
                         </label>
                         <input
                           type="text"
                           value={formData.series}
                           onChange={(e) => setFormData({ ...formData, series: e.target.value })}
-                          className="w-full bg-neutral-950/60 border border-neutral-800 rounded-xl py-2.5 px-4 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                          className="w-full bg-comet-bg/60 border border-comet-border rounded-xl py-2.5 px-4 text-sm text-comet-text placeholder-comet-muted focus:ring-2 focus:ring-comet-accent outline-none transition-all"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         {/* Issue */}
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black uppercase tracking-wider text-neutral-400 flex items-center gap-1.5 ml-1">
+                          <label className="text-[9px] font-black uppercase tracking-wider text-comet-muted flex items-center gap-1.5 ml-1">
                             <Hash size={10} /> Issue #
                           </label>
                           <input
                             type="number"
                             value={formData.issue}
                             onChange={(e) => setFormData({ ...formData, issue: e.target.value })}
-                            className="w-full bg-neutral-950/60 border border-neutral-800 rounded-xl py-2.5 px-4 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                            className="w-full bg-comet-bg/60 border border-comet-border rounded-xl py-2.5 px-4 text-sm text-comet-text placeholder-comet-muted focus:ring-2 focus:ring-comet-accent outline-none transition-all"
                           />
                         </div>
 
                         {/* Year */}
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black uppercase tracking-wider text-neutral-400 flex items-center gap-1.5 ml-1">
+                          <label className="text-[9px] font-black uppercase tracking-wider text-comet-muted flex items-center gap-1.5 ml-1">
                             <Calendar size={10} /> Release Year
                           </label>
                           <input
                             type="number"
                             value={formData.year}
                             onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                            className="w-full bg-neutral-950/60 border border-neutral-800 rounded-xl py-2.5 px-4 text-sm text-white placeholder-neutral-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                            className="w-full bg-comet-bg/60 border border-comet-border rounded-xl py-2.5 px-4 text-sm text-comet-text placeholder-comet-muted focus:ring-2 focus:ring-comet-accent outline-none transition-all"
                           />
                         </div>
                       </div>
@@ -358,10 +358,10 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
 
                   {/* Rating */}
                   <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase tracking-wider text-neutral-400 ml-1">
+                    <label className="text-[9px] font-black uppercase tracking-wider text-comet-muted ml-1">
                       Personal Rating (1-10)
                     </label>
-                    <div className="flex bg-neutral-950/60 p-1 rounded-xl border border-neutral-850">
+                    <div className="flex bg-comet-bg/60 p-1 rounded-xl border border-comet-border">
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((r) => (
                         <button
                           key={r}
@@ -369,8 +369,8 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                           onClick={() => setFormData({ ...formData, rating: r })}
                           className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${
                             formData.rating === r
-                              ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                              : 'text-neutral-400 hover:text-white'
+                              ? 'bg-comet-accent text-white shadow-lg shadow-comet-accent/20'
+                              : 'text-comet-muted hover:text-comet-text'
                           }`}
                         >
                           {r}
@@ -381,7 +381,7 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
 
                   {/* Cover URL (Manual edit if needed) */}
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase tracking-wider text-neutral-400 ml-1">
+                    <label className="text-[9px] font-black uppercase tracking-wider text-comet-muted ml-1">
                       Cover Image URL
                     </label>
                     <input
@@ -389,23 +389,23 @@ export function MetadataModal({ comic, isOpen, onClose }: MetadataModalProps) {
                       value={formData.coverUrl}
                       onChange={(e) => setFormData({ ...formData, coverUrl: e.target.value })}
                       placeholder="https://example.com/cover.jpg"
-                      className="w-full bg-neutral-950/60 border border-neutral-800 rounded-xl py-2.5 px-4 text-xs text-white placeholder-neutral-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      className="w-full bg-comet-bg/60 border border-comet-border rounded-xl py-2.5 px-4 text-xs text-comet-text placeholder-comet-muted focus:ring-2 focus:ring-comet-accent outline-none transition-all"
                     />
                   </div>
 
                   {/* Buttons */}
-                  <div className="flex gap-4 pt-4 border-t border-neutral-800">
+                  <div className="flex gap-4 pt-4 border-t border-comet-border">
                     <button
                       type="button"
                       onClick={onClose}
-                      className="flex-1 bg-neutral-800 text-neutral-300 py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-neutral-700 transition-all"
+                      className="flex-1 bg-comet-surface-2 text-comet-text py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-comet-surface-2/80 transition-all"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={updateComic.isPending}
-                      className="flex-[2] bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2"
+                      className="flex-[2] bg-comet-accent hover:bg-comet-accent-hover disabled:opacity-50 text-white py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-xl shadow-comet-accent/20 flex items-center justify-center gap-2"
                     >
                       {updateComic.isPending ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

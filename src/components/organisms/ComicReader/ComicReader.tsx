@@ -144,6 +144,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   const setPage = useReaderStore((state) => state.setPage);
   const setPagePanels = useReaderStore((state) => state.setPagePanels);
   const pagePanels = useReaderStore((state) => state.pagePanels);
+  const toggleMenu = useReaderStore((state) => state.toggleMenu);
 
   const { addBookmark, removeBookmark, getBookmarkForPage } = useBookmarks({ comicId });
 
@@ -645,6 +646,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
         </svg>
         <div
           ref={verticalContainerRef}
+          onClick={() => toggleMenu()}
           className="comic-reader-vertical-container h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-20 flex flex-col items-center gap-4 scroll-smooth transition-all duration-300"
         >
           {comic.pages.map((page, idx) => (

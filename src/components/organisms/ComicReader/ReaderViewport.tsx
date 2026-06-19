@@ -178,7 +178,19 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
         }
       }}
       onClick={(e) => {
-        if (e.detail === 1 && scale.get() <= 1.1) {
+        if (scale.get() > 1.1) return; // Don't turn pages if zoomed in
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const width = rect.width;
+
+        if (x < width * 0.3) {
+          if (mode === 'manga-rtl') nextPage();
+          else prevPage();
+        } else if (x > width * 0.7) {
+          if (mode === 'manga-rtl') prevPage();
+          else nextPage();
+        } else {
           toggleMenu();
         }
       }}
