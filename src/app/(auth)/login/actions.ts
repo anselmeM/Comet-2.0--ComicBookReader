@@ -108,16 +108,20 @@ export async function loginAction(prevState: unknown, formData: FormData) {
     }
 
     // ─── Unrecognized error — log full shape for debugging ───────────
+    const safeErrorKeys = err ? Object.keys(err) : [];
+    const errorDetails = {
+      message: errorMessage,
+      name: typeof err?.name === 'string' ? err.name : 'unknown',
+      type: typeof err?.type === 'string' ? err.type : undefined,
+      digest: typeof err?.digest === 'string' ? err.digest : undefined,
+      causeMessage: errorCauseMessage || undefined,
+      constructor: (error as object)?.constructor?.name,
+      keys: safeErrorKeys,
+    };
+
     logger.error(
       '[LoginAction] Unexpected error caught. Details:',
-      {
-        message: errorMessage,
-        name: typeof err?.name === 'string' ? err.name : 'unknown',
-        type: typeof err?.type === 'string' ? err.type : undefined,
-        digest: typeof err?.digest === 'string' ? err.digest : undefined,
-        causeMessage: errorCauseMessage || undefined,
-        constructor: (error as object)?.constructor?.name,
-      },
+      errorDetails,
       error instanceof Error ? error : undefined,
     );
 
