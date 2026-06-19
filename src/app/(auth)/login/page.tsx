@@ -97,7 +97,7 @@ function LoginForm() {
         } else if (result.error.includes('Account locked')) {
           setErrorMsg(result.error);
         } else {
-          setErrorMsg('An unexpected error occurred. Please try again.');
+          setErrorMsg(`Login Failed: ${result.error}`);
         }
         setLoading(false);
       } else if (result?.ok) {
@@ -106,7 +106,7 @@ function LoginForm() {
       }
     } catch (err: any) {
       logger.error('[LoginForm] Client sign in error:', {}, err instanceof Error ? err : undefined);
-      setErrorMsg('An unexpected error occurred. Please try again.');
+      setErrorMsg(`Crash: ${err?.message || String(err)}`);
       setLoading(false);
     }
   };
