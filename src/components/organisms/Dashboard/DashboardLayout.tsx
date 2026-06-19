@@ -126,10 +126,6 @@ export function DashboardLayout(props: DashboardLayoutProps) {
       router.push('/settings');
       return;
     }
-    if (viewId === 'achievements') {
-      router.push('/achievements');
-      return;
-    }
     setActiveView(viewId);
   };
 
@@ -174,16 +170,6 @@ export function DashboardLayout(props: DashboardLayoutProps) {
         );
       case 'friends':
         return <FriendsView setActiveView={setActiveView} />;
-      case 'achievements':
-        return (
-          <div className="w-full h-full border-none m-0 p-0 overflow-hidden relative">
-            <iframe
-              src="/achievements"
-              className="w-full h-full border-none absolute inset-0 bg-white"
-              title="Achievements"
-            />
-          </div>
-        );
       default:
         return null;
     }

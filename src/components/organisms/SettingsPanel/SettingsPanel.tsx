@@ -32,6 +32,8 @@ import Link from 'next/link';
 import { logger } from '@/lib/logger';
 import { useSettingsStore } from '@/stores/settingsStore';
 
+import { AchievementsSection } from './AchievementsSection';
+
 function formatBytes(bytes: number, decimals = 2) {
   if (!+bytes) return '0 Bytes';
   const k = 1024;
@@ -41,7 +43,11 @@ function formatBytes(bytes: number, decimals = 2) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
-export function SettingsPanel() {
+interface SettingsPanelProps {
+  earnedBadgeIds?: string[];
+}
+
+export function SettingsPanel({ earnedBadgeIds = [] }: SettingsPanelProps) {
   // User profile state
   const { data: session, update: updateSession } = useSession();
   const { info, clearCache, refresh } = useStorage(session?.user?.id);
@@ -753,6 +759,9 @@ export function SettingsPanel() {
           </div>
         </div>
       </section>
+
+      {/* Achievements Section */}
+      <AchievementsSection earnedBadgeIds={earnedBadgeIds} />
 
       {/* Data Backup & Restore */}
       <section className="space-y-6">

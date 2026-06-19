@@ -28,7 +28,6 @@ export const navItems: NavItem[] = [
   { name: 'Favourites', icon: Heart, id: 'favourites' },
   { name: 'Reading history', icon: History, id: 'history' },
   { name: 'Friends', icon: Users, id: 'friends' },
-  { name: 'Achievements', icon: Trophy, id: 'achievements' },
 ];
 
 export const favouriteHeroes = [

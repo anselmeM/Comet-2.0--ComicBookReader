@@ -257,7 +257,7 @@ export const POST = withAuth(async (_req: Request, context, session) => {
               type: 'SYSTEM_ALERT',
               title: 'Badge Unlocked! 🏆',
               message: `You earned the "${badge.name}" badge: ${badge.description}`,
-              link: '/achievements',
+              link: '/settings',
             });
           }
         }
