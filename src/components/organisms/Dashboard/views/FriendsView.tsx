@@ -17,6 +17,7 @@ import {
   Zap,
   BookOpen,
   MessageCircle,
+  Trophy,
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +30,9 @@ import {
   useHandleFriendRequest,
   useRemoveFriend,
   useInviteFriend,
+  useUserProfile,
+  useDirectMessages,
+  useSendDirectMessage,
 } from '@/hooks/useFriends';
 import { useFeed, FeedActivity } from '@/hooks/useFeed';
 import { useNotification } from '@/components/atoms/Toast';
@@ -63,6 +67,14 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
   const [selectedClubComicTitle, setSelectedClubComicTitle] = useState<string | null>(null);
   const [chatMessage, setChatMessage] = useState('');
 
+  // Profile Drawer State
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+
+  // DM Drawer State
+  const [selectedDMId, setSelectedDMId] = useState<string | null>(null);
+  const [selectedDMName, setSelectedDMName] = useState<string | null>(null);
+  const [dmMessage, setDmMessage] = useState('');
+
   const { data: session } = useSession();
   const { triggerNotification } = useNotification();
 
@@ -79,7 +91,24 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
   const reactToActivity = useReactToActivity();
   const { comments, postComment } = useComicComments(selectedClubComicId || '');
 
+  const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile(selectedProfileId);
+  const { data: directMessages, isLoading: isLoadingDMs } = useDirectMessages(selectedDMId);
+  const sendDM = useSendDirectMessage();
+
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const dmEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [comments]);
+
+  useEffect(() => {
+    if (dmEndRef.current) {
+      dmEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [directMessages]);
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -161,6 +190,18 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
       setChatMessage('');
     } catch (err: any) {
       triggerNotification(err.message || 'Failed to post comment', 'error');
+    }
+  };
+
+  const handleSendDM = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dmMessage.trim() || !selectedDMId) return;
+
+    try {
+      await sendDM.mutateAsync({ friendId: selectedDMId, message: dmMessage.trim() });
+      setDmMessage('');
+    } catch (err: any) {
+      triggerNotification(err.message || 'Failed to send message', 'error');
     }
   };
 
@@ -756,10 +797,19 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                       <div className="w-full h-px bg-neutral-50 my-6"></div>
 
                       <div className="flex items-center gap-4 w-full">
-                        <button className="flex-1 bg-neutral-950 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all cursor-pointer">
+                        <button
+                          onClick={() => setSelectedProfileId(friend.friendId)}
+                          className="flex-1 bg-neutral-950 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all cursor-pointer"
+                        >
                           View Profile
                         </button>
-                        <button className="p-3 bg-neutral-50 text-neutral-400 hover:text-blue-500 hover:bg-blue-50 rounded-2xl transition-all cursor-pointer">
+                        <button
+                          onClick={() => {
+                            setSelectedDMId(friend.friendId);
+                            setSelectedDMName(friend.name || 'Anonymous');
+                          }}
+                          className="p-3 bg-neutral-50 text-neutral-400 hover:text-blue-500 hover:bg-blue-50 rounded-2xl transition-all cursor-pointer"
+                        >
                           <MessageSquare size={20} />
                         </button>
                       </div>
@@ -1025,6 +1075,347 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                   className="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
                 >
                   {postComment.isPending ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                </button>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Public Profile Slide-over Drawer Panel */}
+      <AnimatePresence>
+        {selectedProfileId && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProfileId(null)}
+              className="fixed inset-0 bg-black z-[100] cursor-pointer"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-[110] shadow-2xl border-l border-neutral-100 flex flex-col h-full overflow-y-auto"
+            >
+              {isLoadingProfile ? (
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <Loader2 size={40} className="text-blue-500 animate-spin mb-4" />
+                  <p className="text-neutral-400 font-bold text-sm">Loading profile...</p>
+                </div>
+              ) : userProfile ? (
+                <div className="flex-1">
+                  {/* Header & Avatar */}
+                  <div className="relative h-48 bg-gradient-to-br from-blue-600 to-indigo-800 flex items-end px-8 pb-8 pt-6 justify-between">
+                    <button
+                      onClick={() => setSelectedProfileId(null)}
+                      className="absolute top-6 right-6 p-2 bg-black/20 text-white hover:bg-black/40 rounded-full transition-all cursor-pointer backdrop-blur-md"
+                    >
+                      <X size={20} />
+                    </button>
+
+                    <div className="flex items-end gap-6">
+                      <div className="relative w-24 h-24 rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-white shrink-0 -mb-12">
+                        {userProfile.image ? (
+                          <Image
+                            src={userProfile.image}
+                            alt={userProfile.name || ''}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-4xl font-black text-neutral-300">
+                            {(userProfile.name || 'A')[0].toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-white pb-2">
+                        <h2 className="text-2xl font-black tracking-tight drop-shadow-md">
+                          {userProfile.name || 'Anonymous'}
+                        </h2>
+                        <p className="text-xs font-bold text-blue-200 uppercase tracking-widest drop-shadow-md">
+                          Joined {new Date(userProfile.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-8 pt-20 pb-8 space-y-10">
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-neutral-50 rounded-2xl p-4 text-center border border-neutral-100">
+                        <p className="text-2xl font-black text-neutral-900">
+                          {userProfile.stats.libraryCount}
+                        </p>
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
+                          Comics
+                        </p>
+                      </div>
+                      <div className="bg-neutral-50 rounded-2xl p-4 text-center border border-neutral-100">
+                        <p className="text-2xl font-black text-blue-600">
+                          {userProfile.stats.completedCount}
+                        </p>
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
+                          Finished
+                        </p>
+                      </div>
+                      <div className="bg-neutral-50 rounded-2xl p-4 text-center border border-neutral-100">
+                        <p className="text-xl font-black text-neutral-900">
+                          {Math.round(userProfile.stats.totalTimeSpent / 3600)}h
+                        </p>
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
+                          Read Time
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    {!userProfile.isSelf && (
+                      <div className="flex gap-4">
+                        {!userProfile.isFriend ? (
+                          <button
+                            onClick={() => handleSendRequest(userProfile.id)}
+                            className="flex-1 bg-black text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-neutral-800 transition-all flex justify-center gap-2"
+                          >
+                            <UserPlus size={16} /> Add Friend
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setSelectedProfileId(null);
+                                setSelectedDMId(userProfile.id);
+                                setSelectedDMName(userProfile.name || 'Anonymous');
+                              }}
+                              className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-blue-700 transition-all flex justify-center gap-2"
+                            >
+                              <MessageSquare size={16} /> Message
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedProfileId(null);
+                                handleRemoveFriend(userProfile.id);
+                              }}
+                              className="px-6 bg-neutral-100 text-neutral-500 py-4 rounded-2xl font-black shadow-inner hover:bg-red-50 hover:text-red-500 transition-all"
+                            >
+                              <UserMinus size={16} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Trophy Room */}
+                    <div>
+                      <h3 className="text-lg font-black text-neutral-900 flex items-center gap-2 uppercase tracking-widest mb-4">
+                        <Trophy className="text-yellow-500" size={20} /> Trophy Room
+                      </h3>
+                      {userProfile.badges && userProfile.badges.length > 0 ? (
+                        <div className="grid grid-cols-4 gap-3">
+                          {userProfile.badges.map((b) => (
+                            <div
+                              key={b.badgeId}
+                              className="aspect-square bg-gradient-to-br from-yellow-100 to-yellow-300 rounded-2xl shadow-inner border border-yellow-200 flex items-center justify-center p-2 text-center"
+                              title={`Badge ${b.badgeId} earned on ${new Date(b.earnedAt).toLocaleDateString()}`}
+                            >
+                              <span className="text-2xl drop-shadow-md">🏆</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-6 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 text-center">
+                          <p className="text-sm font-bold text-neutral-400 italic">
+                            No badges earned yet.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Recent Activity */}
+                    <div>
+                      <h3 className="text-lg font-black text-neutral-900 flex items-center gap-2 uppercase tracking-widest mb-4">
+                        <Zap className="text-blue-500" size={20} /> Recent Activity
+                      </h3>
+                      {userProfile.recentActivity && userProfile.recentActivity.length > 0 ? (
+                        <div className="space-y-4">
+                          {userProfile.recentActivity.map((activity) => (
+                            <div
+                              key={activity.comicId}
+                              className="flex gap-4 items-center bg-white border border-neutral-100 p-4 rounded-2xl shadow-sm"
+                            >
+                              <div className="w-12 h-16 bg-neutral-100 rounded-lg shrink-0 relative overflow-hidden shadow-sm">
+                                {activity.coverUrl ? (
+                                  <Image
+                                    src={activity.coverUrl}
+                                    alt={activity.title}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <BookOpen
+                                    className="absolute inset-0 m-auto text-neutral-300"
+                                    size={20}
+                                  />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-black text-neutral-900 text-sm truncate">
+                                  {activity.title}
+                                </h4>
+                                <p className="text-[10px] font-bold text-neutral-400 uppercase mt-0.5">
+                                  {activity.readStatus === 'COMPLETED'
+                                    ? 'Finished'
+                                    : `Read ${activity.percent}%`}{' '}
+                                  • {formatTimestamp(activity.lastReadAt)}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-6 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 text-center">
+                          <p className="text-sm font-bold text-neutral-400 italic">
+                            No recent reading activity.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-red-500 font-bold">
+                  Failed to load profile.
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Direct Messaging Slide-over Drawer Panel */}
+      <AnimatePresence>
+        {selectedDMId && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedDMId(null)}
+              className="fixed inset-0 bg-black z-[100] cursor-pointer"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-[110] shadow-2xl border-l border-neutral-100 flex flex-col h-full"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-neutral-50 flex items-center justify-between bg-white shadow-sm z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black shadow-inner">
+                    {(selectedDMName || 'A')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-neutral-900 tracking-tight">
+                      {selectedDMName}
+                    </h3>
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">
+                      Direct Message
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedDMId(null)}
+                  className="p-2 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 rounded-xl transition-all cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Chat bubbles list */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-neutral-50/50">
+                {isLoadingDMs ? (
+                  <div className="flex justify-center py-10">
+                    <Loader2 size={24} className="text-blue-500 animate-spin" />
+                  </div>
+                ) : directMessages && directMessages.length > 0 ? (
+                  directMessages.map((msg) => {
+                    const isSelf = msg.senderId === session?.user?.id;
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex gap-3 max-w-[85%] ${isSelf ? 'ml-auto flex-row-reverse' : ''}`}
+                      >
+                        <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-neutral-200">
+                          {msg.sender.image ? (
+                            <Image
+                              src={msg.sender.image}
+                              alt={msg.sender.name || ''}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <span className="text-[10px] font-black absolute inset-0 m-auto flex items-center justify-center text-neutral-500">
+                              {(msg.sender.name || 'A')[0].toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <div
+                            className={`px-4 py-3 text-sm leading-relaxed ${
+                              isSelf
+                                ? 'bg-blue-600 text-white rounded-[1.2rem] rounded-tr-sm shadow-md'
+                                : 'bg-white text-neutral-800 border border-neutral-100 rounded-[1.2rem] rounded-tl-sm shadow-sm'
+                            }`}
+                          >
+                            <p>{msg.message}</p>
+                          </div>
+                          <span
+                            className={`text-[9px] font-bold text-neutral-400 uppercase block tracking-wider ${isSelf ? 'text-right' : ''}`}
+                          >
+                            {formatTimestamp(msg.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-20">
+                    <MessageSquare size={32} className="text-neutral-200 mx-auto mb-3" />
+                    <p className="text-neutral-400 text-xs font-bold italic">
+                      Say hi to {selectedDMName}!
+                    </p>
+                  </div>
+                )}
+                <div ref={dmEndRef} />
+              </div>
+
+              {/* Comment Input */}
+              <form
+                onSubmit={handleSendDM}
+                className="p-6 border-t border-neutral-50 bg-white flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-10"
+              >
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={dmMessage}
+                  onChange={(e) => setDmMessage(e.target.value)}
+                  className="flex-1 bg-neutral-50 px-5 py-3.5 rounded-2xl border-2 border-transparent focus:border-blue-500 focus:bg-white text-sm outline-none transition-all font-medium"
+                  maxLength={1000}
+                />
+                <button
+                  type="submit"
+                  disabled={!dmMessage.trim() || sendDM.isPending}
+                  className="bg-black text-white px-5 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center hover:scale-[1.02] active:scale-95 transition-all shadow-xl hover:shadow-2xl disabled:opacity-50 cursor-pointer"
+                >
+                  {sendDM.isPending ? (
                     <Loader2 size={16} className="animate-spin" />
                   ) : (
                     <Send size={16} />

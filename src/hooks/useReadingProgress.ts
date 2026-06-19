@@ -7,6 +7,7 @@ import { UpdateProgressPayload } from '@/types';
 import { queueSyncTask } from '@/lib/sync';
 import { useAuthCallback } from './useAuthCallback';
 import { logger } from '@/lib/logger';
+import { useNotification } from '@/components/atoms/Toast';
 
 interface UseReadingProgressOptions {
   comicId: string | null;
@@ -30,6 +31,7 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
 
   const queryClient = useQueryClient();
   const { handleAuthError } = useAuthCallback();
+  const { triggerNotification } = useNotification();
 
   // Initialize sync time
   useEffect(() => {
@@ -60,13 +62,21 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Invalidate related queries to keep UI in sync
       queryClient.invalidateQueries({ queryKey: ['library'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       if (comicId) {
         queryClient.invalidateQueries({ queryKey: ['comic', comicId] });
       }
+
+      // Trigger Badge Toasts!
+      if (data && data.newlyEarnedBadges && data.newlyEarnedBadges.length > 0) {
+        data.newlyEarnedBadges.forEach((badge: any) => {
+          triggerNotification(`🏆 Badge Unlocked: ${badge.name}!`, 'success', undefined, 5000);
+        });
+      }
+
       // Reset local time tracker after successful sync
       setSecondsSpent(0);
       lastSyncTimeRef.current = Date.now();

@@ -65,7 +65,7 @@ export function useFriendRequests() {
         await handleAuthError(res);
         throw new Error('Failed to fetch friend requests');
       }
-      return await res.json() as { incoming: FriendRequest[], outgoing: FriendRequest[] };
+      return (await res.json()) as { incoming: FriendRequest[]; outgoing: FriendRequest[] };
     },
   });
 }
@@ -101,7 +101,7 @@ export function useSendFriendRequest() {
       if (!res.ok) {
         const wasAuthError = await handleAuthError(res);
         if (wasAuthError) throw new Error('Unauthorized');
-        
+
         const error = await res.json();
         throw new Error(error.error || 'Failed to send friend request');
       }
@@ -118,7 +118,13 @@ export function useHandleFriendRequest() {
   const queryClient = useQueryClient();
   const { handleAuthError } = useAuthCallback();
   return useMutation({
-    mutationFn: async ({ requestId, action }: { requestId: string, action: 'ACCEPT' | 'DECLINE' }) => {
+    mutationFn: async ({
+      requestId,
+      action,
+    }: {
+      requestId: string;
+      action: 'ACCEPT' | 'DECLINE';
+    }) => {
       const res = await fetch(`/api/friends/requests/${requestId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -127,7 +133,7 @@ export function useHandleFriendRequest() {
       if (!res.ok) {
         const wasAuthError = await handleAuthError(res);
         if (wasAuthError) throw new Error('Unauthorized');
-        
+
         const error = await res.json();
         throw new Error(error.error || 'Failed to handle friend request');
       }
@@ -153,7 +159,7 @@ export function useInviteFriend() {
       if (!res.ok) {
         const wasAuthError = await handleAuthError(res);
         if (wasAuthError) throw new Error('Unauthorized');
-        
+
         const error = await res.json();
         throw new Error(error.error || 'Failed to send invitation');
       }
@@ -180,6 +186,97 @@ export function useRemoveFriend() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friends'] });
       queryClient.invalidateQueries({ queryKey: ['user-search'] });
+    },
+  });
+}
+
+export interface UserProfile {
+  id: string;
+  name: string | null;
+  image: string | null;
+  createdAt: string;
+  isFriend: boolean;
+  isSelf: boolean;
+  stats: {
+    libraryCount: number;
+    completedCount: number;
+    totalTimeSpent: number;
+  };
+  badges: any[];
+  recentActivity: any[];
+}
+
+export function useUserProfile(userId: string | null) {
+  const { handleAuthError } = useAuthCallback();
+  return useQuery({
+    queryKey: ['user-profile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const res = await fetch(`/api/users/${userId}/profile`);
+      if (!res.ok) {
+        await handleAuthError(res);
+        throw new Error('Failed to fetch user profile');
+      }
+      const data = await res.json();
+      return data.profile as UserProfile;
+    },
+    enabled: !!userId,
+  });
+}
+
+export interface DirectMessage {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  sender: {
+    id: string;
+    name: string | null;
+    image: string | null;
+  };
+}
+
+export function useDirectMessages(friendId: string | null) {
+  const { handleAuthError } = useAuthCallback();
+  return useQuery({
+    queryKey: ['direct-messages', friendId],
+    queryFn: async () => {
+      if (!friendId) return [];
+      const res = await fetch(`/api/friends/${friendId}/messages`);
+      if (!res.ok) {
+        await handleAuthError(res);
+        throw new Error('Failed to fetch messages');
+      }
+      const data = await res.json();
+      return data.messages as DirectMessage[];
+    },
+    enabled: !!friendId,
+    refetchInterval: 5000, // Poll every 5s for new messages
+  });
+}
+
+export function useSendDirectMessage() {
+  const queryClient = useQueryClient();
+  const { handleAuthError } = useAuthCallback();
+  return useMutation({
+    mutationFn: async ({ friendId, message }: { friendId: string; message: string }) => {
+      const res = await fetch(`/api/friends/${friendId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      });
+      if (!res.ok) {
+        const wasAuthError = await handleAuthError(res);
+        if (wasAuthError) throw new Error('Unauthorized');
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to send message');
+      }
+      return await res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['direct-messages', variables.friendId] });
     },
   });
 }

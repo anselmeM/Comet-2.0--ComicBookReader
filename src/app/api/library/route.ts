@@ -14,6 +14,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
 import { parseComicFilename } from '@/lib/metadata-parser';
 import { createNotification } from '@/lib/notifications';
+import { evaluateBadges, BADGES } from '@/lib/badges';
 
 /**
  * GET /api/library — Returns the authenticated user's comic library
@@ -242,7 +243,30 @@ export const POST = withAuth(async (_req: Request, context, session) => {
       link: '/library',
     });
 
-    return NextResponse.json(comic, { status: 201 });
+    // Gamification Evaluation
+    const newlyEarnedBadges: any[] = [];
+    try {
+      const newBadgeIds = await evaluateBadges(session.user.id);
+      if (newBadgeIds.length > 0) {
+        for (const badgeId of newBadgeIds) {
+          const badge = BADGES.find((b) => b.id === badgeId);
+          if (badge) {
+            newlyEarnedBadges.push(badge);
+            await createNotification({
+              userId: session.user.id,
+              type: 'SYSTEM_ALERT',
+              title: 'Badge Unlocked! 🏆',
+              message: `You earned the "${badge.name}" badge: ${badge.description}`,
+              link: '/achievements',
+            });
+          }
+        }
+      }
+    } catch (err: unknown) {
+      logger.error(`[API POST /library] Gamification evaluation error`, {}, err as Error);
+    }
+
+    return NextResponse.json({ ...comic, newlyEarnedBadges }, { status: 201 });
   } catch (err) {
     logger.error('Library POST error', {}, err as Error);
     if (err instanceof SyntaxError) {

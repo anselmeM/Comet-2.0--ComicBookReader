@@ -12,6 +12,7 @@ import { logger } from '@/lib/logger';
 import { UpdateProgressRequestSchema } from '@/types/schemas';
 import { invalidateCache } from '@/lib/cache';
 import { createNotification } from '@/lib/notifications';
+import { evaluateBadges, BADGES } from '@/lib/badges';
 
 /**
  * GET /api/comics/[id]/progress — Fetches reading progress for a comic
@@ -246,7 +247,35 @@ export const PUT = withAuth(
         });
       }
 
-      return NextResponse.json(progress, { status: 200 });
+      // Gamification Evaluation
+      const newlyEarnedBadges: any[] = [];
+      try {
+        const newBadgeIds = await evaluateBadges(session.user.id);
+        if (newBadgeIds.length > 0) {
+          // Trigger notifications for new badges
+          for (const badgeId of newBadgeIds) {
+            const badge = BADGES.find((b) => b.id === badgeId);
+            if (badge) {
+              newlyEarnedBadges.push(badge);
+              await createNotification({
+                userId: session.user.id,
+                type: 'SYSTEM_ALERT',
+                title: 'Badge Unlocked! 🏆',
+                message: `You earned the "${badge.name}" badge: ${badge.description}`,
+                link: '/achievements',
+              });
+            }
+          }
+        }
+      } catch (err: unknown) {
+        logger.error(
+          `[API PUT /comics/${comicId}/progress] Gamification evaluation error`,
+          {},
+          err as Error,
+        );
+      }
+
+      return NextResponse.json({ ...progress, newlyEarnedBadges }, { status: 200 });
     } catch (err: unknown) {
       logger.error(`[API PUT /comics/${comicId}/progress] ERROR`, {}, err as Error);
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

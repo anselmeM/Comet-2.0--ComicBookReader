@@ -50,6 +50,9 @@ model User {
   readingSessions        ReadingSession[]
   activityReactions      ActivityReaction[]
   comicComments          ComicComment[]
+  badges                 UserBadge[]
+  sentMessages           DirectMessage[]   @relation("SentMessages")
+  receivedMessages       DirectMessage[]   @relation("ReceivedMessages")
 
   @@index([email])
 }
@@ -289,4 +292,30 @@ model ComicComment {
 
   @@index([comicId])
   @@index([userId])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model DirectMessage {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  message    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId])
 }

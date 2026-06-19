@@ -8,6 +8,7 @@ import { executeParserWorker } from '@/lib/comic-worker-client';
 import { useAuthCallback } from './useAuthCallback';
 import { useCloudSync } from './useCloudSync';
 import { useSession } from 'next-auth/react';
+import { useNotification } from '@/components/atoms/Toast';
 
 interface ParseProgress {
   phase: 'hashing' | 'parsing';
@@ -23,6 +24,7 @@ export function useComicParser() {
   const { handleAuthError } = useAuthCallback();
   const { uploadToCloud } = useCloudSync();
   const { data: session } = useSession();
+  const { triggerNotification } = useNotification();
 
   const parseComic = useCallback(
     async (file: File, options: { skipServerPOST?: boolean; existingComicId?: string } = {}) => {
@@ -94,6 +96,12 @@ export function useComicParser() {
 
           const data = await response.json();
           serverComicId = data.id;
+
+          if (data.newlyEarnedBadges && data.newlyEarnedBadges.length > 0) {
+            data.newlyEarnedBadges.forEach((badge: any) => {
+              triggerNotification(`🏆 Badge Unlocked: ${badge.name}!`, 'success', undefined, 5000);
+            });
+          }
         }
 
         if (!serverComicId) throw new Error('No comic ID available');
@@ -121,7 +129,7 @@ export function useComicParser() {
         throw err;
       }
     },
-    [handleAuthError, session?.user?.id, session?.user?.plan, uploadToCloud],
+    [handleAuthError, session?.user?.id, session?.user?.plan, uploadToCloud, triggerNotification],
   );
 
   return { parseComic, isParsing, progress, error };
