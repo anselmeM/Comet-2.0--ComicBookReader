@@ -1,42 +1,15 @@
 import React from 'react';
+import Link from 'next/link';
+import { Trophy } from 'lucide-react';
 import { BADGES } from '@/lib/badges';
-import {
-  Trophy,
-  Flame,
-  Moon,
-  BookOpenCheck,
-  Archive,
-  SunMedium,
-  Timer,
-  LibraryBig,
-  Lock,
-} from 'lucide-react';
-
-const iconMap: Record<string, any> = {
-  Trophy,
-  Flame,
-  FlameKindling: Flame, // fallback
-  Moon,
-  BookOpenCheck,
-  Archive,
-  SunMedium,
-  Timer,
-  LibraryBig,
-};
-
-const tierColors: Record<string, string> = {
-  BRONZE: 'from-amber-700 to-amber-900 border-amber-800 text-amber-500',
-  SILVER: 'from-slate-400 to-slate-600 border-slate-500 text-slate-300',
-  GOLD: 'from-yellow-400 to-yellow-600 border-yellow-500 text-yellow-300',
-  PLATINUM: 'from-cyan-300 to-blue-500 border-cyan-400 text-cyan-200',
-};
 
 interface AchievementsSectionProps {
   earnedBadgeIds: string[];
 }
 
 export function AchievementsSection({ earnedBadgeIds }: AchievementsSectionProps) {
-  const earnedSet = new Set(earnedBadgeIds);
+  const earnedCount = earnedBadgeIds.length;
+  const totalCount = BADGES.length;
 
   return (
     <section className="space-y-6">
@@ -45,53 +18,29 @@ export function AchievementsSection({ earnedBadgeIds }: AchievementsSectionProps
         Achievements
       </h2>
 
-      <div className="bg-comet-surface border border-comet-border rounded-2xl p-6 sm:p-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {BADGES.map((badge) => {
-            const isEarned = earnedSet.has(badge.id);
-            const Icon = iconMap[badge.icon] || Trophy;
+      <div className="bg-comet-surface border border-comet-border rounded-2xl p-8 flex flex-col sm:flex-row justify-between items-center gap-6">
+        <div>
+          <h3 className="text-lg font-bold text-comet-text mb-1 flex items-center gap-2">
+            Badges Earned:{' '}
+            <span className="text-comet-accent">
+              {earnedCount} / {totalCount}
+            </span>
+          </h3>
+          <p className="text-comet-muted text-sm">
+            {earnedCount === 0
+              ? 'Start reading to unlock badges and milestones.'
+              : 'Keep reading to unlock more badges and reach new milestones.'}
+          </p>
+        </div>
 
-            return (
-              <div
-                key={badge.id}
-                className={`relative overflow-hidden rounded-2xl border p-6 flex flex-col items-center text-center transition-all ${
-                  isEarned
-                    ? `bg-gradient-to-br ${tierColors[badge.tier]} bg-opacity-10 shadow-lg shadow-black/20`
-                    : 'bg-zinc-900/50 border-zinc-800 opacity-60 grayscale'
-                }`}
-              >
-                <div
-                  className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
-                    isEarned ? 'bg-black/20 shadow-inner' : 'bg-zinc-800'
-                  }`}
-                >
-                  {isEarned ? (
-                    <Icon className="w-8 h-8 drop-shadow-md" />
-                  ) : (
-                    <Lock className="w-8 h-8 text-zinc-500" />
-                  )}
-                </div>
-
-                <h3
-                  className={`font-semibold text-lg mb-1 ${isEarned ? 'text-white' : 'text-zinc-400'}`}
-                >
-                  {badge.name}
-                </h3>
-
-                <p className="text-sm text-zinc-500 mb-4">{badge.description}</p>
-
-                <div className="mt-auto">
-                  <span
-                    className={`text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded-full ${
-                      isEarned ? 'bg-black/30' : 'bg-zinc-800 text-zinc-600'
-                    }`}
-                  >
-                    {badge.tier}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+        <div className="shrink-0">
+          <Link
+            href="/settings/achievements"
+            className="flex items-center gap-2 bg-comet-surface-2 border border-comet-border text-comet-text px-6 py-3 rounded-xl hover:bg-comet-surface transition-all"
+          >
+            <Trophy size={18} />
+            <span>View All Badges</span>
+          </Link>
         </div>
       </div>
     </section>
