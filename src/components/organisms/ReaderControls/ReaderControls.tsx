@@ -1,5 +1,6 @@
 'use client';
 
+// cSpell:ignore customizer mozfullscreenchange
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useReaderStore } from '@/stores/readerStore';

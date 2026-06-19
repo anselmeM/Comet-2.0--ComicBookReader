@@ -33,6 +33,11 @@ vi.mock('@/lib/db', () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    userBadge: {
+      findMany: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      createMany: vi.fn(),
+    },
     $transaction: vi.fn((arg) => {
       if (typeof arg === 'function') {
         return arg(db);

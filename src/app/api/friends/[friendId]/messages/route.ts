@@ -6,14 +6,14 @@ import { logger } from '@/lib/logger';
 /**
  * GET /api/friends/[friendId]/messages — Fetch DM history with a specific friend
  */
-export async function GET(req: NextRequest, { params }: { params: { friendId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ friendId: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { friendId } = params;
+    const { friendId } = await params;
 
     // Verify friendship
     const friendship = await db.friendship.findFirst({
@@ -69,14 +69,17 @@ export async function GET(req: NextRequest, { params }: { params: { friendId: st
 /**
  * POST /api/friends/[friendId]/messages — Send a new DM to a friend
  */
-export async function POST(req: NextRequest, { params }: { params: { friendId: string } }) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ friendId: string }> },
+) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { friendId } = params;
+    const { friendId } = await params;
     const body = await req.json();
     const { message } = body;
 

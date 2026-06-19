@@ -7,14 +7,14 @@ import { logger } from '@/lib/logger';
  * GET /api/users/[id]/profile — Fetch public profile data for a specific user
  * This will return their badges, reading statistics, and recent activity
  */
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: targetUserId } = params;
+    const { id: targetUserId } = await params;
 
     // 1. Fetch user basics
     const targetUser = await db.user.findUnique({

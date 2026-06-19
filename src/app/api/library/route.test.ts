@@ -32,6 +32,11 @@ vi.mock('@/lib/db', () => ({
     user: {
       findUnique: vi.fn(),
     },
+    userBadge: {
+      findMany: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      createMany: vi.fn(),
+    },
     $transaction: vi.fn((promises) => Promise.all(promises)),
   },
 }));

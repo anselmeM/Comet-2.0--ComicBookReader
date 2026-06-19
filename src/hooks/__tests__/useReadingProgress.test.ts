@@ -22,17 +22,21 @@ vi.mock('../useAuthCallback', () => ({
   useAuthCallback: vi.fn(() => ({ handleAuthError: vi.fn() })),
 }));
 
+vi.mock('@/components/atoms/Toast', () => ({
+  useNotification: vi.fn(() => ({ triggerNotification: vi.fn() })),
+}));
+
 describe('useReadingProgress', () => {
   const mockMutate = vi.fn();
   const mockInvalidateQueries = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Default mock implementations
     (useMutation as any).mockReturnValue({ mutate: mockMutate });
     (useQueryClient as any).mockReturnValue({ invalidateQueries: mockInvalidateQueries });
-    
+
     // Simulate reader store state
     (useReaderStore as any).mockImplementation((selector: any) => {
       const state = {
@@ -48,7 +52,7 @@ describe('useReadingProgress', () => {
 
   it('should not sync if comicId is null', () => {
     renderHook(() => useReadingProgress({ comicId: null }));
-    
+
     act(() => {
       vi.advanceTimersByTime(3000);
     });
@@ -77,10 +81,12 @@ describe('useReadingProgress', () => {
       vi.advanceTimersByTime(3000);
     });
 
-    expect(mockMutate).toHaveBeenCalledWith(expect.objectContaining({
-      lastPage: 1,
-      totalPages: 100,
-    }));
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lastPage: 1,
+        totalPages: 100,
+      }),
+    );
   });
 
   it('should track reading time and include it in sync', () => {
@@ -105,8 +111,10 @@ describe('useReadingProgress', () => {
       vi.advanceTimersByTime(3000); // 2s debounce
     });
 
-    expect(mockMutate).toHaveBeenCalledWith(expect.objectContaining({
-      timeDelta: 30,
-    }));
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeDelta: 30,
+      }),
+    );
   });
 });
