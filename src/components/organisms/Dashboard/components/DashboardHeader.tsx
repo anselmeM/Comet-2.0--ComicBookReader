@@ -158,7 +158,7 @@ export function DashboardHeader({
           <button
             onClick={onSidebarToggle}
             aria-label="Toggle Sidebar"
-            className="p-2.5 md:p-4 rounded-xl md:rounded-[1.5rem] border bg-white border-neutral-100 text-neutral-400 hover:border-neutral-300 transition-all shadow-sm shrink-0"
+            className="hidden md:block p-2.5 md:p-4 rounded-xl md:rounded-[1.5rem] border bg-white border-neutral-100 text-neutral-400 hover:border-neutral-300 transition-all shadow-sm shrink-0"
           >
             <AlignRight className="w-5 h-5 md:w-6 md:h-6" />
           </button>
