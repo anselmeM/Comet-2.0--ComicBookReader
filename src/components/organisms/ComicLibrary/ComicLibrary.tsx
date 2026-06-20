@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { useLibrary, useDeleteComic } from '@/hooks/useLibrary';
 import { useComicParser } from '@/hooks/useComicParser';
+import { useFavorites } from '@/hooks/useFavorites';
 import { DashboardComicCard, ComicCardSkeleton } from '@/components/molecules/DashboardComicCard';
 import { UploadCloud, Loader2, AlertCircle, BookOpen } from 'lucide-react';
 import { logger } from '@/lib/logger';
@@ -13,6 +14,7 @@ export function ComicLibrary() {
   const comics = libraryData?.data ?? [];
   const { mutate: deleteComic, isPending: isDeleting } = useDeleteComic();
   const { parseComic, isParsing, progress, error: parseError } = useComicParser();
+  const { toggleFavorite } = useFavorites();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -118,7 +120,13 @@ export function ComicLibrary() {
         ) : comics && comics.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {comics.map((comic) => (
-              <DashboardComicCard key={comic.id} comic={comic} variant="standard" />
+              <DashboardComicCard
+                key={comic.id}
+                comic={comic}
+                variant="standard"
+                isFav={comic.isFavorite}
+                onToggleFav={() => toggleFavorite(comic.id, !!comic.isFavorite)}
+              />
             ))}
           </div>
         ) : (

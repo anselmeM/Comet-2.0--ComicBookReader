@@ -244,11 +244,26 @@ export function DashboardComicCard({
               <div className="h-full bg-blue-500" style={{ width: `${progressPercent}%` }} />
             </div>
 
-            <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+              {onToggleFav && (
+                <button
+                  onClick={handleFavoriteClick}
+                  disabled={isTogglingFav}
+                  className="p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-red-400 hover:bg-black/80 transition-all"
+                  title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+                  aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  {isTogglingFav ? (
+                    <Loader2 size={16} className="animate-spin text-neutral-400" />
+                  ) : (
+                    <Heart size={16} className={`${isFav ? 'text-red-500 fill-red-500' : ''}`} />
+                  )}
+                </button>
+              )}
               <button
                 onClick={handleEnrich}
                 disabled={enrichment.isPending}
-                className="p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-blue-400 hover:bg-black/80 transition-all"
+                className="hidden md:flex p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-blue-400 hover:bg-black/80 transition-all"
                 title="Fetch metadata"
               >
                 {enrichment.isPending ? (
@@ -259,14 +274,14 @@ export function DashboardComicCard({
               </button>
               <button
                 onClick={handleMetadataClick}
-                className="p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-blue-400 hover:bg-black/80 transition-all"
+                className="hidden md:flex p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-blue-400 hover:bg-black/80 transition-all"
                 title="Edit details"
               >
                 <Edit3 size={16} />
               </button>
               <button
                 onClick={handleDelete}
-                className="p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-red-400 hover:bg-black/80 transition-all"
+                className="hidden md:flex p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-red-400 hover:bg-black/80 transition-all"
                 title="Delete comic"
               >
                 <Trash2 size={16} />
@@ -344,25 +359,27 @@ export function DashboardComicCard({
       {renderSyncBadge()}
 
       {!isEditMode && (
-        <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={handleFavoriteClick}
-            disabled={isTogglingFav}
-            className="p-1.5 bg-white/90 rounded-xl shadow-lg hover:bg-white text-neutral-600 transition-all disabled:opacity-50"
-            title={isFav ? 'Remove from favorites' : 'Add to favorites'}
-            aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            {isTogglingFav ? (
-              <Loader2 size={16} className="animate-spin text-neutral-400" />
-            ) : (
-              <Heart size={16} className={`${isFav ? 'text-red-500 fill-red-500' : ''}`} />
-            )}
-          </button>
+        <div className="absolute top-2 right-2 z-20 flex flex-col gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+          {onToggleFav && (
+            <button
+              onClick={handleFavoriteClick}
+              disabled={isTogglingFav}
+              className="p-1.5 bg-white/90 rounded-xl shadow-lg hover:bg-white text-neutral-600 transition-all disabled:opacity-50"
+              title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+              aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              {isTogglingFav ? (
+                <Loader2 size={16} className="animate-spin text-neutral-400" />
+              ) : (
+                <Heart size={16} className={`${isFav ? 'text-red-500 fill-red-500' : ''}`} />
+              )}
+            </button>
+          )}
 
           <button
             onClick={handleEnrich}
             disabled={enrichment.isPending}
-            className="p-1.5 bg-white/90 rounded-xl shadow-lg hover:bg-white text-blue-500 transition-all disabled:opacity-50"
+            className="hidden md:flex p-1.5 bg-white/90 rounded-xl shadow-lg hover:bg-white text-blue-500 transition-all disabled:opacity-50"
             title="Enrich metadata"
             aria-label="Enrich metadata"
           >
@@ -375,7 +392,7 @@ export function DashboardComicCard({
 
           <button
             onClick={handleMetadataClick}
-            className="p-1.5 bg-white/90 rounded-xl shadow-lg hover:bg-white text-neutral-600 transition-all"
+            className="hidden md:flex p-1.5 bg-white/90 rounded-xl shadow-lg hover:bg-white text-neutral-600 transition-all"
             title="Edit details"
             aria-label="Edit details"
           >
