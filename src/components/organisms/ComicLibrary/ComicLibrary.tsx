@@ -6,6 +6,7 @@ import { useComicParser } from '@/hooks/useComicParser';
 import { DashboardComicCard, ComicCardSkeleton } from '@/components/molecules/DashboardComicCard';
 import { UploadCloud, Loader2, AlertCircle, BookOpen } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { PWAInstallPrompt } from '@/components/atoms/PWAInstallPrompt';
 
 export function ComicLibrary() {
   const { data: libraryData, isLoading, error: fetchError, refetch } = useLibrary();
@@ -44,6 +45,7 @@ export function ComicLibrary() {
 
   return (
     <div className="flex flex-col gap-8 w-full max-w-7xl mx-auto px-4 py-8">
+      <PWAInstallPrompt />
       {/* Upload Area */}
       <section
         className={`relative flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-3xl transition-colors ${

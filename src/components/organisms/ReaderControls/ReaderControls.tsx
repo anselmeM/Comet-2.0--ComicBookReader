@@ -67,6 +67,21 @@ export function ReaderControls({ type }: ReaderControlsProps) {
   const [fullscreenError, setFullscreenError] = useState<string | null>(null);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [showReaderSettings, setShowReaderSettings] = useState(false);
+  const [showFullscreenBtn, setShowFullscreenBtn] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isStandaloneMode =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone;
+    const ua = window.navigator.userAgent;
+    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+
+    // Hide fullscreen button if it's iOS (API unsupported) or already running as a standalone PWA
+    if (isStandaloneMode || isIOSDevice) {
+      setShowFullscreenBtn(false);
+    }
+  }, []);
 
   const { data: session } = useSession();
 
@@ -273,22 +288,27 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               }
               aria-label={bookmarked ? 'Remove bookmark' : 'Add bookmark'}
             >
-              <Bookmark size={20} fill={bookmarked ? 'currentColor' : 'none'} />
+              <Bookmark
+                className="w-5 h-5 sm:w-6 sm:h-6"
+                fill={bookmarked ? 'currentColor' : 'none'}
+              />
               {bookmarks.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 text-black text-xs font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center">
                   {bookmarks.length > 9 ? '9+' : bookmarks.length}
                 </span>
               )}
             </button>
-            <button
-              type="button"
-              onClick={handleFullscreen}
-              className={`p-2 rounded-lg transition-colors ${fullscreenError ? 'text-red-400 hover:text-red-300' : 'text-comet-muted hover:text-comet-text hover:bg-comet-surface-2'}`}
-              title={isFullscreen ? 'Exit Fullscreen (F)' : fullscreenError || 'Fullscreen (F)'}
-              aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            >
-              {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-            </button>
+            {showFullscreenBtn && (
+              <button
+                type="button"
+                onClick={handleFullscreen}
+                className={`hidden sm:flex p-2 rounded-lg transition-colors items-center justify-center ${fullscreenError ? 'text-red-400 hover:text-red-300' : 'text-comet-muted hover:text-comet-text hover:bg-comet-surface-2'}`}
+                title={isFullscreen ? 'Exit Fullscreen (F)' : fullscreenError || 'Fullscreen (F)'}
+                aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+              >
+                {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+              </button>
+            )}
             <Link
               href="/settings"
               className="p-2 text-comet-muted hover:text-comet-text hover:bg-comet-surface-2 rounded-lg transition-colors"
@@ -318,7 +338,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             {/* Horizontal Filmstrip */}
             <div
               ref={filmstripRef}
-              className="flex-1 flex items-center gap-2 overflow-x-auto py-2 px-1 scrollbar-none scroll-smooth select-none snap-x"
+              className="hidden md:flex flex-1 items-center gap-2 overflow-x-auto py-2 px-1 scrollbar-none scroll-smooth select-none snap-x"
               style={{
                 maxWidth: 'calc(100vw - 12rem)',
               }}
@@ -374,8 +394,8 @@ export function ReaderControls({ type }: ReaderControlsProps) {
           </div>
 
           {/* Controls Row */}
-          <div className="flex items-center justify-between mt-2 flex-wrap gap-4">
-            <div className="flex items-center gap-1 bg-comet-surface-2 p-1 rounded-xl">
+          <div className="flex items-center justify-between mt-2 gap-4">
+            <div className="flex items-center gap-1 bg-comet-surface-2 p-1 rounded-xl overflow-x-auto no-scrollbar">
               <ModeButton
                 active={mode === 'single-page'}
                 onClick={() => setMode('single-page')}
@@ -419,7 +439,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               />
             </div>
 
-            <div className="flex items-center gap-1 bg-comet-surface-2 p-1 rounded-xl">
+            <div className="hidden sm:flex items-center gap-1 bg-comet-surface-2 p-1 rounded-xl">
               <button
                 type="button"
                 onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}

@@ -418,13 +418,13 @@ export function SettingsPanel({ earnedBadgeIds = [] }: SettingsPanelProps) {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="flex-1 bg-comet-surface-2 border border-comet-border rounded-xl px-4 py-2 text-comet-text focus:outline-none focus:ring-2 focus:ring-comet-accent"
+                  className="flex-1 bg-comet-surface-2 border border-comet-border rounded-xl px-4 py-3 min-h-[44px] text-comet-text focus:outline-none focus:ring-2 focus:ring-comet-accent"
                   placeholder="Enter your name"
                 />
                 <button
                   type="submit"
                   disabled={isSaving || name === session?.user?.name}
-                  className="flex items-center gap-2 bg-comet-accent text-white px-4 py-2 rounded-xl hover:bg-comet-accent-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 bg-comet-accent text-white px-4 py-3 min-h-[44px] rounded-xl hover:bg-comet-accent-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   <span>Save</span>
@@ -458,7 +458,7 @@ export function SettingsPanel({ earnedBadgeIds = [] }: SettingsPanelProps) {
                   key={item.id}
                   type="button"
                   onClick={() => saveReadingPreference(item.id as ReaderMode)}
-                  className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                  className={`flex items-center gap-3 p-4 min-h-[44px] rounded-xl border transition-all ${
                     mode === item.id
                       ? 'border-comet-accent bg-comet-accent/10 text-comet-accent shadow-[0_0_10px_rgba(124,106,247,0.1)]'
                       : 'border-comet-border bg-comet-surface text-comet-muted hover:border-comet-accent hover:text-comet-text'

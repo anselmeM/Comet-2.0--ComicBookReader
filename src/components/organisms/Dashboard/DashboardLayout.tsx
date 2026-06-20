@@ -9,6 +9,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useNotification } from '@/components/atoms/Toast';
 import { useFavorites } from '@/hooks/useFavorites';
 import { ErrorBoundary } from '@/components/atoms/ErrorBoundary';
+import { Plus } from 'lucide-react';
 
 // Modular Imports
 import { DashboardComic } from '@/components/molecules/DashboardComicCard';
@@ -28,6 +29,7 @@ import { DashboardSidebar } from './components/DashboardSidebar';
 import { DashboardHeader } from './components/DashboardHeader';
 import { SearchFilterBar } from './components/SearchFilterBar';
 import { SearchResultsView } from './components/SearchResultsView';
+import { MobileBottomNav } from './components/MobileBottomNav';
 
 interface DashboardLayoutProps {
   comics: DashboardComic[];
@@ -228,7 +230,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           )}
         </AnimatePresence>
 
-        <div className="flex-1 overflow-y-auto px-12 py-12 scroll-smooth">
+        <div className="flex-1 overflow-y-auto no-scrollbar relative z-0 p-4 md:p-12 pb-24 md:pb-0 bg-neutral-50/50">
           <AnimatePresence mode="wait">
             {searchResults ? (
               <SearchResultsView
@@ -261,6 +263,17 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Floating Action Button (Mobile Only) */}
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="md:hidden fixed bottom-24 right-6 z-50 w-14 h-14 bg-comet-accent text-white rounded-full shadow-lg flex items-center justify-center hover:bg-comet-accent-hover hover:scale-105 active:scale-95 transition-all"
+        aria-label="Upload Comic"
+      >
+        <Plus size={24} />
+      </button>
+
+      <MobileBottomNav activeView={activeView} onNavClick={handleNavClick} />
     </div>
   );
 }

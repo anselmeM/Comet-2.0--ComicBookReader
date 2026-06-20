@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
 /**
@@ -9,21 +10,25 @@ import { useEffect } from 'react';
  */
 export function ThemeManager() {
   const { data: session } = useSession();
+  const pathname = usePathname();
 
   useEffect(() => {
     // Get theme from session
     const theme = session?.user?.theme || 'dark';
-    
+
     // Remove all possible theme classes
     document.documentElement.classList.remove('theme-dark', 'theme-light', 'theme-sepia');
-    
+
     // Add the active theme class
     document.documentElement.classList.add(`theme-${theme}`);
-    
+
     // Update meta theme color for PWA polish
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      if (theme === 'light') {
+      if (pathname?.startsWith('/reader')) {
+        // Immersive status bar for comic reader
+        metaThemeColor.setAttribute('content', '#000000');
+      } else if (theme === 'light') {
         metaThemeColor.setAttribute('content', '#ffffff');
       } else if (theme === 'sepia') {
         metaThemeColor.setAttribute('content', '#f4ecd8');
@@ -31,7 +36,7 @@ export function ThemeManager() {
         metaThemeColor.setAttribute('content', '#0a0a0f');
       }
     }
-  }, [session]);
+  }, [session, pathname]);
 
   return null; // This component doesn't render anything
 }

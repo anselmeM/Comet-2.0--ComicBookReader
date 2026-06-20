@@ -28,10 +28,10 @@ const iconMap: Record<string, any> = {
 };
 
 const tierColors: Record<string, string> = {
-  BRONZE: 'from-amber-700 to-amber-900 border-amber-800 text-amber-500',
-  SILVER: 'from-slate-400 to-slate-600 border-slate-500 text-slate-300',
-  GOLD: 'from-yellow-400 to-yellow-600 border-yellow-500 text-yellow-300',
-  PLATINUM: 'from-cyan-300 to-blue-500 border-cyan-400 text-cyan-200',
+  BRONZE: 'from-amber-900/40 to-amber-950/40 border-amber-700/50 text-amber-500',
+  SILVER: 'from-slate-700/40 to-slate-800/40 border-slate-500/50 text-slate-300',
+  GOLD: 'from-yellow-900/40 to-yellow-950/40 border-yellow-600/50 text-yellow-400',
+  PLATINUM: 'from-cyan-900/40 to-blue-900/40 border-cyan-500/50 text-cyan-300',
 };
 
 // Sort tiers conceptually:
@@ -85,15 +85,17 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
   return (
     <div className="space-y-12">
       {/* Progress Header */}
-      <div className="bg-comet-surface/40 border border-comet-border rounded-2xl p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+      <div className="bg-comet-surface/40 border border-comet-border rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 relative z-10">
           <div>
-            <h2 className="text-xl font-bold text-comet-text mb-1">Overall Progress</h2>
-            <p className="text-comet-muted text-sm">
-              You have unlocked {earnedCount} out of {totalCount} badges.
+            <h2 className="text-2xl font-bold text-comet-text mb-1">Overall Progress</h2>
+            <p className="text-comet-muted text-sm font-medium">
+              You have unlocked <span className="text-indigo-400">{earnedCount}</span> out of{' '}
+              {totalCount} badges.
             </p>
           </div>
-          <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+          <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 drop-shadow-sm">
             {progressPercent}%
           </div>
         </div>
@@ -136,13 +138,13 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
                   key={badge.id}
                   className={`relative overflow-hidden rounded-2xl border p-6 flex flex-col items-center text-center transition-all duration-300 ${
                     isEarned
-                      ? `bg-gradient-to-br ${tierColors[badge.tier]} bg-opacity-10 shadow-lg cursor-pointer`
-                      : 'bg-comet-surface/30 border-comet-border backdrop-blur-sm grayscale-[0.8]'
+                      ? `bg-gradient-to-br ${tierColors[badge.tier]} shadow-[0_4px_20px_-4px_rgba(0,0,0,0.3)] cursor-pointer`
+                      : 'bg-comet-surface/30 border-comet-border/50 backdrop-blur-sm grayscale-[0.7] opacity-60 hover:opacity-100 hover:grayscale-[0.3]'
                   }`}
                 >
                   <div
                     className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${
-                      isEarned ? 'bg-black/20 shadow-inner' : 'bg-comet-surface-2'
+                      isEarned ? 'bg-black/30 shadow-inner' : 'bg-comet-surface-2'
                     }`}
                   >
                     {isEarned ? (
@@ -153,7 +155,7 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
                   </div>
 
                   <h3
-                    className={`font-semibold text-lg mb-2 ${isEarned ? 'text-comet-text' : 'text-comet-muted'}`}
+                    className={`font-bold text-lg mb-2 tracking-tight ${isEarned ? 'text-white drop-shadow-sm' : 'text-comet-muted'}`}
                   >
                     {badge.name}
                   </h3>
@@ -162,8 +164,10 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
 
                   <div className="mt-auto w-full flex justify-between items-center border-t border-comet-border pt-4">
                     <span
-                      className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-md ${
-                        isEarned ? 'bg-black/30 text-white' : 'bg-comet-surface-2 text-comet-muted'
+                      className={`text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-md shadow-sm ${
+                        isEarned
+                          ? 'bg-black/40 text-white border border-white/10'
+                          : 'bg-comet-surface-2 text-comet-muted'
                       }`}
                     >
                       {badge.tier}

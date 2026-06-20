@@ -32,12 +32,16 @@ export default async function SettingsAchievementsPage() {
         </Link>
       </div>
       <div className="flex items-center gap-4 mb-8">
-        <div className="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-          <Trophy className="w-8 h-8 text-indigo-400" />
+        <div className="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-inner">
+          <Trophy className="w-10 h-10 text-indigo-400 drop-shadow-md" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-comet-text tracking-tight">Achievements</h1>
-          <p className="text-comet-muted">Unlock badges by reaching reading milestones.</p>
+          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 tracking-tight drop-shadow-sm mb-1">
+            Achievements
+          </h1>
+          <p className="text-comet-muted text-sm font-medium">
+            Unlock badges by reaching reading milestones.
+          </p>
         </div>
       </div>
 

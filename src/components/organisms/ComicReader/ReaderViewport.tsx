@@ -165,35 +165,57 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
     },
   );
 
+  const lastTapRef = useRef<number>(0);
+  const singleTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    // Only process primary pointer (e.g. not multi-touch pinch)
+    if (!e.isPrimary) return;
+
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap detected!
+      if (singleTapTimeoutRef.current) clearTimeout(singleTapTimeoutRef.current);
+      lastTapRef.current = 0; // reset
+
+      if (scale.get() > 1) {
+        setZoomLevel(1);
+        x.set(0);
+        y.set(0);
+      } else {
+        setZoomLevel(2);
+      }
+      return;
+    }
+
+    lastTapRef.current = now;
+
+    // Process single tap
+    singleTapTimeoutRef.current = setTimeout(() => {
+      if (scale.get() > 1.1) return; // Don't turn pages if zoomed in
+
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const width = rect.width;
+
+      if (clickX < width * 0.3) {
+        if (mode === 'manga-rtl') nextPage();
+        else prevPage();
+      } else if (clickX > width * 0.7) {
+        if (mode === 'manga-rtl') prevPage();
+        else nextPage();
+      } else {
+        toggleMenu();
+      }
+    }, DOUBLE_TAP_DELAY); // Wait for potential double-tap
+  };
+
   return (
     <div
       ref={containerRef}
-      onDoubleClick={() => {
-        if (scale.get() > 1) {
-          setZoomLevel(1);
-          x.set(0);
-          y.set(0);
-        } else {
-          setZoomLevel(2);
-        }
-      }}
-      onClick={(e) => {
-        if (scale.get() > 1.1) return; // Don't turn pages if zoomed in
-
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const width = rect.width;
-
-        if (x < width * 0.3) {
-          if (mode === 'manga-rtl') nextPage();
-          else prevPage();
-        } else if (x > width * 0.7) {
-          if (mode === 'manga-rtl') prevPage();
-          else nextPage();
-        } else {
-          toggleMenu();
-        }
-      }}
+      onPointerUp={handlePointerUp}
       className="relative w-full h-full overflow-hidden bg-black touch-none cursor-grab active:cursor-grabbing"
     >
       <motion.div

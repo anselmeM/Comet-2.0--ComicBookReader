@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import { useComicPages } from '@/hooks/useComicPages';
 import { useReaderStore } from '@/stores/readerStore';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
+import { useWakeLock } from '@/hooks/useWakeLock';
 import { ReaderViewport } from './ReaderViewport';
 import { BlobImage } from '@/components/atoms/BlobImage';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -89,6 +90,9 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   const queryClient = useQueryClient();
   const { parseComic, isParsing, progress: parseProgress, error: parseError } = useComicParser();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Acquire screen wake lock while reading
+  useWakeLock(true);
 
   const handleReImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
