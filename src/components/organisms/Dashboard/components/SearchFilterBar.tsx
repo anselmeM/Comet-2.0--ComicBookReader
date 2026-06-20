@@ -16,6 +16,7 @@ interface SearchFilterBarProps {
   isOfflineOnly?: boolean;
   onOfflineOnlyChange?: (val: boolean) => void;
   onReset: () => void;
+  className?: string;
 }
 
 export function SearchFilterBar({
@@ -30,15 +31,16 @@ export function SearchFilterBar({
   isOfflineOnly,
   onOfflineOnlyChange,
   onReset,
+  className,
 }: SearchFilterBarProps) {
   return (
     <motion.div
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height: 'auto', opacity: 1 }}
-      exit={{ height: 0, opacity: 0 }}
-      className="bg-white border-b border-neutral-100 overflow-hidden shrink-0 z-40"
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={`bg-white border border-neutral-100 rounded-2xl shadow-2xl overflow-hidden shrink-0 z-50 ${className || ''}`}
     >
-      <div className="px-12 py-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Sort By */}
         <div className="space-y-3">
           <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-2">

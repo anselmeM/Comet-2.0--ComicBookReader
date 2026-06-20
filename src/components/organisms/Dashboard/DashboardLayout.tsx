@@ -27,7 +27,6 @@ import { useSubscription } from '@/hooks/useSubscription';
 // Sub-components
 import { DashboardSidebar } from './components/DashboardSidebar';
 import { DashboardHeader } from './components/DashboardHeader';
-import { SearchFilterBar } from './components/SearchFilterBar';
 import { SearchResultsView } from './components/SearchResultsView';
 import { MobileBottomNav } from './components/MobileBottomNav';
 
@@ -201,6 +200,17 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           handlePortal={handlePortal}
           handleCheckout={handleCheckout}
           isSubscriptionLoading={isSubscriptionLoading}
+          sortBy={sortBy}
+          onSortChange={onSortChange || (() => {})}
+          readStatus={readStatus}
+          onReadStatusChange={onReadStatusChange || (() => {})}
+          yearStart={yearStart}
+          onYearStartChange={onYearStartChange || (() => {})}
+          yearEnd={yearEnd}
+          onYearEndChange={onYearEndChange || (() => {})}
+          isOfflineOnly={isOfflineOnly}
+          onOfflineOnlyChange={onOfflineOnlyChange}
+          onResetFilters={handleResetFilters}
         />
         <input
           ref={fileInputRef}
@@ -211,24 +221,6 @@ export function DashboardLayout(props: DashboardLayoutProps) {
             if (e.target.files?.[0]) await onFileSelect?.(e.target.files[0]);
           }}
         />
-
-        <AnimatePresence>
-          {showFilters && (
-            <SearchFilterBar
-              sortBy={sortBy}
-              onSortChange={onSortChange || (() => {})}
-              readStatus={readStatus}
-              onReadStatusChange={onReadStatusChange || (() => {})}
-              yearStart={yearStart}
-              onYearStartChange={onYearStartChange || (() => {})}
-              yearEnd={yearEnd}
-              onYearEndChange={onYearEndChange || (() => {})}
-              isOfflineOnly={isOfflineOnly}
-              onOfflineOnlyChange={onOfflineOnlyChange}
-              onReset={handleResetFilters}
-            />
-          )}
-        </AnimatePresence>
 
         <div className="flex-1 overflow-y-auto no-scrollbar relative z-0 p-4 md:p-12 pb-24 md:pb-0 bg-neutral-50/50">
           <AnimatePresence mode="wait">
