@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useStorage } from '@/hooks/useStorage';
 import { evictCachedComic } from '@/lib/idb';
 import { useReaderStore } from '@/stores/readerStore';
@@ -27,6 +27,7 @@ import {
   Download,
   Upload,
   Keyboard,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
 import { logger } from '@/lib/logger';
@@ -995,6 +996,17 @@ export function SettingsPanel({ earnedBadgeIds = [] }: SettingsPanelProps) {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Mobile-only Log Out */}
+      <section className="md:hidden pt-4 pb-12 border-t border-comet-border">
+        <button
+          onClick={() => signOut()}
+          className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-red-500/10 text-red-500 rounded-2xl border border-red-500/20 active:scale-[0.98] transition-transform font-semibold min-h-[56px]"
+        >
+          <LogOut size={20} />
+          Log Out
+        </button>
       </section>
     </div>
   );

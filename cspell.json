@@ -22,7 +22,11 @@
     "Agentic",
     "turbopack",
     "gamespot",
-    "nosniff"
+    "nosniff",
+    "favourite",
+    "favourites",
+    "favourited",
+    "favouriting"
   ],
   "ignorePaths": [
     "node_modules",

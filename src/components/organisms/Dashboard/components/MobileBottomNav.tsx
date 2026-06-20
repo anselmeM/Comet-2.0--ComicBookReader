@@ -3,8 +3,6 @@
 import React from 'react';
 import { navItems } from '@/lib/__mocks__/dashboard';
 import { motion } from 'framer-motion';
-import { Settings, LogOut } from 'lucide-react';
-import { signOut } from 'next-auth/react';
 
 interface MobileBottomNavProps {
   activeView: string;
@@ -12,13 +10,11 @@ interface MobileBottomNavProps {
 }
 
 export function MobileBottomNav({ activeView, onNavClick }: MobileBottomNavProps) {
-  // Combine existing nav items with Settings and Log Out
+  // Combine existing nav items
   const bottomNavItems = [
     ...navItems.filter((item) =>
       ['dashboard', 'collections', 'favourites', 'history', 'friends'].includes(item.id),
     ),
-    { name: 'Settings', icon: Settings, id: 'settings' },
-    { name: 'Log Out', icon: LogOut, id: 'logout' },
   ];
 
   return (
@@ -29,13 +25,7 @@ export function MobileBottomNav({ activeView, onNavClick }: MobileBottomNavProps
           return (
             <button
               key={item.id}
-              onClick={() => {
-                if (item.id === 'logout') {
-                  signOut();
-                } else {
-                  onNavClick(item.id);
-                }
-              }}
+              onClick={() => onNavClick(item.id)}
               className="flex flex-col items-center justify-center gap-1 w-16 h-full py-2 relative shrink-0"
             >
               {isActive && (
@@ -48,21 +38,11 @@ export function MobileBottomNav({ activeView, onNavClick }: MobileBottomNavProps
               <item.icon
                 size={22}
                 strokeWidth={isActive ? 2.5 : 2}
-                className={`transition-colors ${
-                  item.id === 'logout'
-                    ? 'text-red-500'
-                    : isActive
-                      ? 'text-blue-500'
-                      : 'text-neutral-400'
-                }`}
+                className={`transition-colors ${isActive ? 'text-blue-500' : 'text-neutral-400'}`}
               />
               <span
                 className={`text-[10px] font-bold transition-colors text-center leading-tight ${
-                  item.id === 'logout'
-                    ? 'text-red-500'
-                    : isActive
-                      ? 'text-blue-500'
-                      : 'text-neutral-400'
+                  isActive ? 'text-blue-500' : 'text-neutral-400'
                 }`}
               >
                 {item.name}

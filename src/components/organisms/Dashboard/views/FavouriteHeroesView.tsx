@@ -36,8 +36,8 @@ export const FavouriteHeroesView = ({
           <ChevronLeft size={24} />
         </button>
         <div>
-          <h2 className="text-4xl font-black text-neutral-900 tracking-tighter italic">
-            Your Favourite Heroes
+          <h2 className="text-3xl md:text-4xl font-black text-neutral-900 tracking-tighter italic">
+            Favourite Heroes
           </h2>
           <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest mt-1">
             Discover your top rated characters

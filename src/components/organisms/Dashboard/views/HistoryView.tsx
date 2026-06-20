@@ -184,7 +184,7 @@ export const HistoryView = ({ comics, setActiveView }: HistoryViewProps) => {
             <ChevronLeft size={24} />
           </button>
           <div>
-            <h2 className="text-4xl font-black text-neutral-900 tracking-tighter italic">
+            <h2 className="text-3xl md:text-4xl font-black text-neutral-900 tracking-tighter italic">
               Reading Dashboard
             </h2>
             <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest mt-1">
@@ -251,7 +251,7 @@ export const HistoryView = ({ comics, setActiveView }: HistoryViewProps) => {
           {activeTab === 'stats' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               {/* Heatmap (SVG) */}
-              <div className="lg:col-span-8 bg-white p-8 rounded-[2.5rem] border border-neutral-100 shadow-sm space-y-6">
+              <div className="lg:col-span-8 bg-white p-4 sm:p-6 lg:p-8 rounded-[2.5rem] border border-neutral-100 shadow-sm space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
                     <Calendar size={20} />
@@ -346,7 +346,7 @@ export const HistoryView = ({ comics, setActiveView }: HistoryViewProps) => {
               </div>
 
               {/* Weekly Pages (SVG) */}
-              <div className="lg:col-span-4 bg-white p-8 rounded-[2.5rem] border border-neutral-100 shadow-sm space-y-6">
+              <div className="lg:col-span-4 bg-white p-4 sm:p-6 lg:p-8 rounded-[2.5rem] border border-neutral-100 shadow-sm space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
                     <TrendingUp size={20} />
@@ -411,7 +411,7 @@ export const HistoryView = ({ comics, setActiveView }: HistoryViewProps) => {
 
           {/* TAB 2: HISTORICAL SESSION LOGS */}
           {activeTab === 'logs' && (
-            <div className="max-w-4xl mx-auto w-full bg-white p-8 rounded-[2.5rem] border border-neutral-100 shadow-sm space-y-6">
+            <div className="max-w-4xl mx-auto w-full bg-white p-4 sm:p-6 lg:p-8 rounded-[2.5rem] border border-neutral-100 shadow-sm space-y-6">
               <div className="flex items-center gap-3 border-b border-neutral-50 pb-4">
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
                   <Clock size={20} />
@@ -531,7 +531,7 @@ export const HistoryView = ({ comics, setActiveView }: HistoryViewProps) => {
                     return (
                       <div
                         key={comic.id}
-                        className="bg-white p-6 rounded-[2.5rem] border border-neutral-100 shadow-sm flex gap-6 group hover:shadow-xl transition-all relative"
+                        className="bg-white p-4 sm:p-6 rounded-[2.5rem] border border-neutral-100 shadow-sm flex gap-4 sm:gap-6 group hover:shadow-xl transition-all relative"
                       >
                         <div className="relative w-28 h-40 rounded-2xl overflow-hidden shrink-0 shadow bg-neutral-100">
                           {comic.coverUrl ? (

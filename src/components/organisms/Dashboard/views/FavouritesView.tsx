@@ -40,8 +40,8 @@ export const FavouritesView = ({
             <ChevronLeft size={24} />
           </button>
           <div>
-            <h2 className="text-4xl font-black text-neutral-900 tracking-tighter italic">
-              My Favourites
+            <h2 className="text-3xl md:text-4xl font-black text-neutral-900 tracking-tighter italic">
+              Favourites
             </h2>
             <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest mt-1">
               Your curated collection of stories
@@ -53,7 +53,7 @@ export const FavouritesView = ({
       {favouritedComics.length > 0 ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={() => {}}>
           <SortableContext items={favouritedComics.map((c) => c.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-8">
               {favouritedComics.map((comic) => (
                 <DashboardComicCard
                   key={comic.id}

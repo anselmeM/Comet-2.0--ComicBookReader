@@ -238,7 +238,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
             <ChevronLeft size={24} />
           </button>
           <div>
-            <h2 className="text-4xl font-black text-comet-text tracking-tighter italic">
+            <h2 className="text-3xl md:text-4xl font-black text-comet-text tracking-tighter italic">
               Friends & Community
             </h2>
             <p className="text-sm font-bold text-comet-muted uppercase tracking-widest mt-1">
@@ -306,7 +306,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                       key={activity.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="bg-comet-surface p-6 rounded-[2.5rem] border border-comet-border shadow-sm flex flex-col gap-4 group hover:border-blue-200 transition-all"
+                      className="bg-comet-surface p-4 sm:p-6 rounded-[2.5rem] border border-comet-border shadow-sm flex flex-col gap-4 group hover:border-blue-200 transition-all"
                     >
                       <div className="flex items-center gap-6 w-full">
                         <div className="relative shrink-0">
@@ -433,7 +433,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                   Array.from({ length: 5 }).map((_, i) => (
                     <div
                       key={i}
-                      className="bg-comet-surface p-6 rounded-[2rem] border border-comet-border shadow-sm flex items-center gap-6 animate-pulse"
+                      className="bg-comet-surface p-4 sm:p-6 rounded-[2rem] border border-comet-border shadow-sm flex items-center gap-6 animate-pulse"
                     >
                       <div className="w-14 h-14 rounded-2xl bg-comet-surface-2" />
                       <div className="flex-1 space-y-2">
@@ -464,7 +464,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                   {clubs.map((club: ReadingClub) => (
                     <div
                       key={club.key}
-                      className="bg-comet-surface p-8 rounded-[2.5rem] border border-comet-border shadow-sm flex gap-6 hover:shadow-xl hover:border-blue-100 transition-all"
+                      className="bg-comet-surface p-4 sm:p-6 lg:p-8 rounded-[2.5rem] border border-comet-border shadow-sm flex gap-6 hover:shadow-xl hover:border-blue-100 transition-all"
                     >
                       {/* Comic Cover */}
                       <div className="relative w-24 h-36 rounded-2xl overflow-hidden shrink-0 shadow-md bg-comet-surface-2">
@@ -570,7 +570,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div
                       key={i}
-                      className="bg-comet-surface p-8 rounded-[2.5rem] border border-comet-border shadow-sm flex gap-6 animate-pulse"
+                      className="bg-comet-surface p-4 sm:p-6 lg:p-8 rounded-[2.5rem] border border-comet-border shadow-sm flex gap-6 animate-pulse"
                     >
                       <div className="w-24 h-36 bg-comet-surface-2 rounded-2xl shrink-0" />
                       <div className="flex-1 space-y-4 py-1">
@@ -588,7 +588,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
           {/* TAB 3: DISCOVER READERS */}
           {activeTab === 'discover' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto w-full">
-              <div className="bg-comet-surface p-8 rounded-[2.5rem] border border-comet-border shadow-sm space-y-8 h-full">
+              <div className="bg-comet-surface p-4 sm:p-6 lg:p-8 rounded-[2.5rem] border border-comet-border shadow-sm space-y-8 h-full">
                 <div>
                   <h3 className="text-xl font-black text-comet-text tracking-tight flex items-center gap-2 mb-2">
                     <Search className="text-blue-500" size={20} />
@@ -762,7 +762,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                   {friends.map((friend) => (
                     <div
                       key={friend.id}
-                      className="bg-comet-surface p-8 rounded-[2.5rem] border border-comet-border shadow-sm flex flex-col items-center text-center group hover:shadow-xl transition-all relative"
+                      className="bg-comet-surface p-4 sm:p-6 lg:p-8 rounded-[2.5rem] border border-comet-border shadow-sm flex flex-col items-center text-center group hover:shadow-xl transition-all relative"
                     >
                       <button
                         onClick={() => handleRemoveFriend(friend.friendId)}
@@ -849,7 +849,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                   {requests?.incoming.map((req) => (
                     <div
                       key={req.id}
-                      className="bg-comet-surface p-6 rounded-[2rem] border border-comet-border shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all"
+                      className="bg-comet-surface p-4 sm:p-6 rounded-[2rem] border border-comet-border shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all"
                     >
                       <div className="flex items-center gap-5">
                         <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-inner bg-comet-surface-2">
@@ -910,7 +910,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                   {requests?.outgoing.map((req) => (
                     <div
                       key={req.id}
-                      className="bg-comet-surface p-6 rounded-[2rem] border border-comet-border shadow-sm flex items-center justify-between group hover:border-comet-border transition-all"
+                      className="bg-comet-surface p-4 sm:p-6 rounded-[2rem] border border-comet-border shadow-sm flex items-center justify-between group hover:border-comet-border transition-all"
                     >
                       <div className="flex items-center gap-5">
                         <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-inner bg-comet-surface-2 opacity-60">
@@ -974,7 +974,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
               className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-comet-surface z-[110] shadow-2xl border-l border-comet-border flex flex-col h-full"
             >
               {/* Header */}
-              <div className="p-6 border-b border-comet-border flex items-center justify-between">
+              <div className="p-4 sm:p-6 border-b border-comet-border flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-black text-comet-text tracking-tight italic">
                     Club Discussion
@@ -995,7 +995,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
               </div>
 
               {/* Chat bubbles list */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-comet-surface-2/50">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-comet-surface-2/50">
                 {comments && comments.length > 0 ? (
                   comments.map((comment) => {
                     const isSelf = comment.userId === session?.user?.id;
@@ -1059,7 +1059,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
               {/* Comment Input */}
               <form
                 onSubmit={handlePostComment}
-                className="p-6 border-t border-comet-border bg-comet-surface flex gap-3"
+                className="p-4 sm:p-6 border-t border-comet-border bg-comet-surface flex gap-3"
               >
                 <input
                   type="text"
@@ -1229,7 +1229,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                           ))}
                         </div>
                       ) : (
-                        <div className="p-6 bg-comet-surface-2 rounded-2xl border border-dashed border-comet-border text-center">
+                        <div className="p-4 sm:p-6 bg-comet-surface-2 rounded-2xl border border-dashed border-comet-border text-center">
                           <p className="text-sm font-bold text-comet-muted italic">
                             No badges earned yet.
                           </p>
@@ -1279,7 +1279,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                           ))}
                         </div>
                       ) : (
-                        <div className="p-6 bg-comet-surface-2 rounded-2xl border border-dashed border-comet-border text-center">
+                        <div className="p-4 sm:p-6 bg-comet-surface-2 rounded-2xl border border-dashed border-comet-border text-center">
                           <p className="text-sm font-bold text-comet-muted italic">
                             No recent reading activity.
                           </p>
@@ -1317,7 +1317,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
               className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-comet-surface z-[110] shadow-2xl border-l border-comet-border flex flex-col h-full"
             >
               {/* Header */}
-              <div className="p-6 border-b border-comet-border flex items-center justify-between bg-comet-surface shadow-sm z-10">
+              <div className="p-4 sm:p-6 border-b border-comet-border flex items-center justify-between bg-comet-surface shadow-sm z-10">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black shadow-inner">
                     {(selectedDMName || 'A')[0].toUpperCase()}
@@ -1340,7 +1340,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
               </div>
 
               {/* Chat bubbles list */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-comet-surface-2/50">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-comet-surface-2/50">
                 {isLoadingDMs ? (
                   <div className="flex justify-center py-10">
                     <Loader2 size={24} className="text-blue-500 animate-spin" />
@@ -1400,7 +1400,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
               {/* Comment Input */}
               <form
                 onSubmit={handleSendDM}
-                className="p-6 border-t border-comet-border bg-comet-surface flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-10"
+                className="p-4 sm:p-6 border-t border-comet-border bg-comet-surface flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-10"
               >
                 <input
                   type="text"

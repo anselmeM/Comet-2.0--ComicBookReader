@@ -361,7 +361,7 @@ export const CollectionsView = ({
               <ChevronLeft size={24} />
             </button>
             <div>
-              <h2 className="text-4xl font-black text-neutral-900 tracking-tighter italic">
+              <h2 className="text-3xl md:text-4xl font-black text-neutral-900 tracking-tighter italic">
                 My Collections
               </h2>
               <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest mt-1">
@@ -380,7 +380,7 @@ export const CollectionsView = ({
         {/* Collection Stats / Gamification */}
         {!selectedCollectionId && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-gradient-to-br from-orange-500 to-red-500 p-6 rounded-[2rem] shadow-lg shadow-orange-500/20 flex flex-col justify-between text-white relative overflow-hidden group">
+            <div className="bg-gradient-to-br from-orange-500 to-red-500 p-4 sm:p-6 rounded-[2rem] shadow-lg shadow-orange-500/20 flex flex-col justify-between text-white relative overflow-hidden group">
               <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
                 <Flame size={120} />
               </div>
@@ -393,14 +393,14 @@ export const CollectionsView = ({
                 </span>
               </div>
               <div>
-                <h4 className="text-4xl font-black tracking-tighter">
+                <h4 className="text-3xl md:text-4xl font-black tracking-tighter">
                   {isStatsLoading ? '-' : userStats?.streak || 0}{' '}
                   <span className="text-xl opacity-80">days</span>
                 </h4>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm flex flex-col justify-between group hover:border-blue-200 transition-colors">
+            <div className="bg-white p-4 sm:p-6 rounded-[2rem] border border-neutral-100 shadow-sm flex flex-col justify-between group hover:border-blue-200 transition-colors">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
                   <BookOpen size={20} />
@@ -410,13 +410,13 @@ export const CollectionsView = ({
                 </span>
               </div>
               <div>
-                <h4 className="text-4xl font-black text-neutral-900 tracking-tighter">
+                <h4 className="text-3xl md:text-4xl font-black text-neutral-900 tracking-tighter">
                   {isStatsLoading ? '-' : (userStats?.pagesFlipped || 0).toLocaleString()}
                 </h4>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm flex flex-col justify-between group hover:border-green-200 transition-colors">
+            <div className="bg-white p-4 sm:p-6 rounded-[2rem] border border-neutral-100 shadow-sm flex flex-col justify-between group hover:border-green-200 transition-colors">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-500 group-hover:scale-110 transition-transform">
                   <Trophy size={20} />
@@ -426,13 +426,13 @@ export const CollectionsView = ({
                 </span>
               </div>
               <div>
-                <h4 className="text-4xl font-black text-neutral-900 tracking-tighter">
+                <h4 className="text-3xl md:text-4xl font-black text-neutral-900 tracking-tighter">
                   {isStatsLoading ? '-' : userStats?.comicsFinished || 0}
                 </h4>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm flex flex-col justify-between group hover:border-purple-200 transition-colors">
+            <div className="bg-white p-4 sm:p-6 rounded-[2rem] border border-neutral-100 shadow-sm flex flex-col justify-between group hover:border-purple-200 transition-colors">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
                   <Clock size={20} />
@@ -442,7 +442,7 @@ export const CollectionsView = ({
                 </span>
               </div>
               <div>
-                <h4 className="text-4xl font-black text-neutral-900 tracking-tighter">
+                <h4 className="text-3xl md:text-4xl font-black text-neutral-900 tracking-tighter">
                   {isStatsLoading ? '-' : formatTime(userStats?.timeSpentSeconds || 0)}
                 </h4>
               </div>
@@ -456,7 +456,7 @@ export const CollectionsView = ({
             <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block mb-3">
               Smart Collections (Drag here to categorize)
             </span>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible md:gap-4">
               <DroppableCollectionButton
                 id="all-comics"
                 isActive={selectedCollectionId === null}
@@ -504,7 +504,7 @@ export const CollectionsView = ({
             <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block mb-3">
               Custom Collections
             </span>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible md:gap-4">
               {collections.map((col) => (
                 <div key={col.id} className="relative group">
                   <DroppableCollectionButton
@@ -542,7 +542,7 @@ export const CollectionsView = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-neutral-100/60 border border-neutral-150 p-4 rounded-3xl shadow-sm">
           {/* Left: View Mode Toggles */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-neutral-150 shadow-inner">
+            <div className="hidden md:flex items-center gap-1.5 p-1 bg-white rounded-xl border border-neutral-150 shadow-inner">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded-lg transition-all ${
