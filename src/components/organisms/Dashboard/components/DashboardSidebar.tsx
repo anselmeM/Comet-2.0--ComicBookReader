@@ -56,7 +56,7 @@ export function DashboardSidebar({ isOpen, activeView, onNavClick }: DashboardSi
         className="mb-20 flex items-center gap-4"
       >
         <div className="w-12 h-12 bg-blue-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/30 font-black rotate-6 hover:rotate-0 transition-transform cursor-pointer text-2xl shrink-0">
-          G
+          C
         </div>
         <motion.h1
           initial={false}
@@ -67,7 +67,7 @@ export function DashboardSidebar({ isOpen, activeView, onNavClick }: DashboardSi
           transition={{ duration: 0.3, ease: 'easeInOut' }}
           className="font-black text-3xl tracking-tighter italic whitespace-nowrap overflow-hidden"
         >
-          Geek
+          Comet
         </motion.h1>
       </motion.div>
 
