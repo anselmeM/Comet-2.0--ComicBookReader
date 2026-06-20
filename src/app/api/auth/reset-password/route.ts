@@ -19,12 +19,24 @@ export async function POST(req: NextRequest) {
     const { email: rawEmail } = result.data;
     email = rawEmail.toLowerCase().trim();
 
-    // Rate limiting (T-AUTH-003)
-    const limiter = await rateLimit(`reset_${email}`, 3, 60 * 60 * 1000); // 3 per hour
-    if (limiter.isLimited) {
+    // Rate limiting (T-AUTH-003) - Dual-layer protection
+    const ip = (req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
+
+    // 1. IP-based limit (protect against wide brute force / DoS)
+    const ipLimiter = await rateLimit(`reset_ip_${ip}`, 5, 60 * 60 * 1000); // 5 per hour
+    if (ipLimiter.isLimited) {
       return NextResponse.json(
         { error: 'Too many reset attempts. Please try again in an hour.' },
-        { status: 429, headers: limiter.headers },
+        { status: 429, headers: ipLimiter.headers },
+      );
+    }
+
+    // 2. Email-based limit (protect against targeted brute force)
+    const emailLimiter = await rateLimit(`reset_email_${email}`, 10, 60 * 60 * 1000); // 10 per hour
+    if (emailLimiter.isLimited) {
+      return NextResponse.json(
+        { error: 'Too many reset attempts for this email. Please try again in an hour.' },
+        { status: 429, headers: emailLimiter.headers },
       );
     }
 
