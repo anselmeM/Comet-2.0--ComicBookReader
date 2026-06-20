@@ -50,19 +50,20 @@ export function DashboardSidebar({
   return (
     <motion.aside
       initial={false}
-      animate={{ width: isOpen ? 320 : 120 }}
+      animate={{ width: isOpen ? 320 : 88 }}
       transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
       className="hidden md:flex bg-white border-r border-neutral-50 flex-col py-14 shrink-0 overflow-y-auto no-scrollbar"
     >
       <motion.div
         initial={false}
-        animate={{ paddingLeft: isOpen ? 24 : 36 }}
+        animate={{ paddingLeft: isOpen ? 24 : 0 }}
         transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-        className="mb-20 flex items-center gap-4"
+        className={`mb-20 flex items-center gap-4 ${!isOpen ? 'justify-center' : ''}`}
       >
         <div
           className="w-12 h-12 bg-blue-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/30 font-black rotate-6 hover:rotate-0 transition-transform cursor-pointer text-2xl shrink-0"
           onClick={onToggle}
+          title={isOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
         >
           C
         </div>
@@ -79,16 +80,20 @@ export function DashboardSidebar({
         </motion.h1>
       </motion.div>
 
-      <nav className="flex-1 px-6 space-y-4">
+      <nav className={`flex-1 space-y-4 ${isOpen ? 'px-6' : 'px-4'}`}>
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onNavClick(item.id)}
             title={!isOpen ? item.name : undefined}
             aria-current={activeView === item.id ? 'page' : undefined}
-            className={`w-full flex items-center px-6 py-5 rounded-[1.8rem] font-bold text-lg transition-all ${
+            className={`flex items-center transition-all ${
+              isOpen
+                ? 'w-full px-6 py-5 rounded-[1.8rem] justify-start text-lg font-bold'
+                : 'w-12 h-12 rounded-[1.25rem] justify-center mx-auto'
+            } ${
               activeView === item.id
-                ? 'bg-blue-500 text-white shadow-xl shadow-blue-500/40 translate-x-1'
+                ? 'bg-blue-500 text-white shadow-xl shadow-blue-500/40'
                 : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900'
             }`}
           >
@@ -113,16 +118,20 @@ export function DashboardSidebar({
         ))}
       </nav>
 
-      <div className="px-6 space-y-4 mt-auto border-t border-neutral-50 pt-10 pb-10">
+      <div
+        className={`space-y-4 mt-auto border-t border-neutral-50 pt-10 pb-10 ${isOpen ? 'px-6' : 'px-4'}`}
+      >
         {bottomNavItems.map((item) => (
           <button
             key={item.id}
             onClick={() => (item.id === 'logout' ? handleLogout() : onNavClick(item.id))}
             title={!isOpen ? item.name : undefined}
             aria-current={activeView === item.id ? 'page' : undefined}
-            className={`w-full flex items-center px-6 py-5 rounded-[1.8rem] font-bold text-lg text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900 transition-all ${
-              item.id === 'logout' ? 'hover:text-red-400' : ''
-            }`}
+            className={`flex items-center transition-all ${
+              isOpen
+                ? 'w-full px-6 py-5 rounded-[1.8rem] justify-start text-lg font-bold text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900'
+                : 'w-12 h-12 rounded-[1.25rem] justify-center mx-auto text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900'
+            } ${item.id === 'logout' ? 'hover:text-red-400' : ''}`}
           >
             <item.icon size={24} strokeWidth={2.5} className="shrink-0" />
             <motion.span

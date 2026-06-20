@@ -41,6 +41,13 @@ export function DashboardHeader({
   return (
     <header className="h-16 md:h-32 px-4 md:px-12 flex items-center justify-between bg-white/40 backdrop-blur-3xl shrink-0 border-b border-neutral-50 shrink-0 z-50 transition-all">
       <div className="flex items-center gap-2 md:gap-6 flex-1 max-w-2xl">
+        <button
+          onClick={onSidebarToggle}
+          aria-label="Toggle Sidebar"
+          className="p-2.5 md:p-5 rounded-xl md:rounded-[1.5rem] border bg-white border-neutral-100 text-neutral-400 hover:border-neutral-300 transition-all shadow-sm shrink-0"
+        >
+          <AlignRight className="w-5 h-5 md:w-6 md:h-6" />
+        </button>
         <motion.div
           initial={false}
           whileHover={{ width: 320 }}
