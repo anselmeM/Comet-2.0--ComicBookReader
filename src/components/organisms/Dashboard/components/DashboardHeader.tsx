@@ -164,7 +164,7 @@ export function DashboardHeader({
           </button>
 
           {/* Persistent Search Input */}
-          <div className="relative h-10 md:h-12 flex-1 max-w-[260px] md:max-w-[360px] flex items-center bg-neutral-50 hover:bg-neutral-100/80 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/10 rounded-xl md:rounded-[1.5rem] border border-neutral-100 focus-within:border-blue-500/30 transition-all duration-300 shadow-sm">
+          <div className="relative h-10 md:h-12 flex-1 max-w-[260px] md:max-w-[360px] flex items-center bg-neutral-50 hover:bg-neutral-100/80 hover:border-neutral-200 focus-within:bg-white focus-within:border-neutral-300 rounded-xl md:rounded-[1.5rem] border border-neutral-100 transition-all duration-300 shadow-sm">
             <div className="absolute left-0 w-10 md:w-12 h-10 md:h-12 flex items-center justify-center shrink-0">
               <Search className="text-neutral-400 w-4 h-4 md:w-5 md:h-5" />
             </div>
@@ -173,7 +173,7 @@ export function DashboardHeader({
               placeholder="Search library..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full bg-transparent border-none py-2 pl-10 md:pl-12 pr-10 text-xs md:text-sm font-bold text-neutral-800 placeholder:text-neutral-400 outline-none"
+              className="w-full bg-transparent border-none py-2 pl-10 md:pl-12 pr-10 text-xs md:text-sm font-bold text-neutral-800 placeholder:text-neutral-400 outline-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none"
               aria-label="Search library"
             />
             {searchQuery && (
