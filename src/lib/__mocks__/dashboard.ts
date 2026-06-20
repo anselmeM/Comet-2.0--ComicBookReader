@@ -25,8 +25,8 @@ export interface TopRatedComic {
 export const navItems: NavItem[] = [
   { name: 'Dashboard', icon: LayoutGrid, id: 'dashboard' },
   { name: 'My collections', icon: Folder, id: 'collections' },
-  { name: 'Favourites', icon: Heart, id: 'favourites' },
   { name: 'Reading history', icon: History, id: 'history' },
+  { name: 'Favourites', icon: Heart, id: 'favourites' },
   { name: 'Friends', icon: Users, id: 'friends' },
 ];
 
