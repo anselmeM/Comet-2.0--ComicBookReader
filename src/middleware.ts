@@ -12,8 +12,11 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const plan = req.auth?.user?.plan || 'FREE';
 
-  // 1. Handle Redirects / API Errors first
-  const isPublicApiRoute = nextUrl.pathname.startsWith('/api/auth');
+  const isPublicApiRoute =
+    nextUrl.pathname.startsWith('/api/auth') ||
+    nextUrl.pathname === '/api/stripe/locale' ||
+    nextUrl.pathname === '/api/health' ||
+    nextUrl.pathname.startsWith('/api/webhooks/');
   const isStorageApiRoute = nextUrl.pathname.startsWith('/api/storage');
 
   // Restrict Storage APIs to PREMIUM users
@@ -72,5 +75,7 @@ export default auth((req) => {
 
 export const config = {
   // Match all routes EXCEPT static files, _next internals, and favicon
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icons/|manifest.json).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|icons/|manifest.json|unrar\\.wasm|offline\\.html|robots\\.txt|openapi\\.json|\\.well-known).*)',
+  ],
 };

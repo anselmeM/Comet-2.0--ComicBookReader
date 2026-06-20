@@ -18,6 +18,7 @@ vi.mock('@/lib/db', () => ({
     comic: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
     },
     user: {
       findUnique: vi.fn(),
@@ -27,6 +28,8 @@ vi.mock('@/lib/db', () => ({
       findUnique: vi.fn(),
       upsert: vi.fn(),
       delete: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
+      aggregate: vi.fn().mockResolvedValue({ _sum: { totalTimeSpent: 0 } }),
     },
     readingSession: {
       findFirst: vi.fn(),

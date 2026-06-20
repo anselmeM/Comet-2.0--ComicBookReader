@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { LogIn, Rocket, KeyRound, Mail, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -13,6 +13,8 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status } = useSession();
+  const shouldReduceMotion = useReducedMotion();
+  const isReduced = !!shouldReduceMotion;
 
   // Get callback URL from query params (set by middleware)
   const callbackUrl = searchParams.get('callbackUrl') || '/library';
@@ -115,8 +117,8 @@ function LoginForm() {
   if (status === 'loading') {
     return (
       <div className="w-full max-w-md flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
-        <p className="text-zinc-400 text-sm">Checking session...</p>
+        <div className="w-12 h-12 border-4 border-[#ff5a00]/20 border-t-[#ff5a00] rounded-full animate-spin" />
+        <p className="text-neutral-400 text-sm font-semibold">Checking session...</p>
       </div>
     );
   }
@@ -128,18 +130,18 @@ function LoginForm() {
       initial="hidden"
       animate="visible"
     >
-      {/* Glass Card */}
-      <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 p-8 rounded-3xl shadow-2xl relative z-10">
+      {/* Neo-brutalist Panel */}
+      <div className="bg-neutral-950 border-3 border-neutral-950 rounded-[2rem] shadow-[8px_8px_0px_0px_#ff5a00] p-8 md:p-10 relative z-10">
         <motion.div variants={itemVariants} className="flex justify-center mb-8">
           <div className="relative">
-            <div className="bg-gradient-to-br from-blue-500 to-violet-600 p-4 rounded-2xl shadow-lg shadow-blue-500/20">
+            <div className="bg-[#ff5a00] border-2 border-neutral-950 shadow-[3px_3px_0px_0px_#000] p-4 rounded-2xl">
               <Rocket className="w-8 h-8 text-white" />
             </div>
             {email && email.includes('@') && (
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="absolute -top-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-600 font-black text-lg border-2 border-blue-600 shadow-xl"
+                className="absolute -top-2 -right-2 w-10 h-10 bg-[#a3e635] text-neutral-950 rounded-full flex items-center justify-center font-heading font-black text-lg border-2 border-neutral-950 shadow-[2px_2px_0px_0px_#000]"
               >
                 {email.split('@')[0].charAt(0).toUpperCase()}
               </motion.div>
@@ -148,12 +150,10 @@ function LoginForm() {
         </motion.div>
 
         <motion.div variants={itemVariants} className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400 mb-2">
-            {email && email.includes('@')
-              ? `Welcome back, ${email.split('@')[0]}!`
-              : 'Welcome back'}
+          <h1 className="text-3xl font-heading font-black uppercase italic text-white mb-2">
+            {email && email.includes('@') ? `Hi, ${email.split('@')[0]}!` : 'Welcome back'}
           </h1>
-          <p className="text-zinc-400 text-sm">
+          <p className="text-neutral-400 text-sm font-medium">
             {email && email.includes('@')
               ? 'Great to see you again.'
               : 'Sign in to access your Comet library'}
@@ -163,10 +163,10 @@ function LoginForm() {
         {errorMsg && (
           <motion.div
             variants={itemVariants}
-            className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3"
+            className="mb-6 p-4 bg-red-500/10 border-2 border-red-500/30 rounded-xl flex items-start gap-3"
           >
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-red-200">{errorMsg}</p>
+            <p className="text-sm text-red-200 font-semibold">{errorMsg}</p>
           </motion.div>
         )}
 
@@ -174,7 +174,7 @@ function LoginForm() {
           <motion.form variants={itemVariants} onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-zinc-500" />
+                <Mail className="h-5 w-5 text-neutral-500" />
               </div>
               <input
                 ref={emailRef}
@@ -182,7 +182,7 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="block w-full pl-11 pr-4 py-3 bg-zinc-950/50 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
+                className="block w-full pl-11 pr-4 py-3 bg-neutral-900/50 border-2 border-neutral-850 hover:border-[#ff5a00]/40 focus:border-[#ff5a00] rounded-xl text-white placeholder-neutral-500 transition-all outline-none font-medium focus:ring-2 focus:ring-[#ff5a00]/10"
                 required
                 disabled={loading}
               />
@@ -190,14 +190,14 @@ function LoginForm() {
 
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <KeyRound className="h-5 w-5 text-zinc-500" />
+                <KeyRound className="h-5 w-5 text-neutral-500" />
               </div>
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="block w-full pl-11 pr-12 py-3 bg-zinc-950/50 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
+                className="block w-full pl-11 pr-12 py-3 bg-neutral-900/50 border-2 border-neutral-850 hover:border-[#ff5a00]/40 focus:border-[#ff5a00] rounded-xl text-white placeholder-neutral-500 transition-all outline-none font-medium focus:ring-2 focus:ring-[#ff5a00]/10"
                 required
                 disabled={loading}
               />
@@ -215,7 +215,7 @@ function LoginForm() {
             <div className="flex items-center justify-between">
               <Link
                 href="/forgot-password"
-                className={`text-sm text-blue-400 hover:text-blue-300 transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}
+                className={`text-xs font-heading font-black uppercase tracking-wider text-[#ff5a00] hover:text-[#ff7830] transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}
               >
                 Forgot password?
               </Link>
@@ -224,14 +224,14 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-white hover:bg-zinc-100 disabled:opacity-50 text-zinc-900 font-semibold py-3 px-4 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg mt-2 cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 bg-[#ff5a00] hover:bg-[#e65100] disabled:bg-[#ff5a00]/50 disabled:cursor-not-allowed text-white font-heading font-black uppercase tracking-wider py-3.5 px-4 border-2 border-neutral-950 rounded-xl transition-all active:scale-[0.98] shadow-[3px_3px_0px_0px_#000] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none mt-2 cursor-pointer"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-zinc-900/20 border-t-zinc-900 rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <LogIn className="w-5 h-5" />
-                  Sign In
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
                 </>
               )}
             </button>
@@ -240,10 +240,10 @@ function LoginForm() {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-zinc-800/80"></div>
+              <div className="w-full border-t border-neutral-850"></div>
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-zinc-950 px-3 text-zinc-500 rounded-full border border-zinc-800/30">
+              <span className="bg-neutral-950 px-3 text-neutral-500 rounded-full border-2 border-neutral-850">
                 Or continue with
               </span>
             </div>
@@ -256,7 +256,7 @@ function LoginForm() {
               type="button"
               onClick={() => signIn('google')}
               disabled={loading}
-              className="flex items-center justify-center py-2.5 border border-zinc-800 rounded-xl bg-zinc-950/40 hover:bg-zinc-900/60 transition-all text-zinc-300 hover:text-white disabled:opacity-50 shadow-sm cursor-pointer"
+              className="flex items-center justify-center py-2.5 border-2 border-neutral-950 rounded-xl bg-neutral-900 hover:bg-neutral-850 transition-all text-neutral-300 hover:text-white disabled:opacity-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#ff5a00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none cursor-pointer"
               title="Sign in with Google"
             >
               <svg
@@ -289,7 +289,7 @@ function LoginForm() {
               type="button"
               onClick={() => signIn('github')}
               disabled={loading}
-              className="flex items-center justify-center py-2.5 border border-zinc-800 rounded-xl bg-zinc-950/40 hover:bg-zinc-900/60 transition-all text-zinc-300 hover:text-white disabled:opacity-50 shadow-sm cursor-pointer"
+              className="flex items-center justify-center py-2.5 border-2 border-neutral-950 rounded-xl bg-neutral-900 hover:bg-neutral-850 transition-all text-neutral-300 hover:text-white disabled:opacity-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#ff5a00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none cursor-pointer"
               title="Sign in with GitHub"
             >
               <svg
@@ -310,7 +310,7 @@ function LoginForm() {
               type="button"
               onClick={() => signIn('discord')}
               disabled={loading}
-              className="flex items-center justify-center py-2.5 border border-zinc-800 rounded-xl bg-zinc-950/40 hover:bg-zinc-900/60 transition-all text-zinc-300 hover:text-white disabled:opacity-50 shadow-sm cursor-pointer"
+              className="flex items-center justify-center py-2.5 border-2 border-neutral-950 rounded-xl bg-neutral-900 hover:bg-neutral-850 transition-all text-neutral-300 hover:text-white disabled:opacity-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#ff5a00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none cursor-pointer"
               title="Sign in with Discord"
             >
               <svg
@@ -325,11 +325,11 @@ function LoginForm() {
         </div>
 
         <motion.div variants={itemVariants} className="mt-8 text-center">
-          <p className="text-zinc-500 text-sm">
+          <p className="text-neutral-500 text-sm">
             Don&apos;t have an account?{' '}
             <Link
               href="/register"
-              className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+              className="text-[#ff5a00] hover:text-[#ff7830] font-heading font-black uppercase tracking-wider text-xs transition-colors"
             >
               Create one now
             </Link>
@@ -341,26 +341,53 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+  const shouldReduceMotion = useReducedMotion();
+  const isReduced = !!shouldReduceMotion;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-4 relative overflow-hidden">
-      {/* Background Orbs */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen flex items-center justify-center bg-[#09090b] text-[#e8e8f0] p-4 relative overflow-hidden bg-halftone">
+      {/* Background Gradients (Warm Sunset Nebula) */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={
+            isReduced
+              ? {}
+              : {
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, 0],
+                }
+          }
+          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-lime-500/5 rounded-full blur-[140px]"
+        />
+        <motion.div
+          animate={
+            isReduced
+              ? {}
+              : {
+                  scale: [1, 1.15, 1],
+                  rotate: [0, -8, 0],
+                }
+          }
+          transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#ff5a00]/5 rounded-full blur-[140px]"
+        />
+      </div>
 
       {/* Back to Home Link */}
       <Link
         href="/"
-        className="absolute top-6 left-6 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+        className="absolute top-6 left-6 inline-flex items-center gap-2 rounded-xl border-2 border-neutral-850 bg-neutral-950/40 px-4 py-2 text-xs font-heading font-black uppercase text-neutral-300 hover:text-white hover:border-[#ff5a00] transition-all z-50 cursor-pointer"
       >
-        <ArrowLeft size={20} />
-        <span className="text-sm">Back to home</span>
+        <ArrowLeft size={14} />
+        <span>Back to home</span>
       </Link>
 
       <Suspense
         fallback={
-          <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 p-8 rounded-3xl shadow-2xl relative z-10 w-full max-w-md flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
-            <p className="text-zinc-400 text-sm">Loading login...</p>
+          <div className="bg-neutral-950 border-3 border-neutral-950 p-8 rounded-[2rem] shadow-[8px_8px_0px_0px_#ff5a00] relative z-10 w-full max-w-md flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-[#ff5a00]/20 border-t-[#ff5a00] rounded-full animate-spin" />
+            <p className="text-neutral-400 text-sm font-semibold">Loading login...</p>
           </div>
         }
       >

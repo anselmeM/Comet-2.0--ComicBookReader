@@ -32,6 +32,10 @@ vi.mock('@/lib/db', () => ({
     user: {
       findUnique: vi.fn(),
     },
+    readingProgress: {
+      count: vi.fn().mockResolvedValue(0),
+      aggregate: vi.fn().mockResolvedValue({ _sum: { totalTimeSpent: 0 } }),
+    },
     userBadge: {
       findMany: vi.fn().mockResolvedValue([]),
       create: vi.fn(),

@@ -9,8 +9,8 @@
   --color-border:      #2a2a3d;   /* Subtle dividers */
   --color-text:        #e8e8f0;   /* Primary body text */
   --color-text-muted:  #6b6b8a;   /* Secondary / placeholder text */
-  --color-accent:      #7c6af7;   /* Comet purple — CTAs, active states */
-  --color-accent-hover:#9580ff;   /* Accent on hover */
+  --color-accent:      #ff5a00;   /* Comet orange — CTAs, active states */
+  --color-accent-hover:#ff7830;   /* Accent on hover */
   --color-success:     #4caf82;   /* Success / completed */
   --color-warning:     #f5a623;   /* Warning */
   --color-error:       #e05c5c;   /* Destructive / error */
@@ -94,6 +94,42 @@ button:disabled {
   --color-comet-muted:    var(--color-text-muted);
   --color-comet-accent:   var(--color-accent);
   --color-comet-accent-hover: var(--color-accent-hover);
+  
+  --font-heading:         var(--font-space-grotesk), sans-serif;
+  --font-display:         var(--font-syne), sans-serif;
+}
+
+/* ── Custom Redesign Utilities ──────────────────────────────────────────────── */
+.bg-halftone {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(-1.5deg); }
+}
+
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(0.5deg); }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float-medium 6s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float-fast 5s ease-in-out infinite;
 }
 
 /* ── Reader overlay ───────────────────────────────────────────────────────── */

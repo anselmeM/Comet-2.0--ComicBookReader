@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Space_Grotesk, Syne } from 'next/font/google';
 import { Providers } from '@/app/providers';
 import { NetworkStatusIndicator } from '@/components/atoms/NetworkStatusIndicator';
 import { PWAUpdater } from '@/components/atoms/PWAUpdater';
@@ -11,6 +11,18 @@ import './globals.css';
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+  display: 'swap',
+});
+
+const syne = Syne({
+  subsets: ['latin'],
+  variable: '--font-syne',
   display: 'swap',
 });
 
@@ -55,7 +67,11 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const nonce = (await headers()).get('x-nonce') || undefined;
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${inter.variable} ${spaceGrotesk.variable} ${syne.variable}`}
+      suppressHydrationWarning
+    >
       <body className="bg-comet-bg text-comet-text antialiased">
         <NetworkStatusIndicator />
         <PWAUpdater />

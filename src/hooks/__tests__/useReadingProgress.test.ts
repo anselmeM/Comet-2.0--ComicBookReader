@@ -47,6 +47,11 @@ describe('useReadingProgress', () => {
       return selector(state);
     });
 
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    } as any);
+
     vi.useFakeTimers();
   });
 
