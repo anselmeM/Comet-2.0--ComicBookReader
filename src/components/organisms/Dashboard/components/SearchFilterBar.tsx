@@ -38,19 +38,19 @@ export function SearchFilterBar({
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className={`bg-white border border-neutral-100 rounded-2xl shadow-2xl overflow-hidden shrink-0 z-50 ${className || ''}`}
+      className={`bg-white/95 backdrop-blur-2xl border border-neutral-200/50 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.12)] shrink-0 z-50 p-6 md:p-8 ${className || ''}`}
     >
-      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
         {/* Sort By */}
-        <div className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-2">
-            <SortAsc size={12} /> Sort By
+        <div className="space-y-2">
+          <label className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-400 flex items-center gap-1.5">
+            <SortAsc size={12} className="text-blue-500" /> Sort By
           </label>
-          <div className="relative">
+          <div className="relative group">
             <select
               value={sortBy || 'recent'}
               onChange={(e) => onSortChange(e.target.value)}
-              className="w-full bg-neutral-50 border border-neutral-100 rounded-xl py-3 px-4 text-sm font-bold text-neutral-800 outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none cursor-pointer"
+              className="w-full bg-neutral-50/50 group-hover:bg-neutral-50 hover:border-neutral-300 focus:bg-white border border-neutral-200/60 rounded-2xl py-3.5 pl-4 pr-10 text-sm font-bold text-neutral-700 outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/40 appearance-none cursor-pointer transition-all duration-300"
             >
               <option value="recent">Recently Read</option>
               <option value="added">Recently Added</option>
@@ -64,26 +64,26 @@ export function SearchFilterBar({
               <option value="rating_asc">Rating (Low to High)</option>
             </select>
             <ChevronDown
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 pointer-events-none"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 group-hover:text-neutral-600 transition-colors pointer-events-none"
               size={16}
             />
           </div>
         </div>
 
         {/* Read Status */}
-        <div className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-2">
-            <BookOpen size={12} /> Status
+        <div className="space-y-2">
+          <label className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-400 flex items-center gap-1.5">
+            <BookOpen size={12} className="text-blue-500" /> Status
           </label>
-          <div className="flex gap-1 bg-neutral-50 p-1 rounded-xl border border-neutral-100">
+          <div className="flex gap-1 bg-neutral-100/50 p-1 rounded-2xl border border-neutral-200/30">
             {['all', 'unread', 'reading', 'completed'].map((status) => (
               <button
                 key={status}
                 onClick={() => onReadStatusChange(status)}
-                className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
+                className={`flex-1 py-2.5 text-[10px] md:text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 ${
                   (readStatus || 'all') === status
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-neutral-400 hover:text-neutral-600'
+                    ? 'bg-white text-blue-600 shadow-md shadow-neutral-200/60 border border-neutral-100 font-extrabold scale-100'
+                    : 'text-neutral-400 hover:text-neutral-700 hover:scale-[1.02]'
                 }`}
               >
                 {status}
@@ -93,64 +93,66 @@ export function SearchFilterBar({
         </div>
 
         {/* Year Range */}
-        <div className="md:col-span-2 space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-2">
-            <Calendar size={12} /> Release Period
+        <div className="md:col-span-2 space-y-2.5 pt-2 border-t border-neutral-100">
+          <label className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-400 flex items-center gap-1.5">
+            <Calendar size={12} className="text-blue-500" /> Release Period
           </label>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="relative flex-1 w-full">
               <Hash
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
                 size={14}
               />
               <input
                 type="number"
-                placeholder="From Year"
+                placeholder="From Year (e.g. 1999)"
                 value={yearStart || ''}
                 onChange={(e) =>
                   onYearStartChange(e.target.value ? parseInt(e.target.value) : null)
                 }
-                className="w-full bg-neutral-50 border border-neutral-100 rounded-xl py-3 pl-10 pr-4 text-sm font-bold text-neutral-800 outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full bg-neutral-50/50 hover:bg-neutral-50 hover:border-neutral-300 focus:bg-white border border-neutral-200/60 rounded-2xl py-3.5 pl-11 pr-4 text-sm font-bold text-neutral-700 outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/40 transition-all duration-300"
               />
             </div>
-            <div className="w-4 h-px bg-neutral-200" />
-            <div className="relative flex-1">
+            <div className="hidden sm:block w-4 h-px bg-neutral-200" />
+            <div className="relative flex-1 w-full">
               <Hash
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
                 size={14}
               />
               <input
                 type="number"
-                placeholder="To Year"
+                placeholder="To Year (e.g. 2026)"
                 value={yearEnd || ''}
                 onChange={(e) => onYearEndChange(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full bg-neutral-50 border border-neutral-100 rounded-xl py-3 pl-10 pr-4 text-sm font-bold text-neutral-800 outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full bg-neutral-50/50 hover:bg-neutral-50 hover:border-neutral-300 focus:bg-white border border-neutral-200/60 rounded-2xl py-3.5 pl-11 pr-4 text-sm font-bold text-neutral-700 outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/40 transition-all duration-300"
               />
             </div>
 
-            {onOfflineOnlyChange && (
-              <button
-                onClick={() => onOfflineOnlyChange(!isOfflineOnly)}
-                className={`p-3 rounded-xl transition-all border flex items-center justify-center ${
-                  isOfflineOnly
-                    ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm'
-                    : 'bg-neutral-50 text-neutral-400 border-neutral-100 hover:bg-neutral-100'
-                }`}
-                title={
-                  isOfflineOnly ? 'Showing offline comics only' : 'Filter by offline availability'
-                }
-              >
-                <CloudOff size={20} />
-              </button>
-            )}
+            <div className="flex gap-3 w-full sm:w-auto justify-end">
+              {onOfflineOnlyChange && (
+                <button
+                  onClick={() => onOfflineOnlyChange(!isOfflineOnly)}
+                  className={`p-3.5 rounded-2xl transition-all duration-300 border flex items-center justify-center ${
+                    isOfflineOnly
+                      ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-md shadow-blue-500/5 hover:bg-blue-100/50'
+                      : 'bg-neutral-50/50 text-neutral-400 border-neutral-200/60 hover:bg-neutral-100/50 hover:border-neutral-300'
+                  }`}
+                  title={
+                    isOfflineOnly ? 'Showing offline comics only' : 'Filter by offline availability'
+                  }
+                >
+                  <CloudOff size={18} strokeWidth={2.5} />
+                </button>
+              )}
 
-            <button
-              onClick={onReset}
-              className="p-3 bg-neutral-100 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 rounded-xl transition-all"
-              title="Reset all filters"
-            >
-              <X size={20} />
-            </button>
+              <button
+                onClick={onReset}
+                className="p-3.5 bg-neutral-100 hover:bg-neutral-200/80 text-neutral-400 hover:text-neutral-600 rounded-2xl transition-all duration-300 hover:rotate-12 active:scale-95"
+                title="Reset all filters"
+              >
+                <X size={18} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
