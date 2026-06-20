@@ -153,7 +153,10 @@ export function DashboardHeader({
 
   return (
     <header className="min-h-16 md:min-h-32 py-3 md:py-0 px-4 md:px-12 flex items-center justify-between bg-white/40 backdrop-blur-3xl shrink-0 border-b border-neutral-50 z-50 transition-all">
-      <div className="flex flex-col gap-3 flex-1 max-w-2xl justify-center">
+      <div
+        className="flex flex-col gap-3 flex-1 max-w-2xl justify-center relative"
+        ref={popoverRef}
+      >
         <div className="flex items-center gap-2 md:gap-4 w-full">
           <button
             onClick={onSidebarToggle}
@@ -187,41 +190,40 @@ export function DashboardHeader({
             )}
           </div>
 
-          {/* Floating Filter Popover Anchor */}
-          <div className="relative" ref={popoverRef}>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              aria-label="Toggle filters"
-              aria-expanded={showFilters}
-              className={`p-2.5 md:p-4 rounded-xl md:rounded-[1.5rem] border transition-all ${
-                showFilters
-                  ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20'
-                  : 'bg-white border-neutral-100 text-neutral-400 hover:border-neutral-300 shadow-sm'
-              }`}
-            >
-              <Filter className="w-5 h-5 md:w-6 md:h-6" />
-            </button>
-
-            <AnimatePresence>
-              {showFilters && (
-                <SearchFilterBar
-                  sortBy={sortBy}
-                  onSortChange={onSortChange}
-                  readStatus={readStatus}
-                  onReadStatusChange={onReadStatusChange}
-                  yearStart={yearStart}
-                  onYearStartChange={onYearStartChange}
-                  yearEnd={yearEnd}
-                  onYearEndChange={onYearEndChange}
-                  isOfflineOnly={isOfflineOnly}
-                  onOfflineOnlyChange={onOfflineOnlyChange}
-                  onReset={onResetFilters}
-                  className="absolute top-full left-0 md:left-auto md:right-0 mt-4 z-50 w-[calc(100vw-2rem)] sm:w-[480px]"
-                />
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Floating Filter Popover Button */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            aria-label="Toggle filters"
+            aria-expanded={showFilters}
+            className={`p-2.5 md:p-4 rounded-xl md:rounded-[1.5rem] border transition-all ${
+              showFilters
+                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20'
+                : 'bg-white border-neutral-100 text-neutral-400 hover:border-neutral-300 shadow-sm'
+            }`}
+          >
+            <Filter className="w-5 h-5 md:w-6 md:h-6" />
+          </button>
         </div>
+
+        {/* Floating Filter Popover Content */}
+        <AnimatePresence>
+          {showFilters && (
+            <SearchFilterBar
+              sortBy={sortBy}
+              onSortChange={onSortChange}
+              readStatus={readStatus}
+              onReadStatusChange={onReadStatusChange}
+              yearStart={yearStart}
+              onYearStartChange={onYearStartChange}
+              yearEnd={yearEnd}
+              onYearEndChange={onYearEndChange}
+              isOfflineOnly={isOfflineOnly}
+              onOfflineOnlyChange={onOfflineOnlyChange}
+              onReset={onResetFilters}
+              className="absolute top-full left-0 mt-4 z-50 w-[calc(100vw-2rem)] sm:w-[520px]"
+            />
+          )}
+        </AnimatePresence>
 
         {/* Active Filter Badges */}
         <AnimatePresence>

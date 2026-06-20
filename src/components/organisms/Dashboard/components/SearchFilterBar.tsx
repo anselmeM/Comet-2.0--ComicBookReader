@@ -40,7 +40,7 @@ export function SearchFilterBar({
       exit={{ opacity: 0, y: -10 }}
       className={`bg-white/95 backdrop-blur-2xl border border-neutral-200/50 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.12)] shrink-0 z-50 p-6 md:p-8 ${className || ''}`}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+      <div className="flex flex-col gap-6 w-full">
         {/* Sort By */}
         <div className="space-y-2">
           <label className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-400 flex items-center gap-1.5">
@@ -93,7 +93,7 @@ export function SearchFilterBar({
         </div>
 
         {/* Year Range */}
-        <div className="md:col-span-2 space-y-2.5 pt-2 border-t border-neutral-100">
+        <div className="space-y-2.5 pt-2 border-t border-neutral-100">
           <label className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-400 flex items-center gap-1.5">
             <Calendar size={12} className="text-blue-500" /> Release Period
           </label>
