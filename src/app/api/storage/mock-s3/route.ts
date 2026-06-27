@@ -24,12 +24,18 @@ export async function GET(req: Request) {
 
     ensureMockDir();
     const filePath = path.join(MOCK_S3_DIR, key.replace(/\//g, '_'));
+    const absolutePath = path.resolve(filePath);
+    const baseDir = path.resolve(MOCK_S3_DIR) + path.sep;
 
-    if (!fs.existsSync(filePath)) {
+    if (!absolutePath.startsWith(baseDir) && absolutePath !== path.resolve(MOCK_S3_DIR)) {
+      return NextResponse.json({ error: 'Invalid file path' }, { status: 403 });
+    }
+
+    if (!fs.existsSync(absolutePath)) {
       return NextResponse.json({ error: 'File not found in mock storage' }, { status: 404 });
     }
 
-    const fileBuffer = fs.readFileSync(filePath);
+    const fileBuffer = fs.readFileSync(absolutePath);
     return new Response(fileBuffer, {
       headers: {
         'Content-Type': 'application/octet-stream',
@@ -57,13 +63,19 @@ export async function PUT(req: Request) {
 
     ensureMockDir();
     const filePath = path.join(MOCK_S3_DIR, key.replace(/\//g, '_'));
+    const absolutePath = path.resolve(filePath);
+    const baseDir = path.resolve(MOCK_S3_DIR) + path.sep;
+
+    if (!absolutePath.startsWith(baseDir) && absolutePath !== path.resolve(MOCK_S3_DIR)) {
+      return NextResponse.json({ error: 'Invalid file path' }, { status: 403 });
+    }
 
     const arrayBuffer = await req.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     // Save to local mock directory
-    fs.writeFileSync(filePath, buffer);
-    logger.info(`[Mock S3] Saved ${buffer.length} bytes to ${filePath}`);
+    fs.writeFileSync(absolutePath, buffer);
+    logger.info(`[Mock S3] Saved ${buffer.length} bytes to ${absolutePath}`);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -87,10 +99,16 @@ export async function DELETE(req: Request) {
 
     ensureMockDir();
     const filePath = path.join(MOCK_S3_DIR, key.replace(/\//g, '_'));
+    const absolutePath = path.resolve(filePath);
+    const baseDir = path.resolve(MOCK_S3_DIR) + path.sep;
 
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      logger.info(`[Mock S3] Deleted ${filePath}`);
+    if (!absolutePath.startsWith(baseDir) && absolutePath !== path.resolve(MOCK_S3_DIR)) {
+      return NextResponse.json({ error: 'Invalid file path' }, { status: 403 });
+    }
+
+    if (fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath);
+      logger.info(`[Mock S3] Deleted ${absolutePath}`);
     }
 
     return NextResponse.json({ success: true });
