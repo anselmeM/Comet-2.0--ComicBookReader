@@ -12,6 +12,19 @@ function ensureMockDir() {
   }
 }
 
+// Security: Prevent path traversal by validating the resolved absolute path
+// and sanitizing both forward and backward slashes.
+function getSafeFilePath(key: string): string | null {
+  const sanitizedKey = key.replace(/[/\\]/g, '_');
+  const filePath = path.resolve(MOCK_S3_DIR, sanitizedKey);
+
+  if (!filePath.startsWith(MOCK_S3_DIR + path.sep)) {
+    return null;
+  }
+
+  return filePath;
+}
+
 // GET - Download file from mock storage
 export async function GET(req: Request) {
   try {
@@ -23,7 +36,11 @@ export async function GET(req: Request) {
     }
 
     ensureMockDir();
-    const filePath = path.join(MOCK_S3_DIR, key.replace(/\//g, '_'));
+    const filePath = getSafeFilePath(key);
+
+    if (!filePath) {
+      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+    }
 
     if (!fs.existsSync(filePath)) {
       return NextResponse.json({ error: 'File not found in mock storage' }, { status: 404 });
@@ -56,7 +73,11 @@ export async function PUT(req: Request) {
     }
 
     ensureMockDir();
-    const filePath = path.join(MOCK_S3_DIR, key.replace(/\//g, '_'));
+    const filePath = getSafeFilePath(key);
+
+    if (!filePath) {
+      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+    }
 
     const arrayBuffer = await req.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -86,7 +107,11 @@ export async function DELETE(req: Request) {
     }
 
     ensureMockDir();
-    const filePath = path.join(MOCK_S3_DIR, key.replace(/\//g, '_'));
+    const filePath = getSafeFilePath(key);
+
+    if (!filePath) {
+      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+    }
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
