@@ -11,7 +11,7 @@ test.describe('Comet Critical Flows', () => {
     await page.goto('/');
 
     // Check main title
-    await expect(page.locator('h1')).toContainText('Read Beyond Boundaries.');
+    await expect(page.locator('h1')).toContainText('READ BEYOND THE GUTTERS.');
 
     // Check call to action
     const startReading = page.getByRole('link', { name: /Start Reading/i });
