@@ -9,6 +9,19 @@ import { registerSchema } from '@/lib/validations';
 
 export async function POST(req: Request) {
   try {
+    // CSRF protection: validate Origin/Referer header
+    const origin = req.headers.get('origin');
+    const referer = req.headers.get('referer');
+    const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+    const allowedOrigins = appUrl ? [appUrl] : [];
+    if (process.env.NODE_ENV === 'development') {
+      allowedOrigins.push('http://localhost:3100');
+    }
+    const requestOrigin = origin || (referer ? new URL(referer).origin : null);
+    if (requestOrigin && allowedOrigins.length > 0 && !allowedOrigins.includes(requestOrigin)) {
+      return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 });
+    }
+
     // 1. Rate limiting (T-AUTH-003)
     const ip = (req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
     const limiter = await rateLimit(`reg_${ip}`, 5, 60 * 60 * 1000); // 5 per hour
