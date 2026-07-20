@@ -68,6 +68,7 @@
   "devDependencies": {
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.60.0",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/swagger-ui-react": "^5.18.0",
@@ -79,6 +80,7 @@
     "lint-staged": "^17.0.7",
     "prettier": "^3.8.4",
     "prisma": "^5.22.0",
+    "vercel": "^56.4.1",
     "vitest": "^4.0.18"
   },
   "overrides": {
