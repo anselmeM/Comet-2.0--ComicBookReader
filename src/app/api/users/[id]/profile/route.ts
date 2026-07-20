@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
@@ -9,10 +9,8 @@ import { logger } from '@/lib/logger';
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { session, errorResponse } = await validateSession();
+    if (errorResponse) return errorResponse;
 
     const { id: targetUserId } = await params;
 

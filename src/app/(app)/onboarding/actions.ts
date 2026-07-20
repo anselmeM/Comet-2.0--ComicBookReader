@@ -1,6 +1,6 @@
-'use server'; // This is a mistake, this should be a server action file, so it should be 'use server';
+'use server';
 
-import { auth } from '@/auth';
+import { requireAuth } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
@@ -12,11 +12,7 @@ export async function completeOnboarding(preferences?: {
   defaultReadingMode?: 'single-page' | 'single-vertical' | 'dual-spread' | 'manga-rtl';
   theme?: 'dark' | 'light' | 'sepia';
 }) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    throw new Error('You must be logged in to complete onboarding');
-  }
+  const session = await requireAuth();
 
   const updateData: {
     hasCompletedOnboarding: boolean;

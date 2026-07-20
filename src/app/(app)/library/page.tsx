@@ -56,7 +56,7 @@ export default function LibraryPage() {
       await Promise.all(ids.map((id) => deleteMutation.mutateAsync(id)));
       await refetch();
     } catch (e) {
-      console.error('Bulk delete error:', e);
+      logger.error('Bulk delete error', {}, e as Error);
       throw e;
     }
   };
@@ -105,7 +105,7 @@ export default function LibraryPage() {
       await parseComic(file);
       await refetch();
     } catch (e) {
-      console.error(e);
+      logger.error('File upload failed', {}, e as Error);
     }
   };
 
@@ -145,7 +145,7 @@ export default function LibraryPage() {
         triggerNotification('Comic restored from cloud', 'success');
       }
     } catch (e: any) {
-      console.error('Restore failed:', e);
+      logger.error('Restore failed', {}, e instanceof Error ? e : undefined);
       triggerNotification(`Restore failed: ${e.message || 'Corrupted archive file'}`, 'error');
     }
   };

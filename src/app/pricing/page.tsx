@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { logger } from '@/lib/logger';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   Zap,
@@ -140,7 +141,7 @@ export default function PricingPage() {
           setIsGeoLoaded(true);
         }
       } catch (error) {
-        console.error('Failed to detect country locale:', error);
+        logger.error('Failed to detect country locale', {}, error as Error);
       }
     }
     detectLocale();

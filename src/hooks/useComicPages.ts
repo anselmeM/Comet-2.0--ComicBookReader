@@ -4,6 +4,7 @@ import { CachedComic, ComicDTO } from '@/types';
 import { useAuthCallback } from './useAuthCallback';
 import { useSession } from 'next-auth/react';
 import { executeParserWorker } from '@/lib/comic-worker-client';
+import { logger } from '@/lib/logger';
 
 export type ComicLoadErrorType = 'metadata' | 'cache' | 'auth' | 'unknown';
 
@@ -107,7 +108,11 @@ export function useComicPages(comicId: string): UseComicPagesResult {
 
             return cachedEntry;
           } catch (cloudErr) {
-            console.error('[AUTO_RESTORE_FAILED] Falling back to manual import:', cloudErr);
+            logger.error(
+              '[AUTO_RESTORE_FAILED] Falling back to manual import',
+              {},
+              cloudErr as Error,
+            );
           }
         }
         throw new Error('Comic not found in local storage. Please re-import the comic file.');

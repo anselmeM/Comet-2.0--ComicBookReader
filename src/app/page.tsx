@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { logger } from '@/lib/logger';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 import {
@@ -259,7 +260,7 @@ export default function Home() {
         setSandboxDetectedPanels((prev) => ({ ...prev, [pageIdx]: panels }));
         imageBitmap.close();
       } catch (err) {
-        console.error('Panel detection failed:', err);
+        logger.error('Panel detection failed', {}, err as Error);
       } finally {
         setSandboxIsDetecting(false);
       }
@@ -311,7 +312,7 @@ export default function Home() {
       setSandboxIsParsing(false);
       setSandboxProgress(null);
     } catch (err: any) {
-      console.error(err);
+      logger.error('Sandbox parse failed', {}, err instanceof Error ? err : undefined);
       setSandboxError(err.message || 'Failed to parse file.');
       setSandboxIsParsing(false);
       setSandboxProgress(null);
