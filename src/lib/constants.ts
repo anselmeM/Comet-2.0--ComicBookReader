@@ -11,8 +11,8 @@ export const COMIC_CONFIG = {
 };
 
 export const AUTH_CONFIG = {
-  PASSWORD_MIN_LENGTH: 8,
-  SESSION_MAX_AGE_DAYS: 30,
+  PASSWORD_MIN_LENGTH: 12,
+  SESSION_MAX_AGE_DAYS: 7,
 };
 
 export const STORAGE_CONFIG = {

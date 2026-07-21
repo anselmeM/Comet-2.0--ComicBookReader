@@ -1,0 +1,35 @@
+name: Database Backup
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # Daily at 04:00 UTC
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: Backup Database
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Run Prisma backup
+        run: |
+          npx prisma db pull --schema=prisma/schema.prisma
+          echo "Database schema snapshot created at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+      - name: Upload schema snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-schema-${{ github.run_id }}
+          path: prisma/schema.prisma
+          retention-days: 30
