@@ -8,6 +8,7 @@ import { Suspense, useState, useEffect, useRef } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 
 import { logger } from '@/lib/logger';
+import { getSafeRedirect } from '@/lib/url';
 
 function LoginForm() {
   const router = useRouter();
@@ -17,7 +18,8 @@ function LoginForm() {
   const isReduced = !!shouldReduceMotion;
 
   // Get callback URL from query params (set by middleware)
-  const callbackUrl = searchParams.get('callbackUrl') || '/library';
+  const rawCallbackUrl = searchParams.get('callbackUrl');
+  const callbackUrl = getSafeRedirect(rawCallbackUrl, '/library');
   const errorParam = searchParams.get('error');
 
   const [email, setEmail] = useState('');
