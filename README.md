@@ -10,18 +10,25 @@ A modern, offline-first comic book reader built with Next.js, featuring a beauti
 - 📖 **Immersive Reader** - Guided view reading experience with smooth page transitions
 - 📱 **PWA Support** - Install as a native app on desktop and mobile
 - 🔄 **Offline First** - Works offline with IndexedDB caching
+- ☁️ **Cloud Sync (Premium)** - Cross-device sync via S3/R2 with pre-signed URLs
+- 💳 **Billing** - Stripe subscriptions with FREE/PREMIUM plans
 - 🎨 **Beautiful UI** - Dark theme optimized for reading
 - 🔍 **Metadata Enrichment** - Automatic comic information fetching from ComicVine
-- 🔐 **Authentication** - Secure user accounts with NextAuth.js
+- 👥 **Social** - Friends, feed reactions, direct messages, reading clubs
+- 🏆 **Gamification** - Badges, reading streaks, and statistics
+- 🔐 **Authentication** - Secure accounts with NextAuth.js (credentials + OAuth)
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
-- **Database**: SQLite with Prisma ORM
+- **Database**: PostgreSQL with Prisma ORM (SQLite supported for local development)
 - **Auth**: NextAuth.js v5
 - **State**: Zustand
+- **Billing**: Stripe
+- **Monitoring**: Sentry
+- **Rate Limiting**: Upstash Redis
 - **PWA**: @ducanh2912/next-pwa
 - **Comic Parsing**: JSZip with Web Workers
 
@@ -59,19 +66,38 @@ npm run dev
 
 ### Environment Variables
 
-Create a `.env.local` file with the following:
+Create a `.env.local` file with the following (see `.env.example` for the full list):
 
 ```env
-# Database
-DATABASE_URL="file:./prisma/dev.db"
+# Database (PostgreSQL for production / shared dev; SQLite `file:./dev.db` for local dev)
+DATABASE_URL="postgresql://user:password@host:5432/comet"
+DIRECT_URL="postgresql://user:password@host:5432/comet"
 
 # NextAuth
 AUTH_SECRET="your-secret-key"
-AUTH_URL="http://localhost:3100"
+NEXTAUTH_URL="http://localhost:3100"
 
-# ComicVine API (optional)
-COMICVINE_API_KEY="your-api-key"
+# External APIs
+COMICVINE_API_KEY="your-comicvine-api-key"
+
+# Email (password resets)
+SMTP_HOST="smtp.example.com"
+SMTP_PORT="587"
+SMTP_USER="user@example.com"
+SMTP_PASSWORD="your-smtp-password"
+SMTP_FROM="\"Comet Reader\" <noreply@yourdomain.com>"
+
+# Cloud Sync (S3/R2/B2 — required for production Cloud Sync)
+AWS_ACCESS_KEY_ID="..."
+AWS_SECRET_ACCESS_KEY="..."
+AWS_ENDPOINT="https://your-account-id.r2.cloudflarestorage.com"
+AWS_REGION="auto"
+AWS_BUCKET_NAME="comet-comics"
 ```
+
+The build automatically configures Prisma for PostgreSQL when `DATABASE_URL` is a
+PostgreSQL connection string, otherwise it falls back to SQLite (running migrations
+only for PostgreSQL — use `npm run db:push` to sync a local SQLite schema).
 
 ## Project Structure
 
@@ -121,11 +147,31 @@ npm run build
 npm start
 ```
 
-### Linting
+### Quality Gates
 
 ```bash
-npm run lint
+npm run lint       # ESLint
+npm run typecheck  # TypeScript
+npm run test       # Vitest unit tests
+npm run test:e2e   # Playwright end-to-end tests
 ```
+
+### Database
+
+```bash
+npm run db:push    # Sync the Prisma schema to the database (SQLite local dev)
+npx prisma studio  # Browse the database
+```
+
+## CI/CD
+
+The repository ships with GitHub Actions workflows:
+
+- `ci.yml` — lint, typecheck, unit tests, and production build on every push/PR
+- `deploy.yml` — deploy to Vercel on pushes to `master`
+- `db-backup.yml` — scheduled PostgreSQL backups
+- `lighthouse.yml` — performance budgets
+- `security-audit.yml` — weekly dependency/security audit
 
 ## Contributing
 

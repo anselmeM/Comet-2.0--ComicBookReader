@@ -38,10 +38,9 @@ export default auth((req) => {
       return Response.redirect(new URL('/library', nextUrl));
     }
   } else if (!isPublicApiRoute) {
-    // Auth bypass for testing
+    // Auth bypass for testing — dev/test environments only, never in production
     const hasBypass =
-      (process.env.NODE_ENV !== 'production' || process.env.COMET_LOAD_TEST === 'true') &&
-      req.cookies.get('__COMET_TEST_BYPASS');
+      process.env.NODE_ENV !== 'production' && req.cookies.get('__COMET_TEST_BYPASS');
     if (!hasBypass && !isLoggedIn) {
       let callbackUrl = nextUrl.pathname;
       if (nextUrl.search) {

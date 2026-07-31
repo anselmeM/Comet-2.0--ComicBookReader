@@ -12,7 +12,7 @@ import { cookies } from 'next/headers';
  * const userId = session.user.id;
  */
 export async function validateSession() {
-  if (process.env.NODE_ENV !== 'production' || process.env.COMET_LOAD_TEST === 'true') {
+  if (process.env.NODE_ENV !== 'production') {
     const cookieStore = await cookies();
     if (cookieStore.get('__COMET_TEST_BYPASS')) {
       return {
@@ -59,7 +59,7 @@ export async function validateSession() {
  * @returns The active session.
  */
 export async function requireAuth() {
-  if (process.env.NODE_ENV !== 'production' || process.env.COMET_LOAD_TEST === 'true') {
+  if (process.env.NODE_ENV !== 'production') {
     const cookieStore = await cookies();
     if (cookieStore.get('__COMET_TEST_BYPASS')) {
       return {

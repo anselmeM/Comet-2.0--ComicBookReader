@@ -28,11 +28,8 @@ export const authConfig: NextAuthConfig = {
       const isOnSettings = nextUrl.pathname.startsWith('/settings');
       const isOnOnboarding = nextUrl.pathname.startsWith('/onboarding');
 
-      // Bypass auth for E2E tests
-      if (
-        (process.env.NODE_ENV !== 'production' || process.env.COMET_LOAD_TEST === 'true') &&
-        request.cookies.get('__COMET_TEST_BYPASS')
-      ) {
+      // Bypass auth for E2E tests — dev/test environments only, never in production
+      if (process.env.NODE_ENV !== 'production' && request.cookies.get('__COMET_TEST_BYPASS')) {
         return true;
       }
 

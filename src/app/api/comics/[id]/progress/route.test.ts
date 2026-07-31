@@ -38,8 +38,8 @@ vi.mock('@/lib/db', () => ({
     },
     userBadge: {
       findMany: vi.fn().mockResolvedValue([]),
-      create: vi.fn(),
-      createMany: vi.fn(),
+      create: vi.fn().mockResolvedValue({}),
+      createMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     $transaction: vi.fn((arg) => {
       if (typeof arg === 'function') {

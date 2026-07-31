@@ -5,6 +5,18 @@ import { logger } from '@/lib/logger';
 
 const MOCK_S3_DIR = path.join(process.cwd(), 'prisma', 'mock-s3');
 
+// Mock storage is a development-only facility. In production the filesystem is
+// ephemeral and unauthenticated writes would be an abuse vector, so disable it.
+function productionGuard(): NextResponse | null {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: 'Mock storage is only available in development' },
+      { status: 404 },
+    );
+  }
+  return null;
+}
+
 // Helper to ensure mock directory exists
 function ensureMockDir() {
   if (!fs.existsSync(MOCK_S3_DIR)) {
@@ -15,6 +27,8 @@ function ensureMockDir() {
 // GET - Download file from mock storage
 export async function GET(req: Request) {
   try {
+    const blocked = productionGuard();
+    if (blocked) return blocked;
     const { searchParams } = new URL(req.url);
     const key = searchParams.get('key');
 
@@ -48,6 +62,8 @@ export async function GET(req: Request) {
 // PUT - Upload file to mock storage
 export async function PUT(req: Request) {
   try {
+    const blocked = productionGuard();
+    if (blocked) return blocked;
     const { searchParams } = new URL(req.url);
     const key = searchParams.get('key');
 
@@ -78,6 +94,8 @@ export async function PUT(req: Request) {
 // DELETE - Remove file from mock storage
 export async function DELETE(req: Request) {
   try {
+    const blocked = productionGuard();
+    if (blocked) return blocked;
     const { searchParams } = new URL(req.url);
     const key = searchParams.get('key');
 

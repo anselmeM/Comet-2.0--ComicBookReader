@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
-import { s3, BUCKET_NAME } from '@/lib/storage';
+import { s3, BUCKET_NAME, verifyStorageConfig } from '@/lib/storage';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { logger } from '@/lib/logger';
@@ -52,13 +52,15 @@ export async function POST(req: Request) {
     // 4. Generate PUT URL (with local mock fallback if S3 is not configured in dev)
     let url = '';
     const isDev = process.env.NODE_ENV === 'development';
-    const isS3Configured =
-      process.env.AWS_ACCESS_KEY_ID &&
-      process.env.AWS_SECRET_ACCESS_KEY &&
-      process.env.AWS_ENDPOINT;
+    const isS3Configured = verifyStorageConfig(false);
 
     if (isDev && !isS3Configured) {
       url = `http://localhost:3101/api/storage/mock-s3?key=${encodeURIComponent(key)}`;
+    } else if (!isS3Configured) {
+      return NextResponse.json(
+        { error: 'Cloud Sync is not configured for this environment' },
+        { status: 503 },
+      );
     } else {
       const command = new PutObjectCommand({
         Bucket: BUCKET_NAME,
