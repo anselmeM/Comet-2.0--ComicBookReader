@@ -540,8 +540,8 @@ export function SettingsPanel({ earnedBadgeIds = [] }: SettingsPanelProps) {
             </h3>
             <p className="text-comet-muted text-sm">
               {(session?.user as any)?.plan === 'PREMIUM'
-                ? 'You are on the Cloud Voyager tier with full cloud sync.'
-                : 'Upgrade to Cloud Voyager to unlock cloud backups and seamless sync.'}
+                ? 'You are on the Premium tier with unlimited cloud sync, auto-enrichment, and ad-free reading.'
+                : 'Cloud sync is included free. Upgrade to Premium for auto-enrichment, ad-free reading, and more.'}
             </p>
           </div>
 

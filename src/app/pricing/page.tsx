@@ -158,6 +158,8 @@ export default function PricingPage() {
       description: 'Perfect for casual readers managing a local collection.',
       features: [
         'Unlimited Local Storage (IndexedDB)',
+        'Cloud Sync (S3/R2)',
+        'Cross-device File Restoration',
         'Reading Progress Synchronization',
         'Manual Metadata Editing',
         'Basic Search & Filtering',
@@ -180,9 +182,9 @@ export default function PricingPage() {
       description: 'For the serious collector who reads everywhere.',
       features: [
         'Everything in Free',
-        'Cloud Comic Sync (S3/R2)',
+        'Unlimited Cloud Sync',
         'Automatic Metadata Enrichment',
-        'Cross-device File Restoration',
+        'Seamless Multi-device Sync',
         'Ad-free Experience',
         'Priority Support',
       ],
@@ -507,7 +509,7 @@ export default function PricingPage() {
               </thead>
               <tbody className="font-medium">
                 <ComparisonRow label="Local Library Storage" free="Unlimited" premium="Unlimited" />
-                <ComparisonRow label="Cloud Sync (S3/R2)" free="No" premium="Yes" />
+                <ComparisonRow label="Cloud Sync (S3/R2)" free="Yes" premium="Unlimited" />
                 <ComparisonRow label="Reading Progress Sync" free="Yes" premium="Yes" />
                 <ComparisonRow label="Manual Metadata Editor" free="Yes" premium="Yes" />
                 <ComparisonRow
@@ -515,11 +517,7 @@ export default function PricingPage() {
                   free="Manual Trigger"
                   premium="Unlimited Auto"
                 />
-                <ComparisonRow
-                  label="Multiple Devices"
-                  free="Restricted Sync"
-                  premium="Seamless Sync"
-                />
+                <ComparisonRow label="Multiple Devices" free="Yes" premium="Seamless Sync" />
                 <ComparisonRow label="Advertisements" free="Yes" premium="None" />
               </tbody>
             </table>

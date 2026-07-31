@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { useNotification } from '@/components/atoms/Toast';
 import { logger } from '@/lib/logger';
 
 export function useCloudSync() {
-  const { data: session } = useSession();
   const { triggerNotification } = useNotification();
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -14,8 +12,6 @@ export function useCloudSync() {
    * Uploads a comic file to the cloud.
    */
   const uploadToCloud = async (comicId: string, file: File) => {
-    if (session?.user?.plan !== 'PREMIUM') return;
-
     try {
       setIsSyncing(true);
 
@@ -84,8 +80,6 @@ export function useCloudSync() {
    * Returns a File object that can be passed to the parser.
    */
   const downloadFromCloud = async (comicId: string, title: string): Promise<File | null> => {
-    if (session?.user?.plan !== 'PREMIUM') return null;
-
     try {
       setIsSyncing(true);
 

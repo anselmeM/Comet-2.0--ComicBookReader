@@ -8,26 +8,13 @@ import { logger } from '@/lib/logger';
 
 /**
  * POST /api/storage/upload — Generates a pre-signed URL for comic upload.
- * Requires: PREMIUM plan.
+ * Available to all authenticated users so their comics persist across devices.
  */
 export async function POST(req: Request) {
   let comicId: string | undefined;
   try {
     const { session, errorResponse } = await validateSession();
     if (errorResponse) return errorResponse;
-
-    // 1. Verify PREMIUM plan
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { plan: true },
-    });
-
-    if (user?.plan !== 'PREMIUM') {
-      return NextResponse.json(
-        { error: 'Upgrade to Premium to enable Cloud Sync' },
-        { status: 403 },
-      );
-    }
 
     const body = await req.json();
     comicId = body.comicId;

@@ -16,6 +16,11 @@ vi.mock('../useAuthCallback', () => ({
   useAuthCallback: vi.fn(() => ({ handleAuthError: vi.fn() })),
 }));
 
+// Mock useSession
+vi.mock('next-auth/react', () => ({
+  useSession: vi.fn(() => ({ data: { user: { id: 'user-1' } } })),
+}));
+
 // Mock IndexedDB
 vi.mock('@/lib/idb', () => ({
   evictCachedComic: vi.fn(),

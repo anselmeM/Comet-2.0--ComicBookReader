@@ -54,8 +54,8 @@ export function useComicPages(comicId: string): UseComicPagesResult {
     queryFn: async () => {
       const cached = await getCachedComic(comicId, session?.user?.id);
       if (!cached) {
-        // Auto background download for Premium users if online
-        if (session?.user?.plan === 'PREMIUM') {
+        // Auto background download from cloud if online (all authenticated users)
+        if (navigator.onLine) {
           try {
             // 1. Fetch metadata first to get the title
             const metaRes = await fetch(`/api/comics/${comicId}`);

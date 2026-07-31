@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 
 /**
  * GET /api/storage/download?comicId=... — Generates a pre-signed URL for comic download.
- * Requires: PREMIUM plan.
+ * Available to all authenticated users so their comics restore across devices.
  */
 export async function GET(req: Request) {
   let comicId: string | null = null;
@@ -23,20 +23,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Comic ID is required' }, { status: 400 });
     }
 
-    // 1. Verify PREMIUM plan
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { plan: true },
-    });
-
-    if (user?.plan !== 'PREMIUM') {
-      return NextResponse.json(
-        { error: 'Upgrade to Premium to enable Cloud Sync' },
-        { status: 403 },
-      );
-    }
-
-    // 2. Verify comic ownership and get storage key
+    // 1. Verify comic ownership and get storage key
     const comic = await db.comic.findFirst({
       where: { id: comicId, userId: session.user.id },
       select: { storageKey: true },

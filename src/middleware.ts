@@ -10,19 +10,12 @@ const { auth } = NextAuth(authConfig);
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
-  const plan = req.auth?.user?.plan || 'FREE';
 
   const isPublicApiRoute =
     nextUrl.pathname.startsWith('/api/auth') ||
     nextUrl.pathname === '/api/stripe/locale' ||
     nextUrl.pathname === '/api/health' ||
     nextUrl.pathname.startsWith('/api/webhooks/');
-  const isStorageApiRoute = nextUrl.pathname.startsWith('/api/storage');
-
-  // Restrict Storage APIs to PREMIUM users
-  if (isStorageApiRoute && plan !== 'PREMIUM') {
-    return NextResponse.json({ error: 'Premium subscription required' }, { status: 403 });
-  }
 
   const isPublicRoute = [
     '/',

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 import { evictCachedComic } from '@/lib/idb';
 import { PaginatedLibraryResponseDTO } from '@/types';
 import { useAuthCallback } from './useAuthCallback';
@@ -71,6 +72,7 @@ export function useLibrary(options: UseLibraryOptions = {}) {
 export function useDeleteComic() {
   const queryClient = useQueryClient();
   const { handleAuthError } = useAuthCallback();
+  const { data: session } = useSession();
 
   return useMutation({
     mutationFn: async (comicId: string) => {
@@ -87,8 +89,8 @@ export function useDeleteComic() {
         throw new Error(error.error || 'Failed to delete comic');
       }
 
-      // 2. Delete from local IndexedDB
-      await evictCachedComic(comicId);
+      // 2. Delete from local IndexedDB (user-scoped cache)
+      await evictCachedComic(comicId, session?.user?.id);
 
       return comicId;
     },

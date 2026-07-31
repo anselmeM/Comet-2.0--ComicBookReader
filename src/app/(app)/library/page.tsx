@@ -67,11 +67,11 @@ export default function LibraryPage() {
   // Check local storage availability
   React.useEffect(() => {
     const checkLocal = async () => {
-      const cached = await getAllCachedComicsMetadata();
+      const cached = await getAllCachedComicsMetadata(session?.user?.id);
       setLocalComicIds(new Set(cached.map((c) => c.comicId)));
     };
     checkLocal();
-  }, [libraryData]);
+  }, [libraryData, session?.user?.id]);
 
   // Transform real comics from API to DashboardComic format
   const dashboardComics: DashboardComic[] = useMemo(() => {
@@ -140,7 +140,7 @@ export default function LibraryPage() {
       if (file) {
         await parseComic(file, { skipServerPOST: true, existingComicId: comicId });
         // Refresh local availability
-        const cached = await getAllCachedComicsMetadata();
+        const cached = await getAllCachedComicsMetadata(session?.user?.id);
         setLocalComicIds(new Set(cached.map((c) => c.comicId)));
         triggerNotification('Comic restored from cloud', 'success');
       }
