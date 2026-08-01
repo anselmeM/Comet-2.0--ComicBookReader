@@ -116,7 +116,7 @@ export function getCoverKey(userId: string, filehash: string) {
 }
 
 export const MULTIPART_PART_SIZE = 10 * 1024 * 1024;
-export const MULTIPART_MAX_PARTS = 200;
+export const MULTIPART_MAX_PARTS = 1024;
 
 /**
  * Initiates a multipart upload and returns presigned part URLs.
