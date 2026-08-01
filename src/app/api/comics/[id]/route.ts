@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
+import { deleteFile } from '@/lib/storage';
 import { z } from 'zod';
 import { invalidateCache } from '@/lib/cache';
 import { logger } from '@/lib/logger';
@@ -109,6 +110,10 @@ export const DELETE = withAuth(
 
       if (!comic) {
         return NextResponse.json({ error: 'Comic not found' }, { status: 404 });
+      }
+
+      if (comic.storageKey) {
+        await deleteFile(comic.storageKey);
       }
 
       await db.comic.delete({
