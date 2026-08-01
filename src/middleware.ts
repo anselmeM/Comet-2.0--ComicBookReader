@@ -47,10 +47,13 @@ export default auth((req) => {
   // 2. Generate CSP Nonce for requests that proceed
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const isDev = process.env.NODE_ENV === 'development';
-  const storageOrigin =
-    process.env.NEXT_PUBLIC_AWS_ENDPOINT ||
-    'https://comet-comics.720bf5927abfac2a87f236c63a5941a6.r2.cloudflarestorage.com';
-  const connectSrc = `connect-src 'self' https://comicvine.gamespot.com https://api.stripe.com ${storageOrigin}${isDev ? ' http://localhost:3101 ws://localhost:*' : ''};`;
+  const storageOrigins = [
+    process.env.NEXT_PUBLIC_AWS_ENDPOINT,
+    'https://*.720bf5927abfac2a87f236c63a5941a6.r2.cloudflarestorage.com',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const connectSrc = `connect-src 'self' https://comicvine.gamespot.com https://api.stripe.com ${storageOrigins}${isDev ? ' http://localhost:3101 ws://localhost:*' : ''};`;
   const cspHeader =
     `default-src 'self'; script-src 'self' ${isDev ? "'unsafe-eval'" : ''} 'nonce-${nonce}' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https://comicvine.gamespot.com https://images.unsplash.com https://i.pravatar.cc https://www.transparenttextures.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self' blob:; ${connectSrc}${isDev ? '' : ' upgrade-insecure-requests;'}`
       .replace(/\s{2,}/g, ' ')
