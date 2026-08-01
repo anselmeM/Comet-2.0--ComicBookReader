@@ -9,59 +9,106 @@ export function useCloudSync() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   /**
-   * Uploads a comic file to the cloud.
+   * Uploads a part to the cloud with retry.
+   * R2 intermittently resets large HTTP/2 PUTs, so each part (10 MB) is
+   * retried with exponential backoff until it succeeds.
+   */
+  const uploadPartWithRetry = async (url: string, blob: Blob, maxRetries = 5): Promise<string> => {
+    let lastError: Error | null = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method: 'PUT',
+          body: blob,
+          headers: { 'Content-Type': 'application/octet-stream' },
+        });
+        if (res.ok) {
+          const etag = res.headers.get('ETag');
+          if (etag) return etag;
+          lastError = new Error('Missing ETag from part upload');
+        } else {
+          lastError = new Error(`Part upload failed: HTTP ${res.status}`);
+        }
+      } catch (e: any) {
+        lastError = e instanceof Error ? e : new Error('Part upload failed');
+      }
+      if (attempt < maxRetries) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.min(1000 * 2 ** (attempt - 1), 8000)),
+        );
+      }
+    }
+    throw lastError || new Error('Part upload failed');
+  };
+
+  /**
+   * Uploads a comic file to the cloud using a multipart upload.
+   * Small parts keep each request well under R2's HTTP/2 reset threshold.
    */
   const uploadToCloud = async (comicId: string, file: File) => {
+    let uploadId: string | undefined;
     try {
       setIsSyncing(true);
 
-      // 1. Get pre-signed URL
-      const res = await fetch('/api/storage/upload', {
+      // 1. Init multipart upload, get presigned URL per part
+      const initRes = await fetch('/api/storage/multipart/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           comicId,
           contentType: file.type || 'application/octet-stream',
           fileName: file.name,
+          fileSize: file.size,
         }),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to get upload URL');
+      if (!initRes.ok) {
+        const err = await initRes.json();
+        throw new Error(err.error || 'Failed to init upload');
       }
 
-      const { url } = await res.json();
+      const { uploadId: initUploadId, partUrls, partSize } = await initRes.json();
+      uploadId = initUploadId;
 
-      // 2. Upload to S3/R2 directly
-      const uploadRes = await fetch(url, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type || 'application/octet-stream',
-        },
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error('Cloud upload failed');
+      // 2. Upload each part, retrying on failure
+      const etags: { PartNumber: number; ETag: string }[] = [];
+      for (let i = 0; i < partUrls.length; i++) {
+        const start = i * partSize;
+        const blob = file.slice(start, Math.min(start + partSize, file.size));
+        const etag = await uploadPartWithRetry(partUrls[i], blob);
+        etags.push({ PartNumber: i + 1, ETag: etag });
       }
 
-      // 3. Mark as synced on server
-      await fetch('/api/storage/upload', {
-        method: 'PATCH',
+      // 3. Complete the multipart upload
+      const completeRes = await fetch('/api/storage/multipart/complete', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          comicId,
-          status: 'SYNCED',
-        }),
+        body: JSON.stringify({ comicId, uploadId, parts: etags }),
       });
+
+      if (!completeRes.ok) {
+        const err = await completeRes.json();
+        throw new Error(err.error || 'Failed to complete upload');
+      }
 
       triggerNotification('Comic synced to cloud', 'success');
     } catch (error: any) {
       logger.error('[CLOUD_UPLOAD_ERROR]', {}, error instanceof Error ? error : undefined);
       triggerNotification(`Cloud sync failed: ${error.message}`, 'error');
 
-      // Mark as error on server
+      // Abort the multipart upload and mark as error on server
+      if (uploadId) {
+        try {
+          await fetch('/api/storage/multipart/abort', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comicId, uploadId }),
+          });
+        } catch (abortError) {
+          logger.error('[CLOUD_UPLOAD_ABORT_ERROR]', {}, abortError as Error);
+        }
+      }
+
       await fetch('/api/storage/upload', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

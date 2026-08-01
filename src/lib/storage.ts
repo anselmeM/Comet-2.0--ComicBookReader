@@ -3,6 +3,10 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { logger } from '@/lib/logger';
@@ -109,4 +113,78 @@ export function getComicKey(userId: string, filehash: string, extension: string)
  */
 export function getCoverKey(userId: string, filehash: string) {
   return `covers/${userId}/${filehash}.jpg`;
+}
+
+export const MULTIPART_PART_SIZE = 10 * 1024 * 1024;
+export const MULTIPART_MAX_PARTS = 200;
+
+/**
+ * Initiates a multipart upload and returns presigned part URLs.
+ * Used for large files where single PUTs to R2 intermittently reset over HTTP/2.
+ */
+export async function createMultipartUpload(
+  key: string,
+  contentType: string,
+  fileSize: number,
+  expiresIn = 3600,
+) {
+  verifyStorageConfig(true);
+  const partCount = Math.ceil(fileSize / MULTIPART_PART_SIZE);
+  if (partCount > MULTIPART_MAX_PARTS) {
+    throw new Error(
+      `File too large: max ${MULTIPART_MAX_PARTS} parts (${(MULTIPART_PART_SIZE * MULTIPART_MAX_PARTS) / 1024 / 1024} MB)`,
+    );
+  }
+
+  const createCommand = new CreateMultipartUploadCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+  });
+  const { UploadId } = await s3.send(createCommand);
+  if (!UploadId) throw new Error('Failed to initiate multipart upload');
+
+  const partUrls: string[] = [];
+  for (let partNumber = 1; partNumber <= partCount; partNumber++) {
+    const partCommand = new UploadPartCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      UploadId,
+      PartNumber: partNumber,
+    });
+    partUrls.push(await getSignedUrl(s3, partCommand, { expiresIn }));
+  }
+
+  return { uploadId: UploadId, partUrls, partSize: MULTIPART_PART_SIZE, partCount };
+}
+
+/**
+ * Completes a multipart upload with the ETags of every uploaded part.
+ */
+export async function completeMultipartUpload(
+  key: string,
+  uploadId: string,
+  parts: { PartNumber: number; ETag: string }[],
+) {
+  verifyStorageConfig(true);
+  const command = new CompleteMultipartUploadCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    UploadId: uploadId,
+    MultipartUpload: { Parts: parts },
+  });
+  await s3.send(command);
+}
+
+/**
+ * Aborts a multipart upload, discarding any uploaded parts.
+ */
+export async function abortMultipartUpload(key: string, uploadId: string) {
+  verifyStorageConfig(true);
+  const command = new AbortMultipartUploadCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    UploadId: uploadId,
+  });
+  await s3.send(command);
 }
