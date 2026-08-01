@@ -68,6 +68,8 @@ export const UpdateComicRequestSchema = z.object({
     .nullable(),
   coverUrl: z.string().optional().nullable(),
   comicVineId: z.string().optional().nullable(),
+  pageCount: z.number().int().min(0).optional(),
+  sizeBytes: z.number().int().min(0).optional(),
 });
 
 export const CollectionSchema = z.object({

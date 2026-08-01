@@ -75,6 +75,8 @@ export const PATCH = withAuth(
               : undefined,
           coverUrl: body.coverUrl !== undefined ? body.coverUrl : undefined,
           comicVineId: body.comicVineId !== undefined ? body.comicVineId : undefined,
+          pageCount: body.pageCount !== undefined ? body.pageCount : undefined,
+          sizeBytes: body.sizeBytes !== undefined ? body.sizeBytes : undefined,
         },
       });
 

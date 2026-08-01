@@ -18,7 +18,7 @@ export interface PipelineDeps {
   existingComicId?: string;
   onProgress: (progress: ParseProgress) => void;
   onBadgeEarned?: (badge: { name: string }) => void;
-  uploadToCloud?: (comicId: string, file: File) => void;
+  uploadToCloud?: (comicId: string, file: File) => Promise<void>;
   handleAuthError?: (response: Response) => Promise<boolean>;
 }
 
@@ -141,6 +141,32 @@ export async function syncComicToServer(
 }
 
 /**
+ * PATCHes parsed metadata (cover, page count, size) onto an existing comic record.
+ * Used when re-importing a comic that already exists on the server.
+ */
+export async function syncComicMetadataToServer(
+  comicId: string,
+  metadata: { coverUrl: string | null; pageCount: number; sizeBytes: number },
+  deps: {
+    handleAuthError?: (response: Response) => Promise<boolean>;
+  } = {},
+): Promise<void> {
+  const response = await fetch(`/api/comics/${comicId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(metadata),
+  });
+
+  if (!response.ok) {
+    if (deps.handleAuthError) {
+      const wasAuthError = await deps.handleAuthError(response);
+      if (wasAuthError) throw new Error('Authentication error');
+    }
+    throw new Error(`Server returned ${response.status}`);
+  }
+}
+
+/**
  * Full comic parsing pipeline orchestrator.
  *
  * Runs the complete pipeline: validation → hash → parse → cover → cache → server sync → re-key → cloud upload.
@@ -181,8 +207,24 @@ export async function runComicPipeline(file: File, deps: PipelineDeps): Promise<
 
   await reKeyLocalCache(localComicId, serverComicId, deps.userId);
 
-  if (!deps.skipServerPOST && deps.userPlan === 'PREMIUM' && deps.uploadToCloud) {
-    deps.uploadToCloud(serverComicId, file);
+  if (deps.existingComicId) {
+    await syncComicMetadataToServer(
+      serverComicId,
+      { coverUrl, pageCount: pages.length, sizeBytes: file.size },
+      { handleAuthError: deps.handleAuthError },
+    );
+  }
+
+  if (
+    deps.userPlan === 'PREMIUM' &&
+    deps.uploadToCloud &&
+    (deps.existingComicId || !deps.skipServerPOST)
+  ) {
+    if (deps.existingComicId) {
+      await deps.uploadToCloud(serverComicId, file);
+    } else {
+      deps.uploadToCloud(serverComicId, file);
+    }
   }
 
   return serverComicId;
