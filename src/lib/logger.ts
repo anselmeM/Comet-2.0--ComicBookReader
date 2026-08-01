@@ -16,7 +16,12 @@ interface LogPayload {
 }
 
 class Logger {
-  private formatLog(level: LogLevel, message: string, meta?: Record<string, any>, err?: Error): string {
+  private formatLog(
+    level: LogLevel,
+    message: string,
+    meta?: Record<string, any>,
+    err?: Error,
+  ): string {
     const payload: LogPayload = {
       timestamp: new Date().toISOString(),
       level,
@@ -65,6 +70,20 @@ class Logger {
 
   error(message: string, meta?: Record<string, any>, err?: Error) {
     console.error(this.formatLog('error', message, meta, err));
+
+    // Forward errors to Sentry for bug tracking (no-op when DSN is unset or in dev).
+    // Lazy import keeps heavy SDK out of web workers and cold page loads.
+    if (err) {
+      import('@sentry/nextjs')
+        .then((Sentry) => {
+          Sentry.captureException(err, {
+            extra: { ...(meta || {}), logMessage: message },
+          });
+        })
+        .catch(() => {
+          // Sentry unavailable — logging itself must never throw
+        });
+    }
   }
 
   debug(message: string, meta?: Record<string, any>) {

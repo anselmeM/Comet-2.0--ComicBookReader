@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/lib/logger';
 
 interface GlobalErrorProps {
@@ -10,9 +11,14 @@ interface GlobalErrorProps {
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   useEffect(() => {
-    logger.error('Critical Global root layout crash caught by Global Error Boundary', {
-      digest: error.digest,
-    }, error);
+    logger.error(
+      'Critical Global root layout crash caught by Global Error Boundary',
+      {
+        digest: error.digest,
+      },
+      error,
+    );
+    Sentry.captureException(error);
   }, [error]);
 
   return (
@@ -25,7 +31,8 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
           <div className="space-y-2">
             <h2 className="text-2xl font-black tracking-tight italic">Critical System Error</h2>
             <p className="text-neutral-400 text-sm">
-              The application encountered a critical runtime error and could not load the page layout.
+              The application encountered a critical runtime error and could not load the page
+              layout.
             </p>
           </div>
 
