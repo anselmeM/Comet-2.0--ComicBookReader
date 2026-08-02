@@ -100,6 +100,8 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(withPWA(nextConfig), {
+  org: 'firstmiledevs',
+  project: 'comet',
   silent: true,
   widenClientFileUpload: true,
   disableLogger: true,
