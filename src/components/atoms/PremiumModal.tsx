@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Rocket, ArrowRight, Globe, Zap, Shield } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -13,6 +13,61 @@ interface PremiumModalProps {
 
 export function PremiumModal({ isOpen, onClose, featureName }: PremiumModalProps) {
   const { handleCheckout, isLoading } = useSubscription();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
+
+  // Lock body scroll while the modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
+  // Move focus into the dialog on open and restore it to the trigger on close
+  useEffect(() => {
+    if (!isOpen) return;
+    lastFocusedRef.current = document.activeElement as HTMLElement | null;
+    const id = requestAnimationFrame(() => dialogRef.current?.focus());
+    return () => {
+      cancelAnimationFrame(id);
+      lastFocusedRef.current?.focus?.();
+    };
+  }, [isOpen]);
+
+  // Close on Escape and trap focus within the dialog
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusables || focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const handleUpgrade = async () => {
     await handleCheckout();
@@ -26,10 +81,15 @@ export function PremiumModal({ isOpen, onClose, featureName }: PremiumModalProps
           onClick={(e) => e.stopPropagation()}
         >
           <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="premium-modal-title"
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="w-full max-w-xl bg-neutral-900 border border-comet-accent/30 rounded-[3rem] shadow-2xl overflow-hidden relative"
+            className="w-full max-w-xl bg-neutral-900 border border-comet-accent/30 rounded-[3rem] shadow-2xl overflow-hidden relative outline-none"
           >
             {/* Background Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1/2 bg-comet-accent/20 rounded-full blur-[100px] pointer-events-none" />
@@ -48,7 +108,10 @@ export function PremiumModal({ isOpen, onClose, featureName }: PremiumModalProps
                   <Sparkles size={32} />
                 </div>
 
-                <h3 className="text-3xl md:text-4xl font-black text-white tracking-tighter italic mb-4">
+                <h3
+                  id="premium-modal-title"
+                  className="text-3xl md:text-4xl font-black text-white tracking-tighter italic mb-4"
+                >
                   Unlock the <br />
                   <span className="bg-gradient-to-r from-comet-accent via-blue-400 to-comet-accent bg-clip-text text-transparent">
                     Cloud Voyager Tier

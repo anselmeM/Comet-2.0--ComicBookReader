@@ -192,12 +192,19 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
 
     lastTapRef.current = now;
 
+    // Capture DOM node + coordinates synchronously. React nulls
+    // e.currentTarget after the handler returns, so reading it inside
+    // the setTimeout below would throw on every tap.
+    const container = containerRef.current;
+    const clientX = e.clientX;
+
     // Process single tap
     singleTapTimeoutRef.current = setTimeout(() => {
       if (scale.get() > 1.1) return; // Don't turn pages if zoomed in
 
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const clickX = clientX - rect.left;
       const width = rect.width;
 
       if (clickX < width * 0.3) {

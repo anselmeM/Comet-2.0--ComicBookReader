@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCachedComic, setCachedComic } from '@/lib/idb';
 import { CachedComic, ComicDTO } from '@/types';
@@ -123,6 +124,24 @@ export function useComicPages(comicId: string): UseComicPagesResult {
     staleTime: Infinity, // Local binary data doesn't "expire" in the same way
   });
 
+  // Handle auth failures (signOut, redirect, toast) as a side effect, NOT
+  // during render — calling it in the render body is impure and can run twice
+  // under React StrictMode.
+  const isAuthErrorRef = useRef(false);
+  useEffect(() => {
+    const metaError = metaQuery.error as { status?: number } | null;
+    const isAuthError = metaError?.status === 401 || metaError?.status === 403;
+
+    if (isAuthError && !isAuthErrorRef.current) {
+      isAuthErrorRef.current = true;
+      // Centralized error handling
+      handleAuthError(null, metaError);
+    }
+    if (!isAuthError) {
+      isAuthErrorRef.current = false;
+    }
+  }, [metaQuery.error, handleAuthError]);
+
   // Determine error type based on which query failed
   const error = (metaQuery.error as Error) || (pagesQuery.error as Error) || null;
   let errorType: ComicLoadErrorType = 'unknown';
@@ -135,8 +154,6 @@ export function useComicPages(comicId: string): UseComicPagesResult {
     if (metaError?.status === 401 || metaError?.status === 403) {
       errorType = 'auth';
       isAuthError = true;
-      // Centralized error handling
-      handleAuthError(null, metaError);
     } else if (metaError?.status === 404) {
       errorType = 'metadata';
       is404 = true;

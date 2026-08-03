@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
@@ -24,7 +24,7 @@ interface NotificationContextType {
     message: string,
     type?: ToastType,
     action?: ToastAction,
-    duration?: number
+    duration?: number,
   ) => void;
 }
 
@@ -40,25 +40,43 @@ export function useNotification() {
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  const triggerNotification = useCallback((
-    message: string,
-    type: ToastType = 'info',
-    action?: ToastAction,
-    duration?: number
-  ) => {
-    const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(7);
-    const toastDuration = duration ?? 3000;
+  const triggerNotification = useCallback(
+    (message: string, type: ToastType = 'info', action?: ToastAction, duration?: number) => {
+      const id =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : Math.random().toString(36).substring(7);
+      const toastDuration = duration ?? 3000;
 
-    setToasts((prev) => [...prev, { id, message, type, action }]);
-    // Auto-dismiss after the specified duration
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, toastDuration);
-  }, []);
+      setToasts((prev) => [...prev, { id, message, type, action }]);
+      // Auto-dismiss after the specified duration. Track the timer so it can be
+      // cleared on manual dismiss or provider unmount (no orphan setState).
+      const timer = setTimeout(() => {
+        delete timersRef.current[id];
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, toastDuration);
+      timersRef.current[id] = timer;
+    },
+    [],
+  );
 
   const removeToast = useCallback((id: string) => {
+    const timer = timersRef.current[id];
+    if (timer) {
+      clearTimeout(timer);
+      delete timersRef.current[id];
+    }
     setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // Clear all pending timers on unmount to avoid setState-after-unmount
+  useEffect(() => {
+    return () => {
+      Object.values(timersRef.current).forEach((t) => clearTimeout(t));
+      timersRef.current = {};
+    };
   }, []);
 
   const getIcon = (type: ToastType) => {

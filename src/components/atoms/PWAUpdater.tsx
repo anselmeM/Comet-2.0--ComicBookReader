@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, X } from 'lucide-react';
 
@@ -39,7 +39,11 @@ export function PWAUpdater() {
       });
 
       // Listen for the controller change (when SKIP_WAITING completes)
+      // Guard against multiple queued updates triggering repeated reloads.
+      let hasReloaded = false;
       const handleControllerChange = () => {
+        if (hasReloaded) return;
+        hasReloaded = true;
         window.location.reload();
       };
 
@@ -71,7 +75,7 @@ export function PWAUpdater() {
               <span className="text-white font-bold">New Update Available</span>
               <span className="text-white/70 text-sm">Refresh to get the latest features.</span>
             </div>
-            <button 
+            <button
               onClick={() => setShowUpdate(false)}
               className="text-white/40 hover:text-white transition-colors"
               aria-label="Dismiss update notification"
@@ -79,7 +83,7 @@ export function PWAUpdater() {
               <X className="w-5 h-5" />
             </button>
           </div>
-          
+
           <button
             onClick={handleUpdate}
             className="w-full bg-white text-comet-bg py-2 px-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-white/90 active:scale-95 transition-all"

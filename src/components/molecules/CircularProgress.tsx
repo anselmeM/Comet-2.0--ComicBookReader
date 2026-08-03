@@ -7,18 +7,22 @@ interface CircularProgressProps {
   className?: string;
 }
 
-export const CircularProgress = ({ 
-  value, 
-  size = 96, 
+export const CircularProgress = ({
+  value,
+  size = 96,
   strokeWidth = 8,
-  className = "" 
+  className = '',
 }: CircularProgressProps) => {
-  const radius = (size / 2) - (strokeWidth);
+  const radius = size / 2 - strokeWidth;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (value / 100) * circumference;
+  const clampedValue = Math.min(100, Math.max(0, Number.isFinite(value) ? value : 0));
+  const offset = circumference - (clampedValue / 100) * circumference;
 
   return (
-    <div className={`relative flex items-center justify-center ${className}`} style={{ width: size, height: size }}>
+    <div
+      className={`relative flex items-center justify-center ${className}`}
+      style={{ width: size, height: size }}
+    >
       <svg className="w-full h-full transform -rotate-90">
         <circle
           cx={size / 2}
@@ -41,7 +45,7 @@ export const CircularProgress = ({
           className="text-blue-500 transition-all duration-1000"
         />
       </svg>
-      <span className="absolute text-xl font-black text-white">{value}%</span>
+      <span className="absolute text-xl font-black text-white">{clampedValue}%</span>
     </div>
   );
 };

@@ -13,7 +13,8 @@ import { Plus } from 'lucide-react';
 
 // Modular Imports
 import { DashboardComic } from '@/components/molecules/DashboardComicCard';
-import { favouriteHeroes } from '@/lib/__mocks__/dashboard';
+import { buildFavouriteHeroes } from '@/lib/dashboard';
+import { globalSearch } from '@/lib/search';
 import { DashboardView } from './views/DashboardView';
 import { CollectionsView } from './views/CollectionsView';
 import { HistoryView } from './views/HistoryView';
@@ -100,13 +101,15 @@ export function DashboardLayout(props: DashboardLayoutProps) {
 
   const searchResults = useMemo(() => {
     if (!searchQuery || searchQuery.length < 2) return null;
-    // Note: globalSearch import moved to top-level if needed, but it was used in layout.
-    // I will add it back to imports.
-    return require('@/lib/search').globalSearch(searchQuery, {
+    return globalSearch(searchQuery, {
       comics: comics as any,
       collections: collections as any,
     });
   }, [searchQuery, comics, collections]);
+
+  // Derive the "Favourite Heroes" section from the user's real library so no
+  // hardcoded placeholder characters ship in the production bundle.
+  const favouriteHeroes = useMemo(() => buildFavouriteHeroes(comics), [comics]);
 
   const topRated = useMemo(() => {
     return (

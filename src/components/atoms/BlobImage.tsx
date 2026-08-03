@@ -11,15 +11,15 @@ interface BlobImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
  * An image component that takes a Blob, creates an Object URL only when in view,
  * and manages its lifecycle. Uses IntersectionObserver for efficiency.
  */
-export function BlobImage({ 
-  blob, 
-  width, 
-  height, 
-  onLoadError, 
-  className, 
-  style, 
-  alt = 'Comic page', 
-  ...props 
+export function BlobImage({
+  blob,
+  width,
+  height,
+  onLoadError,
+  className,
+  style,
+  alt = '',
+  ...props
 }: BlobImageProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [isInView, setIsInView] = useState(false);
@@ -33,7 +33,7 @@ export function BlobImage({
           observer.disconnect();
         }
       },
-      { rootMargin: '800px' } // Load well before coming into view for smoother scroll
+      { rootMargin: '800px' }, // Load well before coming into view for smoother scroll
     );
 
     const currentImg = imgRef.current;
@@ -58,14 +58,13 @@ export function BlobImage({
   }, [blob, isInView]);
 
   return (
-    <div 
+    <div
       className={`relative w-full overflow-hidden ${!objectUrl ? 'animate-pulse bg-neutral-800' : ''} ${className}`}
-      style={{ 
+      style={{
         aspectRatio: `${width}/${height}`,
-        ...style 
+        ...style,
       }}
     >
-
       <img
         ref={imgRef}
         src={objectUrl ?? undefined}

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { navItems } from '@/lib/__mocks__/dashboard';
+import { navItems } from '@/lib/dashboard';
 import { motion } from 'framer-motion';
 
 interface MobileBottomNavProps {
@@ -26,6 +26,8 @@ export function MobileBottomNav({ activeView, onNavClick }: MobileBottomNavProps
             <button
               key={item.id}
               onClick={() => onNavClick(item.id)}
+              aria-label={item.name}
+              aria-current={isActive ? 'page' : undefined}
               className="flex flex-col items-center justify-center gap-1 w-16 h-full py-2 relative shrink-0"
             >
               {isActive && (

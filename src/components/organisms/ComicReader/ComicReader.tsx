@@ -31,12 +31,17 @@ interface CanvasPageRenderProps {
 
 function CanvasPageRender({ pageIndex, page, canvasCache, filterString }: CanvasPageRenderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isStaleRef = useRef(false);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    container.innerHTML = '';
+    isStaleRef.current = false;
+
+    // Remove any previously appended canvas node. Avoids innerHTML which
+    // bypasses React reconciliation inside the AnimatePresence tree.
+    container.querySelector('canvas')?.remove();
 
     let canvas = canvasCache.current[pageIndex];
     if (canvas) {
@@ -59,6 +64,13 @@ function CanvasPageRender({ pageIndex, page, canvasCache, filterString }: Canvas
       if (ctx) {
         createImageBitmap(page.blob)
           .then((imageBitmap) => {
+            // Ignore stale resolves: the user may have navigated away from
+            // this page while the bitmap was decoding. Drawing into a canvas
+            // that has been recycled by a newer page corrupts the render.
+            if (isStaleRef.current) {
+              imageBitmap.close();
+              return;
+            }
             ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
             imageBitmap.close();
             canvasCache.current[pageIndex] = canvas;
@@ -72,6 +84,10 @@ function CanvasPageRender({ pageIndex, page, canvasCache, filterString }: Canvas
           });
       }
     }
+
+    return () => {
+      isStaleRef.current = true;
+    };
   }, [pageIndex, page, canvasCache, filterString]);
 
   return (
@@ -166,8 +182,10 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   }, [sepia, contrast, grayscale, sharpen]);
 
   // Clear canvas cache when comic changes or component unmounts
+  const comicIdRef = useRef(comicId);
   useEffect(() => {
     canvasCacheRef.current = {};
+    comicIdRef.current = comicId;
     return () => {
       canvasCacheRef.current = {};
     };
@@ -188,6 +206,13 @@ export function ComicReader({ comicId }: ComicReaderProps) {
       if (ctx) {
         createImageBitmap(page.blob)
           .then((imageBitmap) => {
+            // Discard pre-renders for a different comic — the cache was
+            // reset when the comic changed, and writing here would overwrite
+            // canvases belonging to the newly opened comic.
+            if (comicIdRef.current !== comic.comicId) {
+              imageBitmap.close();
+              return;
+            }
             ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
             imageBitmap.close();
             canvasCacheRef.current[index] = canvas;

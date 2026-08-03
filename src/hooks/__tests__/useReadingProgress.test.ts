@@ -122,4 +122,38 @@ describe('useReadingProgress', () => {
       }),
     );
   });
+
+  it('keeps syncing every 30s while reading even when the page never changes', () => {
+    (useReaderStore as any).mockImplementation((selector: any) => {
+      const state = {
+        currentPage: 0,
+        totalPages: 100,
+        zoomLevel: 1.0,
+      };
+      return selector(state);
+    });
+
+    renderHook(() => useReadingProgress({ comicId: 'comic-1' }));
+
+    // First 30s window
+    act(() => {
+      vi.advanceTimersByTime(30000);
+    });
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeDelta: 30,
+      }),
+    );
+
+    // Second 30s window must fire too — the timer must not be reset by the
+    // every-second secondsSpent tick (regression for the debounce bug).
+    act(() => {
+      vi.advanceTimersByTime(30000);
+    });
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeDelta: 60,
+      }),
+    );
+  });
 });

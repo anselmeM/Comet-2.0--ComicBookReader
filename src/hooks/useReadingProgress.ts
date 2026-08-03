@@ -136,31 +136,51 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
     }
   }, [comicId, totalPages, currentPage, zoomLevel, mutate]);
 
-  // 4. Automatically sync progress with a 2-second debounce during active reading
+  // 4. Automatically sync progress with a 2-second debounce after a page change.
+  // NOTE: secondsSpent is intentionally NOT a dependency here — it increments
+  // every second while reading, and re-running this effect (and its cleanup)
+  // on each tick would perpetually cancel the timeout and never sync.
   useEffect(() => {
+    if (!comicId || totalPages === 0) return;
     const pageChanged = currentPage !== lastSavedPage.current;
-    const significantTimePassed = secondsSpent >= 30;
-
-    if (!comicId || totalPages === 0 || (!pageChanged && !significantTimePassed)) {
-      return;
-    }
+    if (!pageChanged) return;
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(() => {
+      const latest = latestValues.current;
+      if (!latest.comicId || latest.totalPages === 0) return;
+      if (latest.currentPage === lastSavedPage.current) return;
+
       mutate({
-        lastPage: currentPage,
-        totalPages,
-        zoomLevel,
-        timeDelta: secondsSpent,
+        lastPage: latest.currentPage,
+        totalPages: latest.totalPages,
+        zoomLevel: latest.zoomLevel,
+        timeDelta: latest.secondsSpent,
       });
-      lastSavedPage.current = currentPage;
+      lastSavedPage.current = latest.currentPage;
     }, 2000);
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [comicId, currentPage, totalPages, zoomLevel, secondsSpent, mutate]);
+  }, [currentPage, comicId, mutate]);
+
+  // 4b. Periodic sync every 30 seconds of active reading so time spent
+  // reading is recorded even if the user never changes pages.
+  useEffect(() => {
+    if (!comicId || secondsSpent === 0 || secondsSpent % 30 !== 0) return;
+    const latest = latestValues.current;
+    if (!latest.comicId || latest.totalPages === 0) return;
+
+    mutate({
+      lastPage: latest.currentPage,
+      totalPages: latest.totalPages,
+      zoomLevel: latest.zoomLevel,
+      timeDelta: latest.secondsSpent,
+    });
+    lastSavedPage.current = latest.currentPage;
+  }, [secondsSpent, comicId, mutate]);
 
   // 5. Reliable Unmount Sync (Save progress immediately when user closes the comic)
   useEffect(() => {

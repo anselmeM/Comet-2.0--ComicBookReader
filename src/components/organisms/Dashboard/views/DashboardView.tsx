@@ -14,10 +14,11 @@ import { DashboardComic, DashboardComicCard } from '@/components/molecules/Dashb
 import { CircularProgress } from '@/components/molecules/CircularProgress';
 import { DndContext, closestCenter, SensorDescriptor, SensorOptions } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
-import { FavouriteHero, TopRatedComic } from '@/lib/__mocks__/dashboard';
+import { FavouriteHero, TopRatedComic, heroAvatarClass } from '@/lib/dashboard';
 import Image from 'next/image';
 import { useEnrichment } from '@/hooks/useEnrichment';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PremiumModal } from '@/components/atoms/PremiumModal';
 
 interface DashboardViewProps {
@@ -42,13 +43,6 @@ interface DashboardViewProps {
   sensors: SensorDescriptor<SensorOptions>[];
 }
 
-const HERO_GLOWS: Record<string, string> = {
-  'Spider-Man': 'group-hover:shadow-[0_0_25px_rgba(239,68,68,0.8)] group-hover:border-red-500',
-  Hulk: 'group-hover:shadow-[0_0_25px_rgba(34,197,94,0.8)] group-hover:border-green-500',
-  'Iron Man': 'group-hover:shadow-[0_0_25px_rgba(147,51,234,0.8)] group-hover:border-purple-600',
-  Wolverine: 'group-hover:shadow-[0_0_25px_rgba(250,204,21,0.8)] group-hover:border-yellow-400',
-};
-
 export const DashboardView = ({
   comics,
   topRatedComics,
@@ -65,6 +59,7 @@ export const DashboardView = ({
   triggerNotification,
   sensors,
 }: DashboardViewProps) => {
+  const router = useRouter();
   const enrichment = useEnrichment();
   const [isPremiumModalOpen, setIsPremiumModalOpen] = React.useState(false);
 
@@ -230,7 +225,7 @@ export const DashboardView = ({
 
           <button
             className="mt-6 md:mt-8 flex items-center justify-between w-full group/btn"
-            onClick={() => continueComic && (window.location.href = `/reader/${continueComic.id}`)}
+            onClick={() => continueComic && router.push(`/reader/${continueComic.id}`)}
           >
             <span className="text-xs md:text-sm font-black uppercase tracking-widest">
               Resume reading
@@ -253,16 +248,22 @@ export const DashboardView = ({
               key={hero.id}
               className="group flex flex-col items-center gap-2 md:gap-4 cursor-pointer"
             >
-              <div
-                className={`relative w-16 h-16 md:w-24 md:h-24 rounded-full p-[2px] md:p-[3px] overflow-hidden transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-105 border-2 border-transparent bg-neutral-100/50 ${HERO_GLOWS[hero.name] || 'group-hover:shadow-xl'}`}
-              >
-                <Image
-                  src={hero.image}
-                  alt={hero.name}
-                  width={96}
-                  height={96}
-                  className="rounded-full object-cover opacity-95 group-hover:opacity-100 transition-all duration-500 w-full h-full"
-                />
+              <div className="relative w-16 h-16 md:w-24 md:h-24 rounded-full p-[2px] md:p-[3px] overflow-hidden transition-all duration-500 group-hover:-translate-y-2 group-hover:scale-105 border-2 border-transparent bg-neutral-100/50 group-hover:shadow-xl">
+                {hero.image ? (
+                  <Image
+                    src={hero.image}
+                    alt={hero.name}
+                    width={96}
+                    height={96}
+                    className="rounded-full object-cover opacity-95 group-hover:opacity-100 transition-all duration-500 w-full h-full"
+                  />
+                ) : (
+                  <div
+                    className={`w-full h-full flex items-center justify-center font-black text-xl md:text-3xl ${heroAvatarClass(hero.name)}`}
+                  >
+                    {hero.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
               <span className="text-[9px] md:text-[10px] font-black text-neutral-400 group-hover:text-blue-500 transition-colors uppercase tracking-widest text-center">
                 {hero.name}

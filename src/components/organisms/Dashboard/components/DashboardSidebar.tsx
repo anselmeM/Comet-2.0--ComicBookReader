@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { LogOut, Settings } from 'lucide-react';
 import { signOut as nextAuthSignOut, useSession } from 'next-auth/react';
-import { navItems } from '@/lib/__mocks__/dashboard';
+import { navItems } from '@/lib/dashboard';
 import { deleteUserDB, deleteLegacyDB } from '@/lib/idb';
 import { logger } from '@/lib/logger';
 
