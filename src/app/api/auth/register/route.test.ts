@@ -108,7 +108,7 @@ describe('POST /api/auth/register', () => {
     );
     await POST(req);
 
-    expect(bcrypt.hash).toHaveBeenCalledWith('StrongP@ssw0rd!', 12);
+    expect(bcrypt.hash).toHaveBeenCalledWith('StrongP@ssw0rd!', 14);
     expect(db.user.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({

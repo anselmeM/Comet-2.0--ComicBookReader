@@ -91,6 +91,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           let matchedUser = null;
           let lockedUser = null;
+          let attemptedUser = null;
 
           // Iterate through all accounts with this email to find the one with the matching password
           for (const user of users) {
@@ -108,6 +109,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               matchedUser = user;
               break;
             }
+
+            // Track the last account whose password was actually tested
+            attemptedUser = user;
           }
 
           if (matchedUser) {
@@ -132,8 +136,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             throw new Error(`Account locked. Please try again in ${minutesLeft} minutes.`);
           }
 
-          // Handle failed attempt for the most recently active account (or first one)
-          const targetUser = users[0];
+          // Handle failed attempt for the account that was actually tested
+          const targetUser = attemptedUser ?? users[0];
           const newFailedAttempts = targetUser.failedAttempts + 1;
           const MAX_ATTEMPTS = 5;
           const LOCKOUT_DURATION_MIN = 15;

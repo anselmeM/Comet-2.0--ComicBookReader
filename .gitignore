@@ -48,3 +48,9 @@ next-env.d.ts
 /prisma/mock-s3/
 /scripts/test-comic.cbz
 
+# local SQLite dev database (recreated by `npm run db:push`)
+/prisma/prisma/dev.db
+/prisma/prisma/dev.db-journal
+/prisma/prisma/dev.db-shm
+/prisma/prisma/dev.db-wal
+

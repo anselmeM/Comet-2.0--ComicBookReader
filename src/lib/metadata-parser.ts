@@ -62,3 +62,31 @@ export function parseComicFilename(filename: string): ParsedComicMetadata {
     year,
   };
 }
+
+/**
+ * Normalizes a stored metadata value into an object.
+ * Works for both the SQLite column (stored as JSON string) and the
+ * PostgreSQL column (stored as Json, returned as a parsed value).
+ */
+export function parseStoredMetadata(value: unknown): unknown {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
+/**
+ * Serializes a metadata object for storage.
+ * Stores a JSON string, which round-trips correctly for both SQLite (String)
+ * and PostgreSQL (Json) columns.
+ */
+export function serializeStoredMetadata(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
+}

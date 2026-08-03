@@ -88,7 +88,7 @@ describe('POST /api/auth/reset-password-complete', () => {
     });
     await POST(req);
 
-    expect(bcrypt.hash).toHaveBeenCalledWith('NewStr0ngP@ss!', 12);
+    expect(bcrypt.hash).toHaveBeenCalledWith('NewStr0ngP@ss!', 14);
     expect(db.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'user-1' },

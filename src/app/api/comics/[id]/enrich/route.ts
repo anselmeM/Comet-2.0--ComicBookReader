@@ -11,6 +11,7 @@ import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { searchComicIssue } from '@/lib/comicvine';
+import { parseStoredMetadata, serializeStoredMetadata } from '@/lib/metadata-parser';
 
 export const GET = withAuth(
   async (_req: Request, { params }: { params: Promise<{ id: string }> }, session) => {
@@ -28,7 +29,7 @@ export const GET = withAuth(
       // Return cached enrichment if available (allowed for all tiers)
       if (comic.metadata) {
         try {
-          return NextResponse.json(JSON.parse(comic.metadata as string), { status: 200 });
+          return NextResponse.json(parseStoredMetadata(comic.metadata), { status: 200 });
         } catch {
           // Ignore parse error and proceed
         }
@@ -67,7 +68,7 @@ export const GET = withAuth(
           issue: enrichment.issue,
           year: enrichment.year,
           coverUrl: enrichment.coverUrl ?? comic.coverUrl,
-          metadata: JSON.stringify(enrichment),
+          metadata: serializeStoredMetadata(enrichment),
         },
       });
 

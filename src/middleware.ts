@@ -55,7 +55,7 @@ export default auth((req) => {
     .join(' ');
   const connectSrc = `connect-src 'self' https://comicvine.gamespot.com https://api.stripe.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io ${storageOrigins}${isDev ? ' http://localhost:3101 ws://localhost:*' : ''};`;
   const cspHeader =
-    `default-src 'self'; script-src 'self' ${isDev ? "'unsafe-eval'" : ''} 'nonce-${nonce}' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https://comicvine.gamespot.com https://images.unsplash.com https://i.pravatar.cc https://www.transparenttextures.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self' blob:; ${connectSrc}${isDev ? '' : ' upgrade-insecure-requests;'}`
+    `default-src 'self'; script-src 'self' ${isDev ? "'unsafe-eval'" : ''} 'nonce-${nonce}' https://js.stripe.com; style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com; img-src 'self' blob: data: https://comicvine.gamespot.com https://images.unsplash.com https://i.pravatar.cc https://www.transparenttextures.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self' blob:; ${connectSrc}${isDev ? '' : ' upgrade-insecure-requests;'}`
       .replace(/\s{2,}/g, ' ')
       .trim();
 
