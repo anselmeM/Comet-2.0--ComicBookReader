@@ -15,8 +15,10 @@ export async function GET() {
       return errorResponse || NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Try to get from cache first (1 minute TTL)
-    const cacheKey = 'comet:global_feed';
+    // Try to get from cache first (1 minute TTL). Per-user key — the feed
+    // payload is personalized, so a shared key would leak one user's feed
+    // (friend names, comic titles, completion status) to every other user.
+    const cacheKey = `comet:feed:${session.user.id}`;
     const cachedFeed = await getCache<any[]>(cacheKey);
     if (cachedFeed) {
       return NextResponse.json({ activities: cachedFeed });

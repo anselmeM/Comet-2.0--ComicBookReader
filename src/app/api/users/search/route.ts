@@ -19,9 +19,9 @@ export async function GET(req: Request) {
     const users = await db.user.findMany({
       where: {
         AND: [
-          {
-            OR: [{ name: { contains: query } }, { email: { contains: query } }],
-          },
+          // Match by name only — matching email would enable account
+          // enumeration, and email addresses are never returned to other users.
+          { name: { contains: query } },
           { id: { not: session.user.id } },
         ],
       },
@@ -29,7 +29,6 @@ export async function GET(req: Request) {
         id: true,
         name: true,
         image: true,
-        email: true,
       },
       take: 10,
     });

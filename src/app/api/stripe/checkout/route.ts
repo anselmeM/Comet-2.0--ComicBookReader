@@ -47,6 +47,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ url: absoluteUrl('/settings?success=true') });
     }
 
+    // Fail closed in production: a missing/dummy Stripe key must never reach
+    // the Stripe API (opaque 5xx errors) — surface a clear config error instead.
+    if (!isDev && isDummyStripe) {
+      logger.error('[Stripe] Billing not configured in production', { interval });
+      return NextResponse.json({ error: 'Billing is not configured' }, { status: 500 });
+    }
+
     if (!priceId) {
       logger.error(`Stripe price configuration error for interval: ${interval}`);
       return NextResponse.json({ error: 'Billing configuration error' }, { status: 500 });

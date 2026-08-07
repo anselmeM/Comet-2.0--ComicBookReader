@@ -4,6 +4,7 @@
 import NextAuth from 'next-auth';
 import { authConfig } from './auth.config';
 import { NextResponse } from 'next/server';
+import { isTestAuthBypassEnabled } from '@/lib/test-auth';
 
 const { auth } = NextAuth(authConfig);
 
@@ -31,9 +32,8 @@ export default auth((req) => {
       return Response.redirect(new URL('/library', nextUrl));
     }
   } else if (!isPublicApiRoute) {
-    // Auth bypass for testing — dev/test environments only, never in production
-    const hasBypass =
-      process.env.NODE_ENV !== 'production' && req.cookies.get('__COMET_TEST_BYPASS');
+    // Auth bypass for testing — e2e runs only (E2E_TEST_MODE), never deployed
+    const hasBypass = isTestAuthBypassEnabled() && req.cookies.get('__COMET_TEST_BYPASS');
     if (!hasBypass && !isLoggedIn) {
       let callbackUrl = nextUrl.pathname;
       if (nextUrl.search) {

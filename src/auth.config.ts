@@ -1,5 +1,6 @@
 import type { NextAuthConfig, User } from 'next-auth';
 import { logger } from '@/lib/logger';
+import { isTestAuthBypassEnabled } from '@/lib/test-auth';
 
 /**
  * @file Shared NextAuth Configuration
@@ -28,8 +29,8 @@ export const authConfig: NextAuthConfig = {
       const isOnSettings = nextUrl.pathname.startsWith('/settings');
       const isOnOnboarding = nextUrl.pathname.startsWith('/onboarding');
 
-      // Bypass auth for E2E tests — dev/test environments only, never in production
-      if (process.env.NODE_ENV !== 'production' && request.cookies.get('__COMET_TEST_BYPASS')) {
+      // Bypass auth for E2E tests — e2e runs only (E2E_TEST_MODE), never deployed
+      if (isTestAuthBypassEnabled() && request.cookies.get('__COMET_TEST_BYPASS')) {
         return true;
       }
 

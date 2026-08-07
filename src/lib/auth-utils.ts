@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { isTestAuthBypassEnabled } from '@/lib/test-auth';
 
 /**
  * Validates the current session.
@@ -12,7 +13,7 @@ import { cookies } from 'next/headers';
  * const userId = session.user.id;
  */
 export async function validateSession() {
-  if (process.env.NODE_ENV !== 'production') {
+  if (isTestAuthBypassEnabled()) {
     const cookieStore = await cookies();
     if (cookieStore.get('__COMET_TEST_BYPASS')) {
       return {
@@ -59,7 +60,7 @@ export async function validateSession() {
  * @returns The active session.
  */
 export async function requireAuth() {
-  if (process.env.NODE_ENV !== 'production') {
+  if (isTestAuthBypassEnabled()) {
     const cookieStore = await cookies();
     if (cookieStore.get('__COMET_TEST_BYPASS')) {
       return {
