@@ -31,10 +31,13 @@ export const GET = withAuth(async (_req: Request, context, session) => {
       );
     }
 
-    // Parse parameters from URL
+    // Parse parameters from URL, clamped so a crafted query can't trigger
+    // oversized DB fetches (limit=1e9) or negative skip.
     const { searchParams } = new URL(_req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const rawPage = parseInt(searchParams.get('page') || '1');
+    const rawLimit = parseInt(searchParams.get('limit') || '20');
+    const page = Number.isFinite(rawPage) ? Math.max(1, rawPage) : 1;
+    const limit = Number.isFinite(rawLimit) ? Math.min(100, Math.max(1, rawLimit)) : 20;
     const search = searchParams.get('search') || '';
     const series = searchParams.get('series') || '';
     const sortBy = searchParams.get('sortBy') || 'recent';
