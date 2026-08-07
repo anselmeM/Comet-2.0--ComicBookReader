@@ -1,0 +1,13 @@
+#!/sh
+# .husky/pre-push
+# Block direct pushes to the default branch (branch+PR workflow).
+# See CONTRIBUTING.md / AGENTS.md for the operating model.
+
+while read local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/master" ]; then
+    echo "ERROR: direct push to 'master' is blocked. Use a feature branch + PR." >&2
+    echo "  git switch -c <type>/<desc> && git push -u origin <type>/<desc> && gh pr create" >&2
+    exit 1
+  fi
+done
+exit 0
