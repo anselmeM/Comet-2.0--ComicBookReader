@@ -29,35 +29,51 @@ jobs:
 
       - run: npm ci
 
-      - name: Prepare Prisma config (mirror npm run build)
-        # prisma-provider-switch.js rewrites schema.prisma so directUrl falls
-        # back to DATABASE_URL when the DIRECT_URL secret is absent — without
-        # this, prisma CLI fails schema validation ("DIRECT_URL resolved to
-        # an empty string"). DATABASE_URL must be set here or the script
-        # falls into its SQLite branch and rewrites the schema to dev.db.
-        run: node scripts/prisma-provider-switch.js
+      - name: Resolve DIRECT_URL (secret or derived non-pooled URL)
+        # Prefer the DIRECT_URL secret; when absent, derive the Neon direct
+        # host from DATABASE_URL (same credentials, host minus "-pooler").
+        # Exported via $GITHUB_ENV — never printed, so the credential stays
+        # out of logs. Runs before the prisma steps so they see it.
+        run: |
+          if [ -n "$DIRECT_URL" ]; then
+            echo "DIRECT_URL secret present — using it"
+          else
+            derived="${DATABASE_URL/-pooler./.}"
+            if [ "$derived" != "$DATABASE_URL" ]; then
+              echo "DIRECT_URL=${derived}" >> "$GITHUB_ENV"
+              echo "DIRECT_URL secret absent — derived non-pooled URL from DATABASE_URL"
+            else
+              echo "DIRECT_URL secret absent and no -pooler host found — prisma will fall back to DATABASE_URL"
+            fi
+          fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+      - name: Prepare Prisma config (mirror npm run build)
+        # prisma-provider-switch.js rewrites schema.prisma so directUrl falls
+        # back to DATABASE_URL when DIRECT_URL is unset. DATABASE_URL must be
+        # set here or the script falls into its SQLite branch and rewrites
+        # the schema to dev.db.
+        run: node scripts/prisma-provider-switch.js
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Migration status (before)
         continue-on-error: true # P3005 expected pre-baseline; informational
         run: npx prisma migrate status
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
       - name: Baseline migration as applied
         run: npx prisma migrate resolve --applied "${{ inputs.migration }}"
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
       - name: Migration status (after)
         run: npx prisma migrate status
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
       - name: Schema drift check (informational)
         run: |
@@ -65,4 +81,3 @@ jobs:
           echo "drift-check exit code: ${code:-0} (2 = drift between live DB and schema.prisma; unsupported flags error with 1)"
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
