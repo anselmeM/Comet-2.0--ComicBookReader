@@ -39,6 +39,9 @@ yarn-error.log*
 # markdown documentation files
 *.md
 !README.md
+!AGENTS.md
+!CONTRIBUTING.md
+!.github/PULL_REQUEST_TEMPLATE.md
 
 # typescript
 *.tsbuildinfo
