@@ -8,6 +8,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
+import { MotionConfig } from 'framer-motion';
 import { useState, type ReactNode } from 'react';
 import { NotificationProvider } from '@/components/atoms/Toast';
 
@@ -23,7 +24,7 @@ export function Providers({ children }: ProvidersProps) {
         defaultOptions: {
           queries: {
             staleTime: 5 * 60 * 1000, // 5 minutes
-            gcTime: 10 * 60 * 1000,   // 10 minutes (formerly cacheTime)
+            gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
             refetchOnWindowFocus: true,
             retry: 1,
           },
@@ -33,11 +34,11 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <SessionProvider>
-      <QueryClientProvider client={queryClient}>
-        <NotificationProvider>
-          {children}
-        </NotificationProvider>
-      </QueryClientProvider>
+      <MotionConfig reducedMotion="user">
+        <QueryClientProvider client={queryClient}>
+          <NotificationProvider>{children}</NotificationProvider>
+        </QueryClientProvider>
+      </MotionConfig>
     </SessionProvider>
   );
 }

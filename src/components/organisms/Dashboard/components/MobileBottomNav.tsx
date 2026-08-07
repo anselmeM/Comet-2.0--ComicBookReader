@@ -18,7 +18,7 @@ export function MobileBottomNav({ activeView, onNavClick }: MobileBottomNavProps
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-4 left-4 right-4 h-20 bg-white/90 backdrop-blur-xl border border-neutral-100 rounded-2xl z-50 px-2 flex items-center shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-x-auto no-scrollbar">
+    <nav className="md:hidden fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-4 h-20 bg-white/90 backdrop-blur-xl border border-neutral-100 rounded-2xl z-50 px-2 flex items-center shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-x-auto no-scrollbar">
       <div className="flex items-center min-w-max w-full justify-between gap-2 px-2">
         {bottomNavItems.map((item) => {
           const isActive = activeView === item.id;
@@ -40,11 +40,11 @@ export function MobileBottomNav({ activeView, onNavClick }: MobileBottomNavProps
               <item.icon
                 size={22}
                 strokeWidth={isActive ? 2.5 : 2}
-                className={`transition-colors ${isActive ? 'text-blue-500' : 'text-neutral-400'}`}
+                className={`transition-colors ${isActive ? 'text-blue-600' : 'text-neutral-500'}`}
               />
               <span
                 className={`text-[10px] font-bold transition-colors text-center leading-tight ${
-                  isActive ? 'text-blue-500' : 'text-neutral-400'
+                  isActive ? 'text-blue-600' : 'text-neutral-500'
                 }`}
               >
                 {item.name}

@@ -158,22 +158,22 @@ export function DashboardHeader({
       >
         <div className="flex items-center gap-2 md:gap-4 w-full">
           {/* Persistent Search Input */}
-          <div className="relative h-10 md:h-12 flex-1 max-w-[260px] md:max-w-[360px] flex items-center bg-neutral-50 hover:bg-neutral-100/80 hover:border-neutral-200 focus-within:bg-white focus-within:border-neutral-300 rounded-xl md:rounded-[1.5rem] border border-neutral-100 transition-all duration-300 shadow-sm">
+          <div className="relative h-10 md:h-12 flex-1 max-w-[260px] md:max-w-[360px] flex items-center bg-neutral-50 hover:bg-neutral-100/80 hover:border-neutral-200 focus-within:bg-white focus-within:border-comet-accent focus-within:ring-2 focus-within:ring-comet-accent/40 rounded-xl md:rounded-3xl border border-neutral-100 transition-all duration-300 shadow-sm">
             <div className="absolute left-0 w-10 md:w-12 h-10 md:h-12 flex items-center justify-center shrink-0">
-              <Search className="text-neutral-400 w-4 h-4 md:w-5 md:h-5" />
+              <Search className="text-neutral-500 w-4 h-4 md:w-5 md:h-5" />
             </div>
             <input
               type="text"
               placeholder="Search library..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full bg-transparent border-none py-2 pl-10 md:pl-12 pr-10 text-xs md:text-sm font-bold text-neutral-800 placeholder:text-neutral-400 outline-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none"
+              className="w-full bg-transparent border-none py-2 pl-10 md:pl-12 pr-10 text-xs md:text-sm font-bold text-neutral-800 placeholder:text-neutral-500"
               aria-label="Search library"
             />
             {searchQuery && (
               <button
                 onClick={() => onSearchChange('')}
-                className="absolute right-3 p-1 rounded-full text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 transition-all"
+                className="absolute right-3 p-2 rounded-full text-neutral-500 hover:bg-neutral-200 hover:text-neutral-600 transition-all"
                 aria-label="Clear search"
               >
                 <X className="w-3.5 h-3.5 md:w-4 h-4" />
@@ -186,10 +186,10 @@ export function DashboardHeader({
             onClick={() => setShowFilters(!showFilters)}
             aria-label="Toggle filters"
             aria-expanded={showFilters}
-            className={`p-2.5 md:p-4 rounded-xl md:rounded-[1.5rem] border transition-all ${
+            className={`p-3 md:p-4 rounded-xl md:rounded-3xl border transition-all ${
               showFilters
                 ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20'
-                : 'bg-white border-neutral-100 text-neutral-400 hover:border-neutral-300 shadow-sm'
+                : 'bg-white border-neutral-100 text-neutral-500 hover:border-neutral-300 shadow-sm'
             }`}
           >
             <Filter className="w-5 h-5 md:w-6 md:h-6" />
@@ -246,7 +246,7 @@ export function DashboardHeader({
               ))}
               <button
                 onClick={onResetFilters}
-                className="text-[10px] md:text-xs font-black uppercase tracking-wider text-neutral-400 hover:text-neutral-600 transition-colors pl-1"
+                className="text-[10px] md:text-xs font-black uppercase tracking-wider text-neutral-500 hover:text-neutral-600 transition-colors pl-1"
               >
                 Clear All
               </button>
@@ -258,7 +258,7 @@ export function DashboardHeader({
       <div className="flex items-center gap-2 md:gap-6 ml-4 md:ml-10">
         <button
           onClick={onUploadClick}
-          className="bg-black text-white px-4 md:px-10 py-2.5 md:py-5 rounded-xl md:rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center gap-2 md:gap-4 hover:scale-[1.02] active:scale-95 transition-all shadow-2xl"
+          className="bg-black text-white px-4 md:px-10 py-2.5 md:py-5 rounded-xl md:rounded-3xl font-black text-xs uppercase tracking-widest flex items-center gap-2 md:gap-4 hover:scale-[1.02] active:scale-95 transition-all shadow-2xl"
         >
           <UploadCloud className="w-5 h-5 md:w-5 md:h-5" strokeWidth={2.5} />
           <span className="hidden md:inline">Upload</span>
@@ -269,10 +269,10 @@ export function DashboardHeader({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className={`p-2.5 md:p-5 border rounded-xl md:rounded-2xl transition-all relative shadow-sm ${
+            className={`p-3 md:p-5 border rounded-xl md:rounded-2xl transition-all relative shadow-sm ${
               showNotifications
                 ? 'bg-blue-600 border-blue-500 text-white'
-                : 'bg-white border-neutral-100 text-neutral-300 hover:text-blue-500'
+                : 'bg-white border-neutral-100 text-neutral-500 hover:text-blue-500'
             }`}
             aria-label="Notifications"
           >
