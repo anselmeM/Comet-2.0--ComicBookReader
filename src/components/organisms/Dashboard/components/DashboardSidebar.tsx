@@ -66,7 +66,7 @@ export function DashboardSidebar({
           aria-label={isOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
           aria-expanded={isOpen}
           title={isOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
-          className="w-12 h-12 bg-blue-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/30 font-black rotate-6 hover:rotate-0 transition-transform cursor-pointer text-2xl shrink-0"
+          className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-blue-500/30 font-black rotate-6 hover:rotate-0 transition-transform cursor-pointer text-2xl shrink-0"
         >
           C
         </button>
@@ -92,12 +92,12 @@ export function DashboardSidebar({
             aria-current={activeView === item.id ? 'page' : undefined}
             className={`flex items-center transition-all ${
               isOpen
-                ? 'w-full px-6 py-5 rounded-[1.8rem] justify-start text-lg font-bold'
-                : 'w-12 h-12 rounded-[1.25rem] justify-center mx-auto'
+                ? 'w-full px-6 py-5 rounded-3xl justify-start text-lg font-bold'
+                : 'w-12 h-12 rounded-2xl justify-center mx-auto'
             } ${
               activeView === item.id
                 ? 'bg-blue-500 text-white shadow-xl shadow-blue-500/40'
-                : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900'
+                : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
             }`}
           >
             <item.icon
@@ -132,8 +132,8 @@ export function DashboardSidebar({
             aria-current={activeView === item.id ? 'page' : undefined}
             className={`flex items-center transition-all ${
               isOpen
-                ? 'w-full px-6 py-5 rounded-[1.8rem] justify-start text-lg font-bold text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900'
-                : 'w-12 h-12 rounded-[1.25rem] justify-center mx-auto text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900'
+                ? 'w-full px-6 py-5 rounded-3xl justify-start text-lg font-bold text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
+                : 'w-12 h-12 rounded-2xl justify-center mx-auto text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
             } ${item.id === 'logout' ? 'hover:text-red-400' : ''}`}
           >
             <item.icon size={24} strokeWidth={2.5} className="shrink-0" />

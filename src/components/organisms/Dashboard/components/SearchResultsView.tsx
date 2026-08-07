@@ -79,7 +79,7 @@ export function SearchResultsView({
                   setActiveView('collections');
                   onClearSearch();
                 }}
-                className="bg-white border border-neutral-100 p-8 rounded-[1.8rem] flex items-center justify-between group hover:border-purple-500 transition-all text-left"
+                className="bg-white border border-neutral-100 p-8 rounded-3xl flex items-center justify-between group hover:border-purple-500 transition-all text-left"
               >
                 <div className="flex items-center gap-6">
                   <div className="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center">
