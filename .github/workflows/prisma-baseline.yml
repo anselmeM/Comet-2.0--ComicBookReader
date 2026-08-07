@@ -29,6 +29,13 @@ jobs:
 
       - run: npm ci
 
+      - name: Prepare Prisma config (mirror npm run build)
+        # prisma-provider-switch.js rewrites schema.prisma so directUrl falls
+        # back to DATABASE_URL when the DIRECT_URL secret is absent — without
+        # this, prisma CLI fails schema validation ("DIRECT_URL resolved to
+        # an empty string").
+        run: node scripts/prisma-provider-switch.js
+
       - name: Migration status (before)
         continue-on-error: true # P3005 expected pre-baseline; informational
         run: npx prisma migrate status
