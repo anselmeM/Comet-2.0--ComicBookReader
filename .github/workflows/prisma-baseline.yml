@@ -1,0 +1,57 @@
+name: Prisma Migration Baseline
+
+# One-off ops tool: recover from Prisma P3005 ("database schema is not empty")
+# by marking an existing migration as already applied against the database
+# configured in the repo secrets. Does NOT run automatically — dispatch it:
+#
+#   gh workflow run "Prisma Migration Baseline" -f migration=20260720000000_init
+#
+# Then confirm with `npx prisma migrate status` (should show "up to date").
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration:
+        description: 'Migration folder name under prisma/migrations to mark as applied'
+        required: true
+        default: '20260720000000_init'
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Migration status (before)
+        continue-on-error: true # P3005 expected pre-baseline; informational
+        run: npx prisma migrate status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+      - name: Baseline migration as applied
+        run: npx prisma migrate resolve --applied "${{ inputs.migration }}"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+      - name: Migration status (after)
+        run: npx prisma migrate status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+      - name: Schema drift check (informational)
+        run: |
+          npx prisma migrate diff --from-schema-datasource --to-schema-datamodel --exit-code || code=$?
+          echo "drift-check exit code: ${code:-0} (0 = no drift between live DB and schema.prisma)"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
