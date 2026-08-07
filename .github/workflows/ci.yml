@@ -69,22 +69,18 @@ jobs:
       - run: npm ci
 
       - name: Resolve DIRECT_URL (secret or derived non-pooled URL)
-        # Prisma migrations should use a direct (non-pooled) connection. Prefer
-        # the DIRECT_URL secret; when absent, derive the Neon direct host from
-        # DATABASE_URL (same credentials, host minus "-pooler"). The value is
-        # exported to $GITHUB_ENV — never printed, so the credential stays out
-        # of logs (GitHub masks registered secrets, not derived strings).
+        # Prefer the DIRECT_URL secret; otherwise derive the Neon direct host
+        # from DATABASE_URL (host minus "-pooler", same credentials) with
+        # connect_timeout=30 for cold starts. Value is captured into
+        # $GITHUB_ENV, never printed (GitHub masks registered secrets, not
+        # derived strings).
         run: |
-          if [ -n "$DIRECT_URL" ]; then
-            echo "DIRECT_URL secret present — using it"
+          resolved="$(bash scripts/resolve-direct-url.sh)"
+          if [ -n "$resolved" ]; then
+            echo "DIRECT_URL=${resolved}" >> "$GITHUB_ENV"
+            echo "DIRECT_URL resolved (secret or derived non-pooled URL)"
           else
-            derived="${DATABASE_URL/-pooler./.}"
-            if [ "$derived" != "$DATABASE_URL" ]; then
-              echo "DIRECT_URL=${derived}" >> "$GITHUB_ENV"
-              echo "DIRECT_URL secret absent — derived non-pooled URL from DATABASE_URL"
-            else
-              echo "DIRECT_URL secret absent and no -pooler host found — prisma will fall back to DATABASE_URL"
-            fi
+            echo "DIRECT_URL secret absent and no -pooler host found — prisma will fall back to DATABASE_URL"
           fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
