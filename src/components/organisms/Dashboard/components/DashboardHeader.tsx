@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, UploadCloud, Bell, AlignRight, X } from 'lucide-react';
+import { Search, Filter, UploadCloud, Bell, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { NotificationDropdown } from '../../Notifications/NotificationDropdown';
@@ -17,7 +17,6 @@ interface DashboardHeaderProps {
   unreadCount: number;
   showNotifications: boolean;
   setShowNotifications: (show: boolean) => void;
-  onSidebarToggle: () => void;
   session: any;
   handlePortal: () => void;
   handleCheckout: () => void;
@@ -46,7 +45,6 @@ export function DashboardHeader({
   unreadCount,
   showNotifications,
   setShowNotifications,
-  onSidebarToggle,
   session,
   handlePortal,
   handleCheckout,
@@ -158,14 +156,6 @@ export function DashboardHeader({
         ref={popoverRef}
       >
         <div className="flex items-center gap-2 md:gap-4 w-full">
-          <button
-            onClick={onSidebarToggle}
-            aria-label="Toggle Sidebar"
-            className="hidden md:block p-2.5 md:p-4 rounded-xl md:rounded-[1.5rem] border bg-white border-neutral-100 text-neutral-400 hover:border-neutral-300 transition-all shadow-sm shrink-0"
-          >
-            <AlignRight className="w-5 h-5 md:w-6 md:h-6" />
-          </button>
-
           {/* Persistent Search Input */}
           <div className="relative h-10 md:h-12 flex-1 max-w-[260px] md:max-w-[360px] flex items-center bg-neutral-50 hover:bg-neutral-100/80 hover:border-neutral-200 focus-within:bg-white focus-within:border-neutral-300 rounded-xl md:rounded-[1.5rem] border border-neutral-100 transition-all duration-300 shadow-sm">
             <div className="absolute left-0 w-10 md:w-12 h-10 md:h-12 flex items-center justify-center shrink-0">

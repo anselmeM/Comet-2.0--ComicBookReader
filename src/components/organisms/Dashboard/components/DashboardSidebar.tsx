@@ -60,13 +60,16 @@ export function DashboardSidebar({
         transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
         className={`mb-20 flex items-center gap-4 ${!isOpen ? 'justify-center' : ''}`}
       >
-        <div
-          className="w-12 h-12 bg-blue-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/30 font-black rotate-6 hover:rotate-0 transition-transform cursor-pointer text-2xl shrink-0"
+        <button
+          type="button"
           onClick={onToggle}
+          aria-label={isOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
+          aria-expanded={isOpen}
           title={isOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
+          className="w-12 h-12 bg-blue-600 rounded-[1.25rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/30 font-black rotate-6 hover:rotate-0 transition-transform cursor-pointer text-2xl shrink-0"
         >
           C
-        </div>
+        </button>
         <motion.h1
           initial={false}
           animate={{
