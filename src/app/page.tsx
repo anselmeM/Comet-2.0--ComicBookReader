@@ -28,11 +28,11 @@ import {
   Sparkles as SparklesIcon,
   Trash2,
 } from 'lucide-react';
-import JSZip from 'jszip';
-import { executeParserWorker } from '@/lib/comic-worker-client';
-import { validateComicArchive } from '@/lib/comic-validation';
-import { computeFileHash } from '@/lib/hash';
-import { detectPanels } from '@/lib/guidedView';
+
+// NOTE: JSZip + the parsing stack (comic-worker-client, comic-validation,
+// hash, guidedView) are intentionally NOT imported statically — they're
+// loaded lazily inside the sandbox handlers below so they stay out of the
+// landing page's initial bundle (Lighthouse TTI/LCP). Keep it that way.
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -79,6 +79,7 @@ const featureCardVariant = {
 };
 
 async function createMockCbzFile(): Promise<File> {
+  const { default: JSZip } = await import('jszip');
   const zip = new JSZip();
   const pageCount = 3;
   for (let i = 1; i <= pageCount; i++) {
@@ -254,6 +255,7 @@ export default function Home() {
     const runDetection = async () => {
       setSandboxIsDetecting(true);
       try {
+        const { detectPanels } = await import('@/lib/guidedView');
         const page = sandboxPages[pageIdx];
         const imageBitmap = await createImageBitmap(page.blob);
         const panels = await detectPanels(imageBitmap);
@@ -283,6 +285,10 @@ export default function Home() {
     let decompressionTime = 0;
 
     try {
+      const { validateComicArchive } = await import('@/lib/comic-validation');
+      const { computeFileHash } = await import('@/lib/hash');
+      const { executeParserWorker } = await import('@/lib/comic-worker-client');
+
       await validateComicArchive(file);
 
       setSandboxProgress({ phase: 'hashing', page: 0, total: 100 });
