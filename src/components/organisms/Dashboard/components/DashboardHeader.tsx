@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, UploadCloud, Bell, X } from 'lucide-react';
+import type { Session } from 'next-auth';
 import Link from 'next/link';
 import Image from 'next/image';
 import { NotificationDropdown } from '../../Notifications/NotificationDropdown';
@@ -17,7 +18,7 @@ interface DashboardHeaderProps {
   unreadCount: number;
   showNotifications: boolean;
   setShowNotifications: (show: boolean) => void;
-  session: any;
+  session: Session | null | undefined;
   handlePortal: () => void;
   handleCheckout: () => void;
   isSubscriptionLoading: boolean;

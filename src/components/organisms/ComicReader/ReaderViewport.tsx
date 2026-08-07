@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, useMotionValue, animate } from 'framer-motion';
+import {
+  motion,
+  useMotionValue,
+  animate,
+  type AnimationPlaybackControls,
+  type Easing,
+} from 'framer-motion';
 import { useGesture } from '@use-gesture/react';
 import { useReaderStore } from '@/stores/readerStore';
 
@@ -42,9 +48,9 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
 
   // Guided View Automated Panning
   useEffect(() => {
-    let animScale: any;
-    let animX: any;
-    let animY: any;
+    let animScale: AnimationPlaybackControls | undefined;
+    let animX: AnimationPlaybackControls | undefined;
+    let animY: AnimationPlaybackControls | undefined;
 
     if (isGuidedViewEnabled && containerRef.current) {
       const panels = pagePanels[currentPage] || [];
@@ -86,13 +92,13 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
       const targetX = (viewCenterX - panelCenterX) * targetScale;
       const targetY = (viewCenterY - panelCenterY) * targetScale;
 
-      animScale = animate(scale, targetScale, { duration: panSpeed, ease: panEase as any });
-      animX = animate(x, targetX, { duration: panSpeed, ease: panEase as any });
-      animY = animate(y, targetY, { duration: panSpeed, ease: panEase as any });
+      animScale = animate(scale, targetScale, { duration: panSpeed, ease: panEase as Easing });
+      animX = animate(x, targetX, { duration: panSpeed, ease: panEase as Easing });
+      animY = animate(y, targetY, { duration: panSpeed, ease: panEase as Easing });
     } else {
-      animScale = animate(scale, zoomLevel, { duration: panSpeed, ease: panEase as any });
-      animX = animate(x, 0, { duration: panSpeed, ease: panEase as any });
-      animY = animate(y, 0, { duration: panSpeed, ease: panEase as any });
+      animScale = animate(scale, zoomLevel, { duration: panSpeed, ease: panEase as Easing });
+      animX = animate(x, 0, { duration: panSpeed, ease: panEase as Easing });
+      animY = animate(y, 0, { duration: panSpeed, ease: panEase as Easing });
     }
 
     return () => {
