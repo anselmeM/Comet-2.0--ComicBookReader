@@ -198,7 +198,6 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           unreadCount={unreadCount}
           showNotifications={showNotifications}
           setShowNotifications={setShowNotifications}
-          onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)}
           session={session}
           handlePortal={handlePortal}
           handleCheckout={handleCheckout}
