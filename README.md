@@ -99,6 +99,47 @@ The build automatically configures Prisma for PostgreSQL when `DATABASE_URL` is 
 PostgreSQL connection string, otherwise it falls back to SQLite (running migrations
 only for PostgreSQL — use `npm run db:push` to sync a local SQLite schema).
 
+### Full production environment
+
+Beyond the essentials above, production needs (all must be set in Vercel/your host,
+none are committed):
+
+```env
+# OAuth providers (optional — provider is only shown when both ID and secret are set)
+AUTH_GOOGLE_ID="..."          AUTH_GOOGLE_SECRET="..."
+AUTH_DISCORD_ID="..."         AUTH_DISCORD_SECRET="..."
+AUTH_GITHUB_ID="..."          AUTH_GITHUB_SECRET="..."
+
+# Stripe billing (required for Premium checkout to work)
+STRIPE_SECRET_KEY="sk_live_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+STRIPE_PREMIUM_PRICE_ID="price_..."
+STRIPE_PREMIUM_PRICE_ID_ANNUAL="price_..."
+
+# Upstash Redis (rate limiting + caching; falls back to in-memory if unset)
+UPSTASH_REDIS_REST_URL="https://..."
+UPSTASH_REDIS_REST_TOKEN="..."
+
+# Error tracking (Sentry)
+NEXT_PUBLIC_SENTRY_DSN="https://..."
+
+# Cloud sync — either AWS_* or STORAGE_* alias set (S3/R2/B2)
+STORAGE_ACCESS_KEY_ID="..."
+STORAGE_SECRET_ACCESS_KEY="..."
+STORAGE_ENDPOINT="https://..."
+STORAGE_REGION="auto"
+STORAGE_BUCKET="comet-comics"
+NEXT_PUBLIC_AWS_ENDPOINT="https://your-account-id.r2.cloudflarestorage.com"
+```
+
+- `npm run build` runs `scripts/prisma-provider-switch.js` + `prisma migrate deploy`
+  first; a local build without a PostgreSQL `DATABASE_URL` rewrites the schema to
+  SQLite — re-check `git status` after local builds.
+- Health check: `GET /api/health` (public, pings the database).
+- Local dev mock-S3 server runs on port `3101` when `MOCK_S3=1`.
+- e2e tests run against a local server with `E2E_TEST_MODE=true` (auth bypass,
+  see `src/lib/test-auth.ts`); this is never set in deployed environments.
+
 ## Project Structure
 
 ```
