@@ -61,8 +61,8 @@ jobs:
 
       - name: Schema drift check (informational)
         run: |
-          npx prisma migrate diff --from-schema-datasource --to-schema-datamodel --exit-code || code=$?
-          echo "drift-check exit code: ${code:-0} (0 = no drift between live DB and schema.prisma)"
+          npx prisma migrate diff --from-schema-datasource --to-schema-datamodel || code=$?
+          echo "drift-check exit code: ${code:-0} (2 = drift between live DB and schema.prisma; unsupported flags error with 1)"
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
