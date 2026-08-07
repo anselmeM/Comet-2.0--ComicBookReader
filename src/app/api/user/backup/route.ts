@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -144,7 +145,7 @@ export const POST = withAuth(async (req: Request, context, session) => {
                 isFavorite: item.isFavorite ?? false,
                 rating: item.rating ?? 0,
                 tags: item.tags ?? null,
-                metadata: serializeStoredMetadata(item.metadata),
+                metadata: serializeStoredMetadata(item.metadata) ?? Prisma.DbNull,
               },
             });
 

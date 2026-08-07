@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { parseComicFilename } from '../metadata-parser';
+import {
+  parseComicFilename,
+  parseStoredMetadata,
+  serializeStoredMetadata,
+} from '../metadata-parser';
 
 describe('parseComicFilename', () => {
   it('should parse standard format with hash and year', () => {
@@ -42,5 +46,27 @@ describe('parseComicFilename', () => {
     expect(res.series).toBe('Watchmen');
     expect(res.issue).toBeNull();
     expect(res.year).toBeNull();
+  });
+});
+
+describe('serializeStoredMetadata', () => {
+  it('returns undefined for null/undefined so Prisma omits the Json field', () => {
+    expect(serializeStoredMetadata(null)).toBeUndefined();
+    expect(serializeStoredMetadata(undefined)).toBeUndefined();
+  });
+
+  it('passes through already-serialized strings', () => {
+    expect(serializeStoredMetadata('{"series":"Watchmen"}')).toBe('{"series":"Watchmen"}');
+  });
+
+  it('JSON-stringifies objects', () => {
+    expect(serializeStoredMetadata({ series: 'Watchmen', issue: 1 })).toBe(
+      '{"series":"Watchmen","issue":1}',
+    );
+  });
+
+  it('round-trips through parseStoredMetadata', () => {
+    const original = { series: 'Sandman', issue: 22, year: 1989 };
+    expect(parseStoredMetadata(serializeStoredMetadata(original))).toEqual(original);
   });
 });

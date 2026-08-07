@@ -83,10 +83,12 @@ export function parseStoredMetadata(value: unknown): unknown {
 /**
  * Serializes a metadata object for storage.
  * Stores a JSON string, which round-trips correctly for both SQLite (String)
- * and PostgreSQL (Json) columns.
+ * and PostgreSQL (Json) columns. Returns `undefined` for empty input so the
+ * caller omits the field instead of passing `null` (which Prisma rejects for
+ * `Json?` columns — `null` there means the Prisma `DbNull` sentinel).
  */
-export function serializeStoredMetadata(value: unknown): string | null {
-  if (value === null || value === undefined) return null;
+export function serializeStoredMetadata(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined;
   if (typeof value === 'string') return value;
   return JSON.stringify(value);
 }
