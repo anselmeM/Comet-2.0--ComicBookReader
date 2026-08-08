@@ -31,6 +31,9 @@ export default defineConfig({
     command: 'npm run dev',
     url: 'http://localhost:3100',
     reuseExistingServer: !process.env.CI,
+    // Cold Turbopack compile (instrumentation + middleware + first page) can
+    // take >60s on slower machines — default 60s times out. 5 min is safe.
+    timeout: 300_000,
     env: {
       // Opt-in for the __COMET_TEST_BYPASS auth bypass (see src/lib/test-auth.ts).
       // Set ONLY here — never in deployed environments.

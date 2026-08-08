@@ -47,6 +47,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# playwright e2e artifacts
+playwright-report/
+test-results/
+blob-report/
+
 # mock storage & binaries
 /prisma/mock-s3/
 /scripts/test-comic.cbz
