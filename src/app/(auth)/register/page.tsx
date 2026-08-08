@@ -244,7 +244,12 @@ function RegisterForm() {
         )}
 
         <div className="space-y-6">
-          <motion.form variants={itemVariants} onSubmit={handleRegister} className="space-y-4">
+          <motion.form
+            variants={itemVariants}
+            onSubmit={handleRegister}
+            noValidate
+            className="space-y-4"
+          >
             {/* Name Field */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

@@ -10,8 +10,9 @@ test.describe('Comet Critical Flows', () => {
   test('landing page should load and show hero section', async ({ page }) => {
     await page.goto('/');
 
-    // Check main title
-    await expect(page.locator('h1')).toContainText('Read Beyond Boundaries.');
+    // Check main title (current hero copy; the <br/> inside the h1 is
+    // normalized to whitespace by toContainText)
+    await expect(page.locator('h1')).toContainText('READ BEYOND');
 
     // Check call to action
     const startReading = page.getByRole('link', { name: /Start Reading/i });

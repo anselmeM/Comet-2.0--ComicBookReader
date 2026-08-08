@@ -10,6 +10,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  globalSetup: './e2e/global-setup.ts',
+  // Slow machines cold-compile routes in dev; 60s gives headroom after the
+  // global-setup pre-warm.
+  timeout: 60_000,
   use: {
     baseURL: 'http://localhost:3100',
     trace: 'on-first-retry',

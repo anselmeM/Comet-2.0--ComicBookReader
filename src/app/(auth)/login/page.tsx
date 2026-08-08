@@ -173,7 +173,12 @@ function LoginForm() {
         )}
 
         <div className="space-y-6">
-          <motion.form variants={itemVariants} onSubmit={handleSubmit} className="space-y-4">
+          <motion.form
+            variants={itemVariants}
+            onSubmit={handleSubmit}
+            noValidate
+            className="space-y-4"
+          >
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-neutral-500" />
