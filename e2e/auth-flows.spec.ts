@@ -110,7 +110,7 @@ test.describe('Auth Flows', () => {
       await expect(page.locator('h1')).toContainText('Welcome back');
       await expect(page.getByPlaceholder('name@example.com')).toBeVisible();
       await expect(page.getByPlaceholder('Enter your password')).toBeVisible();
-      await expect(page.getByRole('button', { name: /Sign In/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Sign In', exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: /Create one now/i })).toBeVisible();
       await expect(page.getByRole('link', { name: /Forgot password/i })).toBeVisible();
     });
@@ -123,7 +123,7 @@ test.describe('Auth Flows', () => {
 
       await page.getByPlaceholder('name@example.com').fill('user@comet.test');
       await page.getByPlaceholder('Enter your password').fill('valid-password-123');
-      await page.getByRole('button', { name: /Sign In/i }).click();
+      await page.getByRole('button', { name: 'Sign In', exact: true }).click();
 
       // The login page does window.location.href on success — verify navigation attempt
       // Wait for the hard navigation to /library to happen, or check we left the login page
@@ -138,7 +138,7 @@ test.describe('Auth Flows', () => {
 
       await page.getByPlaceholder('name@example.com').fill('bad@comet.test');
       await page.getByPlaceholder('Enter your password').fill('wrong-password');
-      await page.getByRole('button', { name: /Sign In/i }).click();
+      await page.getByRole('button', { name: 'Sign In', exact: true }).click();
 
       await expect(page.locator('text=Invalid email or password.')).toBeVisible({ timeout: 10000 });
     });
@@ -148,7 +148,7 @@ test.describe('Auth Flows', () => {
 
       await page.goto('/login');
 
-      await page.getByRole('button', { name: /Sign In/i }).click();
+      await page.getByRole('button', { name: 'Sign In', exact: true }).click();
 
       await expect(page.locator('text=Please enter both email and password.')).toBeVisible({
         timeout: 5000,
