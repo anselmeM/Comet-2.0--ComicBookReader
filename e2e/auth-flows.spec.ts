@@ -7,7 +7,9 @@ function mockUnauthenticatedSession(page: Parameters<typeof test>[0]) {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({}),
+      // The real endpoint returns `null` for unauthenticated; next-auth v5's
+      // client marks ANY truthy object (even { expires }) as 'authenticated'.
+      body: JSON.stringify(null),
     });
   });
 }
@@ -55,18 +57,22 @@ function mockProvidersEndpoint(page: Parameters<typeof test>[0]) {
 }
 
 function mockCredentialsCallback(page: Parameters<typeof test>[0], opts: { success: boolean }) {
-  return page.route('**/api/auth/callback/credentials', async (route) => {
-    if (opts.success) {
-      await route.fulfill({
-        status: 302,
-        headers: { Location: '/library' },
-      });
-    } else {
-      await route.fulfill({
-        status: 302,
-        headers: { Location: '/login?error=CredentialsSignin' },
-      });
-    }
+  return page.route(/\/api\/auth\/callback\/credentials/, async (route) => {
+    // Regex (not a glob): signIn POSTs to .../credentials?csrfToken=... and
+    // the query string breaks `**/api/auth/callback/credentials` matching.
+    // next-auth v5's client with { redirect: false } sends X-Auth-Return-
+    // Redirect and expects JSON { url } — NOT a 302 (res.json() would throw).
+    // url must be absolute: the client does new URL(data.url).
+    const base = 'http://localhost:3100';
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        opts.success
+          ? { url: `${base}/library` }
+          : { url: `${base}/login?error=CredentialsSignin` },
+      ),
+    });
   });
 }
 
@@ -101,6 +107,15 @@ async function setupAuthMocks(page: Parameters<typeof test>[0]) {
 }
 
 test.describe('Auth Flows', () => {
+  test.beforeEach(async ({ context }) => {
+    // Let middleware pass protected routes (/library, /onboarding) that the
+    // tests navigate to after login/registration — same approach as the
+    // upload-read-progress spec. useSession is still driven by the mocks.
+    await context.addCookies([
+      { name: '__COMET_TEST_BYPASS', value: '1', domain: 'localhost', path: '/' },
+    ]);
+  });
+
   test.describe('Login Page', () => {
     test('should load and render form elements', async ({ page }) => {
       await setupAuthMocks(page);
@@ -202,7 +217,7 @@ test.describe('Auth Flows', () => {
       });
     });
 
-    test('should show validation error with weak password', async ({ page }) => {
+    test('should disable submit until password meets all requirements', async ({ page }) => {
       await setupAuthMocks(page);
 
       await page.goto('/register');
@@ -211,11 +226,10 @@ test.describe('Auth Flows', () => {
       await page.getByPlaceholder('name@example.com').fill('test@comet.test');
       await page.getByPlaceholder('Create a password').fill('short');
       await page.getByPlaceholder('Confirm your password').fill('short');
-      await page.getByRole('button', { name: /Create account/i }).click();
 
-      await expect(
-        page.locator('text=Please ensure your password meets all requirements.'),
-      ).toBeVisible({ timeout: 5000 });
+      // The register form disables submit while the password is invalid
+      // (rather than submitting and showing an inline error).
+      await expect(page.getByRole('button', { name: /Create account/i })).toBeDisabled();
     });
 
     test('should show password requirement checklist when typing', async ({ page }) => {

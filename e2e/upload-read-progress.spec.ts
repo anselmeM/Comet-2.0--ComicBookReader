@@ -141,8 +141,9 @@ test.describe('Library → Reader → Progress Flow', () => {
     // reader may show an error state like "Comic not found in local storage".
     // That's fine — the critical assertion is that we REACHED the reader page.
 
-    // Wait for the page to settle
-    await page.waitForLoadState('networkidle', { timeout: 10000 });
+    // Wait for the page to settle (no networkidle — the reader keeps polling
+    // progress/bookmarks, so networkidle never fires).
+    await page.waitForTimeout(1500);
 
     // Verify we're still on the reader page (not redirected away)
     await expect(page).toHaveURL(/\/reader\/comic-e2e-001/);
