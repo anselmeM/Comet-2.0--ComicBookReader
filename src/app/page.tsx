@@ -49,9 +49,13 @@ const staggerContainer = {
 };
 
 const heroTextVariant = {
-  initial: { opacity: 0, y: 40 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+  // LCP element (the h1): animate transform ONLY. Fading opacity from 0
+  // delays the first visible paint of the largest element, which is exactly
+  // what Lighthouse LCP measures. A y-slide keeps the entrance animation
+  // without hiding the text.
+  initial: { y: 16 },
+  animate: { y: 0 },
+  transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
 };
 
 const navVariant = {
@@ -361,9 +365,7 @@ export default function Home() {
   // Conditional variants for reduced motion
   const animatedFadeIn = isReduced ? { initial: { opacity: 1 }, animate: { opacity: 1 } } : fadeIn;
   const animatedNav = isReduced ? { initial: { opacity: 1 }, animate: { opacity: 1 } } : navVariant;
-  const animatedHeroText = isReduced
-    ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
-    : heroTextVariant;
+  const animatedHeroText = isReduced ? {} : heroTextVariant;
   const animatedStagger = isReduced
     ? { animate: { transition: { staggerChildren: 0 } } }
     : staggerContainer;
