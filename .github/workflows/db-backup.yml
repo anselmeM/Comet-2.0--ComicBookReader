@@ -19,6 +19,15 @@ jobs:
 
       - run: npm ci
 
+      - name: Prepare Prisma config
+        # Same prep as npm run build: DIRECT_URL secret is absent, so
+        # prisma-provider-switch.js rewrites directUrl to fall back to
+        # DATABASE_URL — without it, prisma fails schema validation (P1012).
+        run: node scripts/prisma-provider-switch.js
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
       - name: Run Prisma backup
         run: |
           npx prisma db pull --schema=prisma/schema.prisma
