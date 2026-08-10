@@ -65,7 +65,8 @@ jobs:
       - name: Prepare local SQLite schema
         run: |
           node scripts/prisma-provider-switch.js
-          npx prisma db push --skip-generate
+          # Throwaway CI database — data loss warnings are expected and fine.
+          npx prisma db push --skip-generate --accept-data-loss
 
       - name: Run E2E tests
         run: npm run test:e2e
