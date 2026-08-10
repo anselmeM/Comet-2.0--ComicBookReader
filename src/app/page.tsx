@@ -59,18 +59,6 @@ const navVariant = {
   transition: { duration: 0.5, ease: 'easeOut' },
 };
 
-const blobVariant = {
-  animate: {
-    scale: [1, 1.12, 1],
-    rotate: [0, 8, 0],
-    transition: {
-      duration: 18,
-      repeat: Infinity,
-      ease: 'easeInOut',
-    },
-  },
-};
-
 const featureCardVariant = {
   initial: { opacity: 0, y: 30, scale: 0.97 },
   animate: { opacity: 1, y: 0, scale: 1 },
@@ -97,10 +85,9 @@ const TICKER_ITEMS = [
   { user: '@manga_fan', activity: 'RTL mode works perfectly for manga!', tag: 'MANGA' },
 ];
 
-const SandboxDemo = dynamic(
-  () => import('@/components/organisms/Landing/SandboxDemo'),
-  { ssr: false },
-);
+const SandboxDemo = dynamic(() => import('@/components/organisms/Landing/SandboxDemo'), {
+  ssr: false,
+});
 
 /**
  * Mounts the sandbox demo only when it scrolls near the viewport: the parsing
@@ -217,41 +204,12 @@ export default function Home() {
     <div className="relative min-h-screen overflow-hidden bg-[#09090b] text-[#e8e8f0] font-sans bg-halftone">
       {/* ── Background Gradients (Warm Sunset Nebula - No Blues/Purples) ── */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate="animate"
-          variants={isReduced ? { animate: { opacity: 0.05 } } : (blobVariant as any)}
-          className="absolute top-[-5%] left-[-5%] w-[55%] h-[55%] bg-lime-500/8 rounded-full blur-[140px]"
-        />
-        <motion.div
-          animate="animate"
-          variants={
-            isReduced
-              ? { animate: { opacity: 0.05 } }
-              : ({
-                  animate: {
-                    scale: [1, 1.15, 1],
-                    rotate: [0, -8, 0],
-                    transition: { duration: 22, repeat: Infinity, ease: 'easeInOut' },
-                  },
-                } as any)
-          }
-          className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#ff5a00]/8 rounded-full blur-[140px]"
-        />
-        <motion.div
-          animate="animate"
-          variants={
-            isReduced
-              ? { animate: { opacity: 0.03 } }
-              : ({
-                  animate: {
-                    scale: [1.1, 0.9, 1.1],
-                    x: [0, 20, 0],
-                    transition: { duration: 15, repeat: Infinity, ease: 'easeInOut' },
-                  },
-                } as any)
-          }
-          className="absolute top-[30%] right-[10%] w-[45%] h-[45%] bg-[#eab308]/5 rounded-full blur-[120px]"
-        />
+        {/* CSS-animated (compositor), not framer-motion: infinite JS rAF
+            loops burned ~8s of main-thread work per page load. The global
+            prefers-reduced-motion rule freezes these. */}
+        <div className="absolute top-[-5%] left-[-5%] w-[55%] h-[55%] bg-lime-500/8 rounded-full blur-[140px] animate-comet-blob-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#ff5a00]/8 rounded-full blur-[140px] animate-comet-blob-slower" />
+        <div className="absolute top-[30%] right-[10%] w-[45%] h-[45%] bg-[#eab308]/5 rounded-full blur-[120px] animate-comet-blob-breathe" />
       </div>
 
       {/* ── Navigation ─────────────────────────────────────────────────── */}
@@ -929,15 +887,9 @@ export default function Home() {
 
             {/* Custom Speech-Bubble Scrolling Ticker */}
             <div className="relative w-full overflow-hidden py-4 select-none mask-fade-edges">
-              <motion.div
-                animate={isReduced ? {} : { x: [0, -1200] }}
-                transition={{
-                  repeat: Infinity,
-                  ease: 'linear',
-                  duration: 32,
-                }}
-                className="flex gap-6 whitespace-nowrap w-max"
-              >
+              {/* CSS marquee (compositor) — was a framer-motion x-loop that
+                  kept the main thread busy every frame. */}
+              <div className="flex gap-6 whitespace-nowrap w-max animate-comet-ticker">
                 {/* Render multiple flat copies for a continuous seamless loop */}
                 {[...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS].map((item, idx) => (
                   <div
@@ -960,7 +912,7 @@ export default function Home() {
                     </span>
                   </div>
                 ))}
-              </motion.div>
+              </div>
             </div>
           </motion.div>
         </section>

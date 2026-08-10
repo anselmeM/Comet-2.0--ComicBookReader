@@ -194,6 +194,59 @@ button:disabled {
   max-width: var(--comic-max-width, 95vw);
 }
 
+/* ── Decorative infinite animations ─────────────────────────────────────
+   Moved from framer-motion's JS rAF loop (which burned main-thread time —
+   Lighthouse "Other" ~8s) to CSS transform/opacity keyframes, which run on
+   the compositor. The global prefers-reduced-motion rule below freezes
+   them automatically. */
+@keyframes comet-blob-slow {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(8deg);
+  }
+}
+@keyframes comet-blob-slower {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(-8deg);
+  }
+}
+@keyframes comet-blob-breathe {
+  0%,
+  100% {
+    transform: scale(1.1) translateX(0);
+  }
+  50% {
+    transform: scale(0.9) translateX(20px);
+  }
+}
+@keyframes comet-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-1200px);
+  }
+}
+.animate-comet-blob-slow {
+  animation: comet-blob-slow 18s ease-in-out infinite;
+}
+.animate-comet-blob-slower {
+  animation: comet-blob-slower 22s ease-in-out infinite;
+}
+.animate-comet-blob-breathe {
+  animation: comet-blob-breathe 15s ease-in-out infinite;
+}
+.animate-comet-ticker {
+  animation: comet-ticker 32s linear infinite;
+}
+
 /* ── Focus visible ────────────────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--color-accent);
