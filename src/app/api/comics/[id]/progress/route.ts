@@ -10,7 +10,7 @@ import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { UpdateProgressRequestSchema } from '@/types/schemas';
-import { invalidateCache } from '@/lib/cache';
+import { getCache, setCache, invalidateCache } from '@/lib/cache';
 import { createNotification } from '@/lib/notifications';
 import { evaluateBadges, BADGES } from '@/lib/badges';
 
@@ -219,10 +219,7 @@ export const PUT = withAuth(
         return p;
       });
 
-      // Invalidate library cache for this user since reading progress changed
-      await invalidateCache(`comet:u:${session.user.id}:library`, true);
-
-      // Trigger notifications for completion and streak
+      // Trigger notifications for completion and streak (cheap, rare — always run)
       const wasCompleted = currentProgress?.readStatus === 'COMPLETED';
       const isNewlyCompleted = !wasCompleted && readStatus === 'COMPLETED';
       const streakExtended = newStreak > user.readingStreak;
@@ -247,35 +244,57 @@ export const PUT = withAuth(
         });
       }
 
-      // Gamification Evaluation
-      const newlyEarnedBadges: any[] = [];
-      try {
-        const newBadgeIds = await evaluateBadges(session.user.id);
-        if (newBadgeIds.length > 0) {
-          // Trigger notifications for new badges
-          for (const badgeId of newBadgeIds) {
-            const badge = BADGES.find((b) => b.id === badgeId);
-            if (badge) {
-              newlyEarnedBadges.push(badge);
-              await createNotification({
-                userId: session.user.id,
-                type: 'SYSTEM_ALERT',
-                title: 'Badge Unlocked! 🏆',
-                message: `You earned the "${badge.name}" badge: ${badge.description}`,
-                link: '/settings',
-              });
+      // Heavy work — badge evaluation (several queries) and library cache
+      // invalidation — runs on every save otherwise (every page turn).
+      // Throttle to once per 5 minutes per user; milestone events (status
+      // change, completion, streak extension) always run it immediately so
+      // badges and library status never visibly lag.
+      const readStatusChanged = currentProgress
+        ? currentProgress.readStatus !== readStatus
+        : true;
+      const forceHeavyWork = readStatusChanged || isNewlyCompleted || streakExtended;
+
+      const heavyWorkKey = `comet:u:${session.user.id}:progress:heavy`;
+      const heavyWorkRecentlyRan = await getCache(heavyWorkKey);
+
+      if (forceHeavyWork || !heavyWorkRecentlyRan) {
+        await setCache(heavyWorkKey, '1', 300);
+
+        // Invalidate library cache for this user since reading progress changed
+        await invalidateCache(`comet:u:${session.user.id}:library`, true);
+
+        // Gamification Evaluation
+        const newlyEarnedBadges: any[] = [];
+        try {
+          const newBadgeIds = await evaluateBadges(session.user.id);
+          if (newBadgeIds.length > 0) {
+            // Trigger notifications for new badges
+            for (const badgeId of newBadgeIds) {
+              const badge = BADGES.find((b) => b.id === badgeId);
+              if (badge) {
+                newlyEarnedBadges.push(badge);
+                await createNotification({
+                  userId: session.user.id,
+                  type: 'SYSTEM_ALERT',
+                  title: 'Badge Unlocked! 🏆',
+                  message: `You earned the "${badge.name}" badge: ${badge.description}`,
+                  link: '/settings',
+                });
+              }
             }
           }
+        } catch (err: unknown) {
+          logger.error(
+            `[API PUT /comics/${comicId}/progress] Gamification evaluation error`,
+            {},
+            err as Error,
+          );
         }
-      } catch (err: unknown) {
-        logger.error(
-          `[API PUT /comics/${comicId}/progress] Gamification evaluation error`,
-          {},
-          err as Error,
-        );
+
+        return NextResponse.json({ ...progress, newlyEarnedBadges }, { status: 200 });
       }
 
-      return NextResponse.json({ ...progress, newlyEarnedBadges }, { status: 200 });
+      return NextResponse.json({ ...progress, newlyEarnedBadges: [] }, { status: 200 });
     } catch (err: unknown) {
       logger.error(`[API PUT /comics/${comicId}/progress] ERROR`, {}, err as Error);
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
