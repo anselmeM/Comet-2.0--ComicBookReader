@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { rateLimit } from '@/lib/rate-limit';
 import { createNotification } from '@/lib/notifications';
 import { logger } from '@/lib/logger';
+import { getClientIp } from '@/lib/request-ip';
 import { registerSchema } from '@/lib/validations';
 
 export async function POST(req: Request) {
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
     }
 
     // 1. Rate limiting (T-AUTH-003)
-    const ip = (req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
+    const ip = getClientIp(req);
     const limiter = await rateLimit(`reg_${ip}`, 5, 60 * 60 * 1000); // 5 per hour
 
     if (limiter.isLimited) {

@@ -12,6 +12,7 @@ import { Prisma } from '@prisma/client';
 import { PaginatedLibraryResponseDTO } from '@/types/schemas';
 import { rateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
+import { getClientIp } from '@/lib/request-ip';
 import { parseComicFilename } from '@/lib/metadata-parser';
 import { createNotification } from '@/lib/notifications';
 import { evaluateBadges, BADGES } from '@/lib/badges';
@@ -22,7 +23,7 @@ import { evaluateBadges, BADGES } from '@/lib/badges';
 export const GET = withAuth(async (_req: Request, context, session) => {
   try {
     // Rate limit check
-    const ip = (_req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
+    const ip = getClientIp(_req);
     const limiter = await rateLimit(`library_get_${ip}`, 100, 60 * 1000); // 100 per minute
     if (limiter.isLimited) {
       return NextResponse.json(
@@ -180,7 +181,7 @@ export const GET = withAuth(async (_req: Request, context, session) => {
 export const POST = withAuth(async (_req: Request, context, session) => {
   try {
     // Rate limit check
-    const ip = (_req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
+    const ip = getClientIp(_req);
     const limiter = await rateLimit(`library_post_${ip}`, 10, 60 * 1000); // 10 per minute
     if (limiter.isLimited) {
       return NextResponse.json(
