@@ -1,5 +1,6 @@
 import { handlers } from '@/auth';
 import { rateLimit } from '@/lib/rate-limit';
+import { getClientIp } from '@/lib/request-ip';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -12,7 +13,7 @@ const { GET: _GET, POST: _POST } = handlers;
 export const GET = _GET;
 
 export async function POST(req: NextRequest) {
-  const ip = (req.headers.get('x-forwarded-for') || '127.0.0.1').split(',')[0];
+  const ip = getClientIp(req);
   const limiter = await rateLimit(`auth_${ip}`, 10, 60 * 1000);
 
   if (limiter.isLimited) {

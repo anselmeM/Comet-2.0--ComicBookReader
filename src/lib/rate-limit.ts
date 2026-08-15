@@ -69,6 +69,26 @@ export async function rateLimit(key: string, limit: number, windowMs: number) {
     }
   }
 
+  // Fail closed in production when Redis (and thus the distributed rate
+  // limiter) is not configured: per-instance in-memory limiting is bypassable
+  // on serverless, so refuse rather than serve unlimited traffic. In dev,
+  // keep the per-instance fallback so local workflows aren't blocked.
+  if (!ratelimit && process.env.NODE_ENV === 'production') {
+    logger.error(
+      `[RateLimit] UPSTASH_REDIS is not configured in production — failing closed for key ${key}`,
+    );
+    return {
+      isLimited: true,
+      remaining: 0,
+      reset: 0,
+      headers: {
+        'X-RateLimit-Limit': String(limit),
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': '0',
+      },
+    };
+  }
+
   // Fallback to memory
   const now = Date.now();
   let record = memoryStore.get(identifier);
