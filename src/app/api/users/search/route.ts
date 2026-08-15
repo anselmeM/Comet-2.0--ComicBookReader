@@ -33,51 +33,42 @@ export async function GET(req: Request) {
       take: 10,
     });
 
-    // Check relationship status for each user
-    const usersWithStatus = await Promise.all(
-      users.map(async (user) => {
-        const friendship = await db.friendship.findFirst({
-          where: {
-            OR: [
-              { userId: session.user.id, friendId: user.id },
-              { userId: user.id, friendId: session.user.id },
-            ],
-          },
-        });
+    // Batch relationship lookups (3 queries total instead of 3 per user)
+    const userIds = users.map((u) => u.id);
 
-        if (friendship) {
-          return { ...user, status: 'FRIEND' };
-        }
+    const friendships = await db.friendship.findMany({
+      where: {
+        OR: [
+          { userId: session.user.id, friendId: { in: userIds } },
+          { userId: { in: userIds }, friendId: session.user.id },
+        ],
+      },
+    });
 
-        const sentRequest = await db.friendRequest.findUnique({
-          where: {
-            senderId_receiverId: {
-              senderId: session.user.id,
-              receiverId: user.id,
-            },
-          },
-        });
+    const sentRequests = await db.friendRequest.findMany({
+      where: { senderId: session.user.id, receiverId: { in: userIds } },
+    });
 
-        if (sentRequest) {
-          return { ...user, status: 'REQUEST_SENT', requestId: sentRequest.id };
-        }
+    const receivedRequests = await db.friendRequest.findMany({
+      where: { senderId: { in: userIds }, receiverId: session.user.id },
+    });
 
-        const receivedRequest = await db.friendRequest.findUnique({
-          where: {
-            senderId_receiverId: {
-              senderId: user.id,
-              receiverId: session.user.id,
-            },
-          },
-        });
+    const usersWithStatus = users.map((user) => {
+      const isFriend = friendships.some(
+        (f) =>
+          (f.userId === session.user.id && f.friendId === user.id) ||
+          (f.userId === user.id && f.friendId === session.user.id),
+      );
+      if (isFriend) return { ...user, status: 'FRIEND' };
 
-        if (receivedRequest) {
-          return { ...user, status: 'REQUEST_RECEIVED', requestId: receivedRequest.id };
-        }
+      const sent = sentRequests.find((r) => r.receiverId === user.id);
+      if (sent) return { ...user, status: 'REQUEST_SENT', requestId: sent.id };
 
-        return { ...user, status: 'NONE' };
-      }),
-    );
+      const received = receivedRequests.find((r) => r.senderId === user.id);
+      if (received) return { ...user, status: 'REQUEST_RECEIVED', requestId: received.id };
+
+      return { ...user, status: 'NONE' };
+    });
 
     return NextResponse.json({ users: usersWithStatus });
   } catch (error) {

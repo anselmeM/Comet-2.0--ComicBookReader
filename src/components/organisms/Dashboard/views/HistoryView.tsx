@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { useResetProgress, useClearAllHistory } from '@/hooks/useLibrary';
 import { useReadingHistory } from '@/hooks/useReadingHistory';
 import { useNotification } from '@/components/atoms/Toast';
+import { formatDuration } from '@/lib/format';
 
 interface HistoryViewProps {
   comics: DashboardComic[];
@@ -27,16 +28,6 @@ interface HistoryViewProps {
 /**
  * Helper to format duration in seconds to a human-readable string.
  */
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  const mins = Math.floor(seconds / 60);
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  const remainingMins = mins % 60;
-  if (remainingMins === 0) return `${hrs}h`;
-  return `${hrs}h ${remainingMins}m`;
-}
-
 /**
  * Helper to format a session date/time.
  */

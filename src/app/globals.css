@@ -247,6 +247,14 @@ button:disabled {
   animation: comet-ticker 32s linear infinite;
 }
 
+/* Skip rendering off-screen sections until the scroll nears them (cuts
+   initial render cost as the landing page grows). The intrinsic-size
+   reserve avoids scrollbar/layout jump on reveal. */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 800px;
+}
+
 /* ── Focus visible ────────────────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--color-accent);

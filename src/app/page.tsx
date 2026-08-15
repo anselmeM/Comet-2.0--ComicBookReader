@@ -525,7 +525,7 @@ export default function Home() {
         </div>
 
         {/* ── Features Grid (The Asymmetric Comic Grid) ────────────────── */}
-        <section id="features" className="mt-48 w-full max-w-7xl mx-auto text-left">
+        <section id="features" className="content-visibility-auto mt-48 w-full max-w-7xl mx-auto text-left">
           <motion.div
             initial="initial"
             whileInView="animate"
@@ -626,7 +626,7 @@ export default function Home() {
         <LazySandbox />
 
         {/* ── Guided View Showcase ─────────────────────────────────────── */}
-        <section className="mt-48 w-full max-w-7xl mx-auto text-left">
+        <section className="content-visibility-auto mt-48 w-full max-w-7xl mx-auto text-left">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div
               initial="initial"
@@ -863,7 +863,7 @@ export default function Home() {
         </section>
 
         {/* ── Social / Community Section (Speech-Bubble Ticker) ───────── */}
-        <section className="mt-48 w-full max-w-7xl mx-auto">
+        <section className="content-visibility-auto mt-48 w-full max-w-7xl mx-auto">
           <motion.div
             initial="initial"
             whileInView="animate"
@@ -918,7 +918,7 @@ export default function Home() {
         </section>
 
         {/* ── Final CTA ────────────────────────────────────────────────── */}
-        <section className="mt-48 pb-20">
+        <section className="content-visibility-auto mt-48 pb-20">
           <motion.div
             initial="initial"
             whileInView="animate"
