@@ -248,7 +248,7 @@ export const POST = withAuth(async (_req: Request, context, session) => {
     });
 
     // Gamification Evaluation
-    const newlyEarnedBadges: any[] = [];
+    const newlyEarnedBadges: { id: string; name: string; description: string }[] = [];
     try {
       const newBadgeIds = await evaluateBadges(session.user.id);
       if (newBadgeIds.length > 0) {

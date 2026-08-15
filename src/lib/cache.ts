@@ -131,7 +131,7 @@ export async function invalidateCache(keyOrPrefix: string, usePrefix = false): P
 /**
  * Helper to generate a cache key for a user and endpoint.
  */
-export function genCacheKey(userId: string, endpoint: string, params?: any): string {
+export function genCacheKey(userId: string, endpoint: string, params?: unknown): string {
   const base = `comet:u:${userId}:${endpoint}`;
   if (!params) return base;
 
@@ -140,8 +140,8 @@ export function genCacheKey(userId: string, endpoint: string, params?: any): str
     typeof params === 'object' && params !== null
       ? Object.keys(params)
           .sort()
-          .reduce((acc: any, key) => {
-            acc[key] = params[key];
+          .reduce<Record<string, unknown>>((acc, key) => {
+            acc[key] = (params as Record<string, unknown>)[key];
             return acc;
           }, {})
       : params;

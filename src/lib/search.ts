@@ -4,9 +4,9 @@
 import Fuse from 'fuse.js';
 import { ComicDTO } from '@/types';
 
-export interface SearchResult {
-  comics: ComicDTO[];
-  collections: any[];
+export interface SearchResult<TComic = ComicDTO> {
+  comics: TComic[];
+  collections: { id: string; name: string; items?: unknown[] }[];
   series: string[];
 }
 
@@ -16,10 +16,10 @@ export interface SearchResult {
  * @param query The search string
  * @param data The dataset to search (comics, collections)
  */
-export function globalSearch(
+export function globalSearch<TComic extends { title: string; series?: string }>(
   query: string,
-  data: { comics: ComicDTO[]; collections: any[] }
-): SearchResult {
+  data: { comics: TComic[]; collections: { id: string; name: string; items?: unknown[] }[] }
+): SearchResult<TComic> {
   if (!query) {
     return { comics: [], collections: [], series: [] };
   }

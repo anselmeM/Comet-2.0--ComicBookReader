@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getErrorMessage } from '@/lib/errors';
 import { useNotification } from '@/components/atoms/Toast';
 
 export function useSubscription() {
@@ -18,8 +19,8 @@ export function useSubscription() {
       } else {
         throw new Error(data.error || 'Failed to initiate checkout');
       }
-    } catch (error: any) {
-      triggerNotification(error.message, 'error');
+    } catch (error) {
+      triggerNotification(getErrorMessage(error), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -36,8 +37,8 @@ export function useSubscription() {
       } else {
         throw new Error(data.error || 'Failed to open billing portal');
       }
-    } catch (error: any) {
-      triggerNotification(error.message, 'error');
+    } catch (error) {
+      triggerNotification(getErrorMessage(error), 'error');
     } finally {
       setIsLoading(false);
     }

@@ -13,6 +13,12 @@ export interface FeedActivity {
   issue: number | null;
   type: 'FINISHED' | 'READING';
   timestamp: string;
+  reactions: {
+    id: string;
+    userId: string;
+    userName: string | null;
+    reactionType: string;
+  }[];
 }
 
 export function useFeed() {

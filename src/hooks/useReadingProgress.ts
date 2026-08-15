@@ -72,7 +72,7 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
 
       // Trigger Badge Toasts!
       if (data && data.newlyEarnedBadges && data.newlyEarnedBadges.length > 0) {
-        data.newlyEarnedBadges.forEach((badge: any) => {
+        data.newlyEarnedBadges.forEach((badge: { id: string; name: string }) => {
           triggerNotification(`🏆 Badge Unlocked: ${badge.name}!`, 'success', undefined, 5000);
         });
       }

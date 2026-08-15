@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getErrorMessage } from '@/lib/errors';
 import { withAuth } from '@/lib/api-middleware';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -55,7 +56,16 @@ export const GET = withAuth(async (req: Request, context, session) => {
     }
 
     const data = await response.json();
-    const results = (data?.results ?? []).map((result: any) => ({
+    const results = (data?.results ?? []).map((result: {
+          id?: string;
+          name?: string;
+          issue_number?: string;
+          volume?: { name?: string };
+          cover_date?: string;
+          deck?: string;
+          description?: string;
+          image?: { original_url?: string; thumb_url?: string };
+        }) => ({
       comicVineId: String(result.id),
       title:
         result.name ||
@@ -68,10 +78,10 @@ export const GET = withAuth(async (req: Request, context, session) => {
     }));
 
     return NextResponse.json(results);
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Failed to search ComicVine metadata', { query }, error as Error);
     return NextResponse.json(
-      { error: error.message || 'Failed to search ComicVine' },
+      { error: getErrorMessage(error) || 'Failed to search ComicVine' },
       { status: 502 },
     );
   }

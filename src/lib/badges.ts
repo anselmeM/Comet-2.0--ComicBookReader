@@ -98,7 +98,7 @@ export async function evaluateBadges(userId: string): Promise<string[]> {
     select: { badgeId: true },
   });
 
-  const earnedBadgeIds = new Set(earnedBadges.map((b: any) => b.badgeId));
+  const earnedBadgeIds = new Set(earnedBadges.map((b: { badgeId: string }) => b.badgeId));
   const unearnedBadges = BADGES.filter((b: BadgeDefinition) => !earnedBadgeIds.has(b.id));
 
   if (unearnedBadges.length === 0) return []; // All badges earned

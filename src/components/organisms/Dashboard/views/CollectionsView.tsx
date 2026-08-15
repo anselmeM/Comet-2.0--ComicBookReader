@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { getErrorMessage } from '@/lib/errors';
 import {
   ChevronLeft,
   ChevronRight,
@@ -172,11 +173,11 @@ export const CollectionsView = ({
     const collectionComics = currentCollectionData?.comics || [];
     return collectionComics.map((c) => ({
       ...c,
-      author: c.author || (c as any).series || undefined,
+      author: c.author || (c as { series?: string }).series || undefined,
     })) as DashboardComic[];
   }, [selectedCollectionId, currentCollectionData, comics]);
 
-  const handleDragEnd = async (event: any) => {
+  const handleDragEnd = async (event: import('@dnd-kit/core').DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
 
@@ -191,15 +192,15 @@ export const CollectionsView = ({
       try {
         await addItem.mutateAsync({ collectionId, comicId });
         triggerNotification('Added comic to collection', 'success');
-      } catch (err: any) {
-        triggerNotification(err.message || 'Failed to add comic to collection', 'error');
+      } catch (err) {
+        triggerNotification(getErrorMessage(err) || 'Failed to add comic to collection', 'error');
       }
     } else if (targetId === 'smart-unread') {
       try {
         await resetProgress.mutateAsync(comicId);
         triggerNotification('Progress reset (marked as unread)', 'success');
-      } catch (err: any) {
-        triggerNotification(err.message || 'Failed to update progress', 'error');
+      } catch (err) {
+        triggerNotification(getErrorMessage(err) || 'Failed to update progress', 'error');
       }
     } else if (targetId === 'smart-inprogress') {
       try {
@@ -210,8 +211,8 @@ export const CollectionsView = ({
           readStatus: 'READING',
         });
         triggerNotification('Comic marked as in progress', 'success');
-      } catch (err: any) {
-        triggerNotification(err.message || 'Failed to update progress', 'error');
+      } catch (err) {
+        triggerNotification(getErrorMessage(err) || 'Failed to update progress', 'error');
       }
     } else if (targetId === 'smart-completed') {
       try {
@@ -222,8 +223,8 @@ export const CollectionsView = ({
           readStatus: 'COMPLETED',
         });
         triggerNotification('Comic marked as completed!', 'success');
-      } catch (err: any) {
-        triggerNotification(err.message || 'Failed to update progress', 'error');
+      } catch (err) {
+        triggerNotification(getErrorMessage(err) || 'Failed to update progress', 'error');
       }
     }
   };
@@ -289,8 +290,8 @@ export const CollectionsView = ({
       triggerNotification(`Collection "${newCollectionName}" created!`, 'success');
       setNewCollectionName('');
       setIsCreateModalOpen(false);
-    } catch (err: any) {
-      triggerNotification(err.message || 'Failed to create collection', 'error');
+    } catch (err) {
+      triggerNotification(getErrorMessage(err) || 'Failed to create collection', 'error');
     }
   };
 

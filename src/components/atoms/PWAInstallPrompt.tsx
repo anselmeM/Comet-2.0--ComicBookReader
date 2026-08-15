@@ -15,14 +15,14 @@ export function PWAInstallPrompt() {
     // Check if already installed
     const isStandaloneMode =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone;
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
     setIsStandalone(isStandaloneMode);
 
     if (isStandaloneMode) return;
 
     // Detect iOS Safari
     const ua = window.navigator.userAgent;
-    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
     const isSafari = ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS');
 
     if (isIOSDevice && isSafari) {

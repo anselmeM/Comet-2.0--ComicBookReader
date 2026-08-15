@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { LogIn, Rocket, KeyRound, Mail, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
+import { getErrorMessage } from '@/lib/errors';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { signIn, useSession } from 'next-auth/react';
@@ -108,9 +109,9 @@ function LoginForm() {
         // Force a hard refresh to the callback URL so session state is fully initialized
         window.location.href = callbackUrl;
       }
-    } catch (err: any) {
+    } catch (err) {
       logger.error('[LoginForm] Client sign in error:', {}, err instanceof Error ? err : undefined);
-      setErrorMsg(`Crash: ${err?.message || String(err)}`);
+      setErrorMsg(`Crash: ${getErrorMessage(err)}`);
       setLoading(false);
     }
   };

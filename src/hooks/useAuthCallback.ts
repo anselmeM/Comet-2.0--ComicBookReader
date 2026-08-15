@@ -21,8 +21,8 @@ export function useAuthCallback() {
    * @returns {Promise<boolean>} True if an auth error was handled, false otherwise.
    */
   const handleAuthError = useCallback(
-    async (response?: Response | null, error?: any, force = false) => {
-      const status = response?.status || error?.status;
+    async (response?: Response | null, error?: unknown, force = false) => {
+      const status = response?.status || (error as { status?: number } | null)?.status;
       const isUnauthorized = status === 401;
       const isForbidden = status === 403;
 

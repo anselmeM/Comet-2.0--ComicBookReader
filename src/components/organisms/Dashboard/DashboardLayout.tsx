@@ -102,8 +102,8 @@ export function DashboardLayout(props: DashboardLayoutProps) {
   const searchResults = useMemo(() => {
     if (!searchQuery || searchQuery.length < 2) return null;
     return globalSearch(searchQuery, {
-      comics: comics as any,
-      collections: collections as any,
+      comics: comics,
+      collections: collections,
     });
   }, [searchQuery, comics, collections]);
 

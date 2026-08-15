@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getErrorMessage } from '@/lib/errors';
 import { motion } from 'framer-motion';
 import {
   Zap,
@@ -13,6 +14,7 @@ import {
   Rocket,
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import type { ComicPage } from '@/types';
 
 // NOTE: JSZip + the parsing stack (comic-worker-client, comic-validation, hash,
 // guidedView) are loaded lazily inside the handlers below, and this whole
@@ -84,7 +86,7 @@ async function createMockCbzFile(): Promise<File> {
 export default function SandboxDemo() {
   // Sandbox state
   const [sandboxFile, setSandboxFile] = useState<File | null>(null);
-  const [sandboxPages, setSandboxPages] = useState<any[]>([]);
+  const [sandboxPages, setSandboxPages] = useState<ComicPage[]>([]);
   const [sandboxIsParsing, setSandboxIsParsing] = useState(false);
   const [sandboxProgress, setSandboxProgress] = useState<{
     page: number;
@@ -101,7 +103,7 @@ export default function SandboxDemo() {
   } | null>(null);
   const [sandboxCurrentPage, setSandboxCurrentPage] = useState(0);
   const [sandboxShowPanels, setSandboxShowPanels] = useState(false);
-  const [sandboxDetectedPanels, setSandboxDetectedPanels] = useState<Record<number, any[]>>({});
+  const [sandboxDetectedPanels, setSandboxDetectedPanels] = useState<Record<number, { x: number; y: number; width: number; height: number }[]>>({});
   const [sandboxIsDetecting, setSandboxIsDetecting] = useState(false);
   const [sandboxIsDragging, setSandboxIsDragging] = useState(false);
 
@@ -176,9 +178,9 @@ export default function SandboxDemo() {
       });
       setSandboxIsParsing(false);
       setSandboxProgress(null);
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Sandbox parse failed', {}, err instanceof Error ? err : undefined);
-      setSandboxError(err.message || 'Failed to parse file.');
+      setSandboxError(getErrorMessage(err) || 'Failed to parse file.');
       setSandboxIsParsing(false);
       setSandboxProgress(null);
     }
@@ -211,7 +213,7 @@ export default function SandboxDemo() {
     try {
       const mockFile = await createMockCbzFile();
       await handleSandboxParse(mockFile);
-    } catch (err: any) {
+    } catch (err) {
       setSandboxError('Failed to generate mock sample.');
       setSandboxIsParsing(false);
     }
