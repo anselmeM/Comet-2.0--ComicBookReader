@@ -41,6 +41,7 @@ yarn-error.log*
 !README.md
 !AGENTS.md
 !CONTRIBUTING.md
+!IMPROVEMENTS.md
 !.github/PULL_REQUEST_TEMPLATE.md
 
 # typescript
