@@ -27,10 +27,17 @@ vi.mock('@/lib/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
+const { cache } = vi.hoisted(() => ({
+  cache: { getCache: vi.fn(), setCache: vi.fn(), invalidateCache: vi.fn() },
+}));
+vi.mock('@/lib/cache', () => cache);
+
 describe('POST /api/webhooks/stripe', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_secret';
+    cache.getCache.mockResolvedValue(null);
+    cache.setCache.mockResolvedValue(undefined);
   });
 
   function mockHeaders(signature: string | null) {
@@ -302,5 +309,54 @@ describe('POST /api/webhooks/stripe', () => {
     expect(res.status).toBe(200);
     expect(stripe.subscriptions.retrieve).not.toHaveBeenCalled();
     expect(db.user.update).not.toHaveBeenCalled();
+  });
+
+  it('skips events already processed (idempotency) without re-running work', async () => {
+    cache.getCache.mockResolvedValue('1'); // already marked processed
+    const mockEvent = {
+      id: 'evt_already_done',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_123',
+          subscription: 'sub_test_123',
+          metadata: { userId: 'user-123' },
+        },
+      },
+    };
+
+    vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as any);
+
+    const res = await POST(buildRequest(JSON.stringify(mockEvent), 'valid_signature'));
+
+    expect(res.status).toBe(200);
+    expect(stripe.subscriptions.retrieve).not.toHaveBeenCalled();
+    expect(db.user.update).not.toHaveBeenCalled();
+  });
+
+  it('marks a successfully processed event so redeliveries are deduped', async () => {
+    const mockEvent = {
+      id: 'evt_fresh',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_123',
+          subscription: 'sub_test_123',
+          metadata: { userId: 'user-123' },
+        },
+      },
+    };
+
+    vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as any);
+    vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
+      id: 'sub_test_123',
+      customer: 'cus_test_123',
+      items: { data: [{ price: { id: 'price_test_123' } }] },
+      current_period_end: Math.floor(Date.now() / 1000) + 3600,
+    } as any);
+
+    await POST(buildRequest(JSON.stringify(mockEvent), 'valid_signature'));
+
+    expect(cache.setCache).toHaveBeenCalledWith('stripe:event:evt_fresh', '1', 60 * 60 * 24);
   });
 });

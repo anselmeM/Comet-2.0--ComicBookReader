@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
+import { getCache, setCache } from '@/lib/cache';
 import { logger } from '@/lib/logger';
 import Stripe from 'stripe';
 
@@ -43,6 +44,14 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Idempotency: Stripe redelivers events with the same id; skip anything
+    // already processed successfully (24h window). Failures are NOT marked, so
+    // retries re-run.
+    const processed = await getCache(`stripe:event:${event.id}`);
+    if (processed) {
+      return new NextResponse(null, { status: 200 });
+    }
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -124,6 +133,10 @@ export async function POST(req: Request) {
     // are safe; the failure is surfaced in logs for investigation.
     return new NextResponse('Webhook processing failed', { status: 500 });
   }
+
+  // Mark as processed (24h) so Stripe redeliveries are deduped. Failures above
+  // return before this, so a 500 keeps the event unmarked for retry.
+  await setCache(`stripe:event:${event.id}`, '1', 60 * 60 * 24);
 
   return new NextResponse(null, { status: 200 });
 }
