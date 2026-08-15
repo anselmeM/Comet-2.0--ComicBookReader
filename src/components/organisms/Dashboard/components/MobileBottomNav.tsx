@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/cn';
 import { navItems } from '@/lib/dashboard';
 import { motion } from 'framer-motion';
 
@@ -40,12 +41,10 @@ export function MobileBottomNav({ activeView, onNavClick }: MobileBottomNavProps
               <item.icon
                 size={22}
                 strokeWidth={isActive ? 2.5 : 2}
-                className={`transition-colors ${isActive ? 'text-blue-600' : 'text-neutral-500'}`}
+                className={cn('transition-colors', isActive ? 'text-blue-600' : 'text-neutral-500')}
               />
               <span
-                className={`text-[10px] font-bold transition-colors text-center leading-tight ${
-                  isActive ? 'text-blue-600' : 'text-neutral-500'
-                }`}
+                className={cn('text-[10px] font-bold transition-colors text-center leading-tight', isActive ? 'text-blue-600' : 'text-neutral-500')}
               >
                 {item.name}
               </span>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/cn';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, UploadCloud, Bell, X } from 'lucide-react';
 import type { Session } from 'next-auth';
@@ -186,11 +187,9 @@ export function DashboardHeader({
             onClick={() => setShowFilters(!showFilters)}
             aria-label="Toggle filters"
             aria-expanded={showFilters}
-            className={`p-3 md:p-4 rounded-xl md:rounded-3xl border transition-all ${
-              showFilters
+            className={cn('p-3 md:p-4 rounded-xl md:rounded-3xl border transition-all', showFilters
                 ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20'
-                : 'bg-white border-neutral-100 text-neutral-500 hover:border-neutral-300 shadow-sm'
-            }`}
+                : 'bg-white border-neutral-100 text-neutral-500 hover:border-neutral-300 shadow-sm')}
           >
             <Filter className="w-5 h-5 md:w-6 md:h-6" />
           </button>
@@ -269,11 +268,9 @@ export function DashboardHeader({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className={`p-3 md:p-5 border rounded-xl md:rounded-2xl transition-all relative shadow-sm ${
-              showNotifications
+            className={cn('p-3 md:p-5 border rounded-xl md:rounded-2xl transition-all relative shadow-sm', showNotifications
                 ? 'bg-blue-600 border-blue-500 text-white'
-                : 'bg-white border-neutral-100 text-neutral-500 hover:text-blue-500'
-            }`}
+                : 'bg-white border-neutral-100 text-neutral-500 hover:text-blue-500')}
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5 md:w-6 md:h-6" />

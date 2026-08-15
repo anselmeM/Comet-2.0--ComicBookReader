@@ -20,6 +20,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import Image from 'next/image';
+import { formatTimeAgo } from '@/lib/format';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import {
@@ -207,17 +208,6 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
 
   const pendingCount = (requests?.incoming.length || 0) + (requests?.outgoing.length || 0);
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    return date.toLocaleDateString();
-  };
-
   // Helper reaction helpers
   const getReactionCount = (reactions: any[] = [], type: string) => {
     return reactions.filter((r) => r.reactionType === type).length;
@@ -346,7 +336,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                           <p className="text-[10px] font-bold text-comet-muted uppercase tracking-widest mt-1">
                             {activity.series && `${activity.series} `}
                             {activity.issue !== null && `#${activity.issue} • `}
-                            {formatTimestamp(activity.timestamp)}
+                            {formatTimeAgo(activity.timestamp)}
                           </p>
                         </div>
 
@@ -1039,7 +1029,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                           <span
                             className={`text-[8px] font-bold text-comet-muted uppercase block ${isSelf ? 'text-right' : ''}`}
                           >
-                            {formatTimestamp(comment.createdAt)}
+                            {formatTimeAgo(comment.createdAt)}
                           </span>
                         </div>
                       </div>
@@ -1272,7 +1262,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                                   {activity.readStatus === 'COMPLETED'
                                     ? 'Finished'
                                     : `Read ${activity.percent}%`}{' '}
-                                  • {formatTimestamp(activity.lastReadAt)}
+                                  • {formatTimeAgo(activity.lastReadAt)}
                                 </p>
                               </div>
                             </div>
@@ -1380,7 +1370,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                           <span
                             className={`text-[9px] font-bold text-comet-muted uppercase block tracking-wider ${isSelf ? 'text-right' : ''}`}
                           >
-                            {formatTimestamp(msg.createdAt)}
+                            {formatTimeAgo(msg.createdAt)}
                           </span>
                         </div>
                       </div>

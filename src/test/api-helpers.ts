@@ -43,6 +43,7 @@ export function createMockDb() {
     user: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       count: vi.fn(),
@@ -50,6 +51,7 @@ export function createMockDb() {
     comic: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       count: vi.fn(),
@@ -72,6 +74,11 @@ export function createMockDb() {
     },
     friendship: {
       create: vi.fn(),
+      findMany: vi.fn(),
+    },
+    friendRequest: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
     },
     userBadge: {
       findMany: vi.fn(),

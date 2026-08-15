@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/cn';
 import { motion } from 'framer-motion';
 import { LogOut, Settings } from 'lucide-react';
 import { signOut as nextAuthSignOut, useSession } from 'next-auth/react';
@@ -58,7 +59,7 @@ export function DashboardSidebar({
         initial={false}
         animate={{ paddingLeft: isOpen ? 24 : 0 }}
         transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
-        className={`mb-20 flex items-center gap-4 ${!isOpen ? 'justify-center' : ''}`}
+        className={cn('mb-20 flex items-center gap-4', !isOpen ? 'justify-center' : '')}
       >
         <button
           type="button"
@@ -83,27 +84,23 @@ export function DashboardSidebar({
         </motion.h1>
       </motion.div>
 
-      <nav className={`flex-1 space-y-4 ${isOpen ? 'px-6' : 'px-4'}`}>
+      <nav className={cn('flex-1 space-y-4', isOpen ? 'px-6' : 'px-4')}>
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onNavClick(item.id)}
             title={!isOpen ? item.name : undefined}
             aria-current={activeView === item.id ? 'page' : undefined}
-            className={`flex items-center transition-all ${
-              isOpen
+            className={cn('flex items-center transition-all', isOpen
                 ? 'w-full px-6 py-5 rounded-3xl justify-start text-lg font-bold'
-                : 'w-12 h-12 rounded-2xl justify-center mx-auto'
-            } ${
-              activeView === item.id
+                : 'w-12 h-12 rounded-2xl justify-center mx-auto', activeView === item.id
                 ? 'bg-blue-500 text-white shadow-xl shadow-blue-500/40'
-                : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
-            }`}
+                : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900')}
           >
             <item.icon
               size={24}
               strokeWidth={2.5}
-              className={`shrink-0 ${activeView === item.id ? 'text-white' : ''}`}
+              className={cn('shrink-0', activeView === item.id ? 'text-white' : '')}
             />
             <motion.span
               initial={false}
@@ -122,7 +119,7 @@ export function DashboardSidebar({
       </nav>
 
       <div
-        className={`space-y-4 mt-auto border-t border-neutral-50 pt-10 pb-10 ${isOpen ? 'px-6' : 'px-4'}`}
+        className={cn('space-y-4 mt-auto border-t border-neutral-50 pt-10 pb-10', isOpen ? 'px-6' : 'px-4')}
       >
         {bottomNavItems.map((item) => (
           <button
@@ -130,11 +127,9 @@ export function DashboardSidebar({
             onClick={() => (item.id === 'logout' ? handleLogout() : onNavClick(item.id))}
             title={!isOpen ? item.name : undefined}
             aria-current={activeView === item.id ? 'page' : undefined}
-            className={`flex items-center transition-all ${
-              isOpen
+            className={cn('flex items-center transition-all', isOpen
                 ? 'w-full px-6 py-5 rounded-3xl justify-start text-lg font-bold text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
-                : 'w-12 h-12 rounded-2xl justify-center mx-auto text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
-            } ${item.id === 'logout' ? 'hover:text-red-400' : ''}`}
+                : 'w-12 h-12 rounded-2xl justify-center mx-auto text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900', item.id === 'logout' ? 'hover:text-red-400' : '')}
           >
             <item.icon size={24} strokeWidth={2.5} className="shrink-0" />
             <motion.span
