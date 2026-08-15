@@ -23,6 +23,10 @@ vi.mock('@/lib/stripe', () => ({
   },
 }));
 
+vi.mock('@/lib/logger', () => ({
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+
 describe('POST /api/webhooks/stripe', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -207,5 +211,96 @@ describe('POST /api/webhooks/stripe', () => {
 
     expect(res.status).toBe(200);
     expect(stripe.subscriptions.retrieve).not.toHaveBeenCalled();
+  });
+
+  it('acknowledges checkout without a subscription (one-off payment)', async () => {
+    const mockEvent = {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_oneoff',
+          subscription: null, // one-off payment, no subscription
+          metadata: { userId: 'user-123' },
+        },
+      },
+    };
+
+    vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as any);
+
+    const req = buildRequest(JSON.stringify(mockEvent), 'valid_signature');
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(stripe.subscriptions.retrieve).not.toHaveBeenCalled();
+    expect(db.user.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 (retryable) when subscription retrieval fails', async () => {
+    const mockEvent = {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_123',
+          subscription: 'sub_test_123',
+          metadata: { userId: 'user-123' },
+        },
+      },
+    };
+
+    vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as any);
+    vi.mocked(stripe.subscriptions.retrieve).mockRejectedValue(new Error('stripe down'));
+
+    const req = buildRequest(JSON.stringify(mockEvent), 'valid_signature');
+    const res = await POST(req);
+
+    expect(res.status).toBe(500);
+    expect(db.user.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 (retryable) when the subscription has no price items', async () => {
+    const mockEvent = {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_123',
+          subscription: 'sub_test_123',
+          metadata: { userId: 'user-123' },
+        },
+      },
+    };
+
+    vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as any);
+    vi.mocked(stripe.subscriptions.retrieve).mockResolvedValue({
+      id: 'sub_test_123',
+      items: { data: [] }, // no price items → cannot determine plan
+      current_period_end: Math.floor(Date.now() / 1000) + 3600,
+    } as any);
+
+    const req = buildRequest(JSON.stringify(mockEvent), 'valid_signature');
+    const res = await POST(req);
+
+    expect(res.status).toBe(500);
+    expect(db.user.update).not.toHaveBeenCalled();
+  });
+
+  it('acknowledges invoice.payment_succeeded without a subscription', async () => {
+    const mockEvent = {
+      type: 'invoice.payment_succeeded',
+      data: {
+        object: {
+          id: 'in_oneoff',
+          subscription: null, // one-off invoice
+        },
+      },
+    };
+
+    vi.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent as any);
+
+    const req = buildRequest(JSON.stringify(mockEvent), 'valid_signature');
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(stripe.subscriptions.retrieve).not.toHaveBeenCalled();
+    expect(db.user.update).not.toHaveBeenCalled();
   });
 });
