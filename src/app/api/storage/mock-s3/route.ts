@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getErrorMessage } from '@/lib/errors';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '@/lib/logger';
@@ -50,10 +51,10 @@ export async function GET(req: Request) {
         'Content-Disposition': `attachment; filename="${path.basename(key)}"`,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[MOCK_S3_GET_ERROR]', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
-      { error: error.message || 'Failed to download from mock storage' },
+      { error: getErrorMessage(error) || 'Failed to download from mock storage' },
       { status: 500 },
     );
   }
@@ -82,10 +83,10 @@ export async function PUT(req: Request) {
     logger.info(`[Mock S3] Saved ${buffer.length} bytes to ${filePath}`);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[MOCK_S3_PUT_ERROR]', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
-      { error: error.message || 'Failed to upload to mock storage' },
+      { error: getErrorMessage(error) || 'Failed to upload to mock storage' },
       { status: 500 },
     );
   }
@@ -112,10 +113,10 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[MOCK_S3_DELETE_ERROR]', {}, error instanceof Error ? error : undefined);
     return NextResponse.json(
-      { error: error.message || 'Failed to delete from mock storage' },
+      { error: getErrorMessage(error) || 'Failed to delete from mock storage' },
       { status: 500 },
     );
   }

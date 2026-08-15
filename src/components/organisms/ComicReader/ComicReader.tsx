@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { useComicPages } from '@/hooks/useComicPages';
-import { useReaderStore } from '@/stores/readerStore';
+import { useReaderStore, type ReaderMode } from '@/stores/readerStore';
 import { useReadingProgress } from '@/hooks/useReadingProgress';
 import { useWakeLock } from '@/hooks/useWakeLock';
 import { ReaderViewport } from './ReaderViewport';
@@ -307,7 +307,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
       if (currentId !== comic.comicId) {
         const initialPage = metadata?.progress?.lastPage ?? 0;
         // Cast session user to any temporarily to access custom fields
-        const initialMode = (session?.user as any)?.defaultReadingMode as any;
+        const initialMode = session?.user?.defaultReadingMode as ReaderMode | undefined;
         openComic(comic.comicId, comic.pages.length, initialPage, initialMode);
       }
     }

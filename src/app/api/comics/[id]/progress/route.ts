@@ -264,7 +264,7 @@ export const PUT = withAuth(
         await invalidateCache(`comet:u:${session.user.id}:library`, true);
 
         // Gamification Evaluation
-        const newlyEarnedBadges: any[] = [];
+        const newlyEarnedBadges: { id: string; name: string; description: string }[] = [];
         try {
           const newBadgeIds = await evaluateBadges(session.user.id);
           if (newBadgeIds.length > 0) {

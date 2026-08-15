@@ -14,7 +14,7 @@ import { logger } from '@/lib/logger';
 export async function queueSyncTask(
   url: string,
   method: SyncTask['method'],
-  body: any,
+  body: SyncTask['body'],
   headers: Record<string, string> = { 'Content-Type': 'application/json' },
 ): Promise<void> {
   const db = await getDB();
@@ -34,7 +34,9 @@ export async function queueSyncTask(
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'SyncManager' in window) {
     try {
       const registration = await navigator.serviceWorker.ready;
-      await (registration as any).sync.register('comet-sync');
+      await (
+        registration as unknown as { sync: { register(tag: string): Promise<void> } }
+      ).sync.register('comet-sync');
     } catch (err) {
       logger.warn(
         '[SyncManager] Failed to register native sync, falling back to manual process.',

@@ -202,8 +202,18 @@ export interface UserProfile {
     completedCount: number;
     totalTimeSpent: number;
   };
-  badges: any[];
-  recentActivity: any[];
+  badges: { id: string; name: string; badgeId?: string; earnedAt?: string }[];
+  recentActivity: {
+    id: string;
+    type: string;
+    createdAt: string;
+    comicId?: string;
+    coverUrl?: string;
+    title?: string;
+    readStatus?: string;
+    percent?: number;
+    lastReadAt?: string;
+  }[];
 }
 
 export function useUserProfile(userId: string | null) {

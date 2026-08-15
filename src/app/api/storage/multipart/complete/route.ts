@@ -31,8 +31,8 @@ export async function POST(req: Request) {
     }
 
     const normalizedParts = parts
-      .filter((p: any) => p && typeof p.PartNumber === 'number' && typeof p.ETag === 'string')
-      .sort((a: any, b: any) => a.PartNumber - b.PartNumber);
+      .filter((p): p is { PartNumber: number; ETag: string } => p && typeof p.PartNumber === 'number' && typeof p.ETag === 'string')
+      .sort((a, b) => a.PartNumber - b.PartNumber);
 
     if (normalizedParts.length !== parts.length) {
       return NextResponse.json({ error: 'Invalid parts list' }, { status: 400 });

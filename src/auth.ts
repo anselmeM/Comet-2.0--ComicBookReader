@@ -1,4 +1,5 @@
 import NextAuth from 'next-auth';
+import { getErrorMessage } from '@/lib/errors';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
@@ -157,7 +158,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const MAX_ATTEMPTS = 5;
           const LOCKOUT_DURATION_MIN = 15;
 
-          const updateData: any = { failedAttempts: newFailedAttempts };
+          const updateData: { failedAttempts: number; lockoutUntil?: Date } = {
+            failedAttempts: newFailedAttempts,
+          };
 
           if (newFailedAttempts >= MAX_ATTEMPTS) {
             const lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MIN * 60 * 1000);
@@ -174,9 +177,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             `[Auth] Login failed: Password mismatch for ${email}. Attempt ${newFailedAttempts}/${MAX_ATTEMPTS}`,
           );
           return null;
-        } catch (dbError: any) {
+        } catch (dbError) {
           // Re-throw lockout error so it can be handled by the UI
-          if (dbError.message?.includes('Account locked')) {
+          if (getErrorMessage(dbError)?.includes('Account locked')) {
             throw dbError;
           }
           logger.error(

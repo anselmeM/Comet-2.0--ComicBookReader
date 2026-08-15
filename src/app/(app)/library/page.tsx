@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { getErrorMessage } from '@/lib/errors';
 import { DashboardLayout } from '@/components/organisms/Dashboard/DashboardLayout';
 import { DashboardComic } from '@/components/molecules/DashboardComicCard';
 import { UploadCloud, Loader2, Library } from 'lucide-react';
@@ -144,9 +145,9 @@ export default function LibraryPage() {
         setLocalComicIds(new Set(cached.map((c) => c.comicId)));
         triggerNotification('Comic restored from cloud', 'success');
       }
-    } catch (e: any) {
+    } catch (e) {
       logger.error('Restore failed', {}, e instanceof Error ? e : undefined);
-      triggerNotification(`Restore failed: ${e.message || 'Corrupted archive file'}`, 'error');
+      triggerNotification(`Restore failed: ${getErrorMessage(e) || 'Corrupted archive file'}`, 'error');
     }
   };
 
@@ -162,7 +163,7 @@ export default function LibraryPage() {
   }
 
   if (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Could not connect to the server';
+    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Could not connect to the server';
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200 flex items-center justify-center text-comet-text">
         <div className="bg-comet-surface p-8 rounded-3xl shadow-xl flex flex-col items-center gap-4 max-w-md text-center border border-comet-border">

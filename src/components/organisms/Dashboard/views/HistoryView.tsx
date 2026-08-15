@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { getErrorMessage } from '@/lib/errors';
 import {
   ChevronLeft,
   History,
@@ -131,8 +132,8 @@ export const HistoryView = ({ comics, setActiveView }: HistoryViewProps) => {
       try {
         await resetProgress.mutateAsync(comicId);
         triggerNotification('Comic progress reset', 'success');
-      } catch (err: any) {
-        triggerNotification(err.message || 'Failed to reset progress', 'error');
+      } catch (err) {
+        triggerNotification(getErrorMessage(err) || 'Failed to reset progress', 'error');
       }
     }
   };
@@ -142,8 +143,8 @@ export const HistoryView = ({ comics, setActiveView }: HistoryViewProps) => {
       try {
         await deleteSession.mutateAsync(sessionId);
         triggerNotification('Session log deleted', 'info');
-      } catch (err: any) {
-        triggerNotification(err.message || 'Failed to delete session', 'error');
+      } catch (err) {
+        triggerNotification(getErrorMessage(err) || 'Failed to delete session', 'error');
       }
     }
   };
@@ -157,7 +158,7 @@ export const HistoryView = ({ comics, setActiveView }: HistoryViewProps) => {
       try {
         await Promise.all([clearAllHistory.mutateAsync(), clearHistory.mutateAsync()]);
         triggerNotification('All reading history and logs cleared', 'success');
-      } catch (err: any) {
+      } catch (err) {
         triggerNotification('Failed to clear history', 'error');
       }
     }

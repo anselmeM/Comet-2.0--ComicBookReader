@@ -73,9 +73,9 @@ export function ReaderControls({ type }: ReaderControlsProps) {
     if (typeof window === 'undefined') return;
     const isStandaloneMode =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone;
+      (window.navigator as Navigator & { standalone?: boolean }).standalone;
     const ua = window.navigator.userAgent;
-    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
 
     // Hide fullscreen button if it's iOS (API unsupported) or already running as a standalone PWA
     if (isStandaloneMode || isIOSDevice) {

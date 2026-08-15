@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { getErrorMessage } from '@/lib/errors';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
@@ -130,12 +131,12 @@ export function DashboardComicCard({
       if (onNotification) onNotification(`Enriching "${comic.title}"...`, 'info');
       await enrichment.mutateAsync(comic.id);
       if (onNotification) onNotification(`Metadata updated for "${comic.title}"!`, 'success');
-    } catch (err: any) {
-      if (err.message?.includes('Premium feature') || err.message?.includes('PREMIUM_REQUIRED')) {
+    } catch (err) {
+      if (getErrorMessage(err)?.includes('Premium feature') || getErrorMessage(err)?.includes('PREMIUM_REQUIRED')) {
         setIsPremiumModalOpen(true);
       } else {
         if (onNotification)
-          onNotification(err.message || `Failed to enrich "${comic.title}"`, 'error');
+          onNotification(getErrorMessage(err) || `Failed to enrich "${comic.title}"`, 'error');
         else logger.error('Manual enrichment failed:', {}, err instanceof Error ? err : undefined);
       }
     }

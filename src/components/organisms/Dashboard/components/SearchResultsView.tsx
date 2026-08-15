@@ -7,7 +7,7 @@ import { DashboardComicCard, DashboardComic } from '@/components/molecules/Dashb
 import { SearchResult } from '@/lib/search';
 
 interface SearchResultsViewProps {
-  results: SearchResult;
+  results: SearchResult<{ id: string; title: string; isFavorite?: boolean }>;
   onClearSearch: () => void;
   onSearchChange: (query: string) => void;
   setActiveView: (view: string) => void;

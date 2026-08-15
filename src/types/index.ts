@@ -139,7 +139,7 @@ export interface SyncTask {
   id: string;
   url: string;
   method: 'POST' | 'PUT' | 'DELETE';
-  body: Record<string, unknown> | null;
+  body: unknown;
   headers: Record<string, string>;
   timestamp: number;
   attempts: number;

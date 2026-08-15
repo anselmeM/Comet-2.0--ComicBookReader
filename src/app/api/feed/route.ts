@@ -19,7 +19,7 @@ export async function GET() {
     // payload is personalized, so a shared key would leak one user's feed
     // (friend names, comic titles, completion status) to every other user.
     const cacheKey = `comet:feed:${session.user.id}`;
-    const cachedFeed = await getCache<any[]>(cacheKey);
+    const cachedFeed = await getCache<{ id: string; type: string; createdAt: string }[]>(cacheKey);
     if (cachedFeed) {
       return NextResponse.json({ activities: cachedFeed });
     }

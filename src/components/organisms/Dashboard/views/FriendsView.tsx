@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getErrorMessage } from '@/lib/errors';
 import {
   ChevronLeft,
   MessageSquare,
@@ -121,8 +122,8 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
     try {
       await sendRequest.mutateAsync(userId);
       triggerNotification('Friend request sent!', 'success');
-    } catch (err: any) {
-      triggerNotification(err.message, 'error');
+    } catch (err) {
+      triggerNotification(getErrorMessage(err), 'error');
     }
   };
 
@@ -135,8 +136,8 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
       await inviteFriend.mutateAsync(inviteEmail.trim());
       triggerNotification(`Invitation sent to ${inviteEmail}`, 'success');
       setInviteEmail('');
-    } catch (err: any) {
-      triggerNotification(err.message, 'error');
+    } catch (err) {
+      triggerNotification(getErrorMessage(err), 'error');
     } finally {
       setIsInviting(false);
     }
@@ -146,8 +147,8 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
     try {
       await handleRequest.mutateAsync({ requestId, action: 'ACCEPT' });
       triggerNotification('Friend request accepted!', 'success');
-    } catch (err: any) {
-      triggerNotification(err.message, 'error');
+    } catch (err) {
+      triggerNotification(getErrorMessage(err), 'error');
     }
   };
 
@@ -155,8 +156,8 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
     try {
       await handleRequest.mutateAsync({ requestId, action: 'DECLINE' });
       triggerNotification('Friend request declined.', 'info');
-    } catch (err: any) {
-      triggerNotification(err.message, 'error');
+    } catch (err) {
+      triggerNotification(getErrorMessage(err), 'error');
     }
   };
 
@@ -165,8 +166,8 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
       try {
         await removeFriend.mutateAsync(friendId);
         triggerNotification('Friend removed.', 'info');
-      } catch (err: any) {
-        triggerNotification(err.message, 'error');
+      } catch (err) {
+        triggerNotification(getErrorMessage(err), 'error');
       }
     }
   };
@@ -177,8 +178,8 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
   ) => {
     try {
       await reactToActivity.mutateAsync({ activityId, reactionType: type });
-    } catch (err: any) {
-      triggerNotification(err.message || 'Failed to toggle reaction', 'error');
+    } catch (err) {
+      triggerNotification(getErrorMessage(err) || 'Failed to toggle reaction', 'error');
     }
   };
 
@@ -189,8 +190,8 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
     try {
       await postComment.mutateAsync(chatMessage.trim());
       setChatMessage('');
-    } catch (err: any) {
-      triggerNotification(err.message || 'Failed to post comment', 'error');
+    } catch (err) {
+      triggerNotification(getErrorMessage(err) || 'Failed to post comment', 'error');
     }
   };
 
@@ -201,19 +202,19 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
     try {
       await sendDM.mutateAsync({ friendId: selectedDMId, message: dmMessage.trim() });
       setDmMessage('');
-    } catch (err: any) {
-      triggerNotification(err.message || 'Failed to send message', 'error');
+    } catch (err) {
+      triggerNotification(getErrorMessage(err) || 'Failed to send message', 'error');
     }
   };
 
   const pendingCount = (requests?.incoming.length || 0) + (requests?.outgoing.length || 0);
 
   // Helper reaction helpers
-  const getReactionCount = (reactions: any[] = [], type: string) => {
+  const getReactionCount = (reactions: { reactionType: string; userId: string }[] = [], type: string) => {
     return reactions.filter((r) => r.reactionType === type).length;
   };
 
-  const hasUserReacted = (reactions: any[] = [], type: string, currentUserId?: string) => {
+  const hasUserReacted = (reactions: { reactionType: string; userId: string }[] = [], type: string, currentUserId?: string) => {
     return reactions.some((r) => r.reactionType === type && r.userId === currentUserId);
   };
 
@@ -291,7 +292,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
 
               <div className="space-y-6">
                 {feed && feed.length > 0 ? (
-                  feed.map((activity: any) => (
+                  feed.map((activity) => (
                     <motion.div
                       key={activity.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -371,7 +372,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                             return (
                               <button
                                 key={type}
-                                onClick={() => handleToggleReaction(activity.id, type as any)}
+                                onClick={() => handleToggleReaction(activity.id, type as 'FIRE' | 'HEART' | 'LIKE' | 'TROPHY')}
                                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all shadow-sm border cursor-pointer ${
                                   hasReacted
                                     ? 'bg-blue-500/10 border-blue-500/20 text-blue-600 scale-105'
@@ -396,7 +397,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                             return (
                               <button
                                 key={type}
-                                onClick={() => handleToggleReaction(activity.id, type as any)}
+                                onClick={() => handleToggleReaction(activity.id, type as 'FIRE' | 'HEART' | 'LIKE' | 'TROPHY')}
                                 className={`p-1 text-base hover:scale-125 transition-all cursor-pointer ${
                                   hasReacted
                                     ? 'grayscale-0 scale-105'
@@ -1212,7 +1213,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                             <div
                               key={b.badgeId}
                               className="aspect-square bg-gradient-to-br from-yellow-100 to-yellow-300 rounded-2xl shadow-inner border border-yellow-200 flex items-center justify-center p-2 text-center"
-                              title={`Badge ${b.badgeId} earned on ${new Date(b.earnedAt).toLocaleDateString()}`}
+                              title={`Badge ${b.badgeId} earned on ${b.earnedAt ? new Date(b.earnedAt).toLocaleDateString() : 'unknown date'}`}
                             >
                               <span className="text-2xl drop-shadow-md">🏆</span>
                             </div>
@@ -1242,8 +1243,8 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                               <div className="w-12 h-16 bg-comet-surface-2 rounded-lg shrink-0 relative overflow-hidden shadow-sm">
                                 {activity.coverUrl ? (
                                   <Image
-                                    src={activity.coverUrl}
-                                    alt={activity.title}
+                                    src={activity.coverUrl ?? ''}
+                                    alt={activity.title ?? 'Comic activity'}
                                     fill
                                     className="object-cover"
                                   />
@@ -1262,7 +1263,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
                                   {activity.readStatus === 'COMPLETED'
                                     ? 'Finished'
                                     : `Read ${activity.percent}%`}{' '}
-                                  • {formatTimeAgo(activity.lastReadAt)}
+                                  • {formatTimeAgo(activity.lastReadAt ?? new Date())}
                                 </p>
                               </div>
                             </div>

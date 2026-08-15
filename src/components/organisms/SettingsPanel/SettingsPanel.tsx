@@ -528,17 +528,17 @@ export function SettingsPanel({ earnedBadgeIds = [] }: SettingsPanelProps) {
           <div>
             <h3 className="text-lg font-bold text-comet-text mb-1 flex items-center gap-2">
               Current Plan:{' '}
-              <span className="text-comet-accent">{(session?.user as any)?.plan || 'FREE'}</span>
+              <span className="text-comet-accent">{session?.user?.plan || 'FREE'}</span>
             </h3>
             <p className="text-comet-muted text-sm">
-              {(session?.user as any)?.plan === 'PREMIUM'
+              {session?.user?.plan === 'PREMIUM'
                 ? 'You are on the Premium tier with unlimited cloud sync, auto-enrichment, and ad-free reading.'
                 : 'Cloud sync is included free. Upgrade to Premium for auto-enrichment, ad-free reading, and more.'}
             </p>
           </div>
 
           <div className="shrink-0">
-            {(session?.user as any)?.plan === 'PREMIUM' ? (
+            {session?.user?.plan === 'PREMIUM' ? (
               <button
                 onClick={handlePortal}
                 disabled={isSubscriptionLoading}

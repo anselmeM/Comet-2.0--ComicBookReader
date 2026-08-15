@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getErrorMessage } from '@/lib/errors';
 import { useNotification } from '@/components/atoms/Toast';
 import { logger } from '@/lib/logger';
 
@@ -29,7 +30,7 @@ export function useCloudSync() {
         } else {
           lastError = new Error(`Part upload failed: HTTP ${res.status}`);
         }
-      } catch (e: any) {
+      } catch (e) {
         lastError = e instanceof Error ? e : new Error('Part upload failed');
       }
       if (attempt < maxRetries) {
@@ -92,9 +93,9 @@ export function useCloudSync() {
       }
 
       triggerNotification('Comic synced to cloud', 'success');
-    } catch (error: any) {
+    } catch (error) {
       logger.error('[CLOUD_UPLOAD_ERROR]', {}, error instanceof Error ? error : undefined);
-      triggerNotification(`Cloud sync failed: ${error.message}`, 'error');
+      triggerNotification(`Cloud sync failed: ${getErrorMessage(error)}`, 'error');
 
       // Abort the multipart upload and mark as error on server
       if (uploadId) {
@@ -177,9 +178,9 @@ export function useCloudSync() {
 
       // 3. Create a File object
       return new File([blob], finalTitle, { type: blob.type });
-    } catch (error: any) {
+    } catch (error) {
       logger.error('[CLOUD_DOWNLOAD_ERROR]', {}, error instanceof Error ? error : undefined);
-      triggerNotification(`Download failed: ${error.message}`, 'error');
+      triggerNotification(`Download failed: ${getErrorMessage(error)}`, 'error');
       return null;
     } finally {
       setIsSyncing(false);

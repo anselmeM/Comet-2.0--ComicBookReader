@@ -107,7 +107,7 @@ export function useUpdateComic() {
   const { handleAuthError } = useAuthCallback();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
       const res = await fetch(`/api/comics/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

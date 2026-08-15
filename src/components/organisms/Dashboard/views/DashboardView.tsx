@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { getErrorMessage } from '@/lib/errors';
 import {
   Heart,
   BookOpen,
@@ -94,8 +95,8 @@ export const DashboardView = ({
       triggerNotification(`Enriching "${featuredComic.title}"...`, 'info');
       await enrichment.mutateAsync(featuredComic.id);
       triggerNotification(`Metadata updated for "${featuredComic.title}"!`, 'success');
-    } catch (err: any) {
-      if (err.message?.includes('Premium feature') || err.message?.includes('PREMIUM_REQUIRED')) {
+    } catch (err) {
+      if (getErrorMessage(err)?.includes('Premium feature') || getErrorMessage(err)?.includes('PREMIUM_REQUIRED')) {
         setIsPremiumModalOpen(true);
       } else {
         triggerNotification(`Failed to enrich "${featuredComic.title}"`, 'error');
