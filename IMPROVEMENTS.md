@@ -13,11 +13,17 @@ Search-focus ring, contrast (neutral-400/300 → 500), active mobile-nav blue-60
 `MotionConfig reducedMotion="user"`, safe-area bottom nav, 44px touch targets,
 global `:focus-visible`.
 
-### A2. Dashboard accent: `blue` vs `comet-accent` (open design question)
+### A2. Dashboard accent: `blue` vs `comet-accent` ✅ (decision: comet violet)
 `DashboardSidebar`/`MobileBottomNav`/`DashboardHeader` use hardcoded `blue-*`
 while the rest of the app is tokenized (`comet-accent`; landing accent is
 orange/lime). Decide the brand accent and tokenize it — currently the dashboard
 won't follow a theme accent change. **Effort: S — decision required.**
+Decision (user): the brand accent is **comet violet**. The accent token is now
+purple in all themes (dark `#8b7cf6`, light/sepia `#6d5ce8`; hovers brighter),
+and ~195 hardcoded `blue-*`/`indigo-*` utilities across the dashboard (sidebar,
+nav, tabs, buttons, cards, gradients, heatmap fills) were mapped to
+`comet-accent`/`comet-accent-hover` (gradient cards use white/opacity text).
+Also fixed `PWAUpdater`'s undefined `bg-comet-blue/90` → `bg-comet-accent/90`.
 
 ### A3. Adopt `cn()` (tailwind-merge)
 `tailwind-merge` is installed but unused; components compose conditional classes

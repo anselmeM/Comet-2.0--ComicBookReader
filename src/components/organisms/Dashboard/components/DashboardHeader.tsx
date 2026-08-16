@@ -1,66 +1,118 @@
 'use client';
 
 import React, { useRef, useEffect, useMemo } from 'react';
+
 import { cn } from '@/lib/cn';
+
 import { motion, AnimatePresence } from 'framer-motion';
+
 import { Search, Filter, UploadCloud, Bell, X } from 'lucide-react';
+
 import type { Session } from 'next-auth';
+
 import Link from 'next/link';
+
 import Image from 'next/image';
+
 import { NotificationDropdown } from '../../Notifications/NotificationDropdown';
+
 import { SearchFilterBar } from './SearchFilterBar';
 
 interface DashboardHeaderProps {
   searchQuery: string;
+
   onSearchChange: (query: string) => void;
+
   showFilters: boolean;
+
   setShowFilters: (show: boolean) => void;
+
   onUploadClick: () => void;
+
   unreadCount: number;
+
   showNotifications: boolean;
+
   setShowNotifications: (show: boolean) => void;
+
   session: Session | null | undefined;
+
   handlePortal: () => void;
+
   handleCheckout: () => void;
+
   isSubscriptionLoading: boolean;
 
   // Filter state props
+
   sortBy: string | undefined;
+
   onSortChange: (sort: string) => void;
+
   readStatus: string | undefined;
+
   onReadStatusChange: (status: string) => void;
+
   yearStart: number | null | undefined;
+
   onYearStartChange: (year: number | null) => void;
+
   yearEnd: number | null | undefined;
+
   onYearEndChange: (year: number | null) => void;
+
   isOfflineOnly?: boolean;
+
   onOfflineOnlyChange?: (val: boolean) => void;
+
   onResetFilters: () => void;
 }
 
 export function DashboardHeader({
   searchQuery,
+
   onSearchChange,
+
   showFilters,
+
   setShowFilters,
+
   onUploadClick,
+
   unreadCount,
+
   showNotifications,
+
   setShowNotifications,
+
   session,
+
   handlePortal,
+
   handleCheckout,
+
   isSubscriptionLoading,
+
   sortBy,
+
   onSortChange,
+
   readStatus,
+
   onReadStatusChange,
+
   yearStart,
+
   onYearStartChange,
+
   yearEnd,
+
   onYearEndChange,
+
   isOfflineOnly,
+
   onOfflineOnlyChange,
+
   onResetFilters,
 }: DashboardHeaderProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -71,7 +123,9 @@ export function DashboardHeader({
         setShowFilters(false);
       }
     }
+
     document.addEventListener('mousedown', handleClickOutside);
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showFilters, setShowFilters]);
 
@@ -81,18 +135,29 @@ export function DashboardHeader({
     if (sortBy && sortBy !== 'recent') {
       const sortLabels: Record<string, string> = {
         added: 'Added',
+
         title_asc: 'A-Z',
+
         title_desc: 'Z-A',
+
         year_desc: 'Year (New)',
+
         year_asc: 'Year (Old)',
+
         pages_desc: 'Pages (Most)',
+
         pages_asc: 'Pages (Least)',
+
         rating_desc: 'Rating (High)',
+
         rating_asc: 'Rating (Low)',
       };
+
       badges.push({
         id: 'sort',
+
         label: `Sort: ${sortLabels[sortBy] || sortBy}`,
+
         onClear: () => onSortChange('recent'),
       });
     }
@@ -100,18 +165,24 @@ export function DashboardHeader({
     if (readStatus && readStatus !== 'all') {
       const statusLabels: Record<string, string> = {
         unread: 'Unread',
+
         reading: 'Reading',
+
         completed: 'Completed',
       };
+
       badges.push({
         id: 'status',
+
         label: `Status: ${statusLabels[readStatus] || readStatus}`,
+
         onClear: () => onReadStatusChange('all'),
       });
     }
 
     if (yearStart || yearEnd) {
       let label = 'Years';
+
       if (yearStart && yearEnd) {
         label = `Years: ${yearStart}-${yearEnd}`;
       } else if (yearStart) {
@@ -119,11 +190,15 @@ export function DashboardHeader({
       } else if (yearEnd) {
         label = `Years: ≤${yearEnd}`;
       }
+
       badges.push({
         id: 'years',
+
         label,
+
         onClear: () => {
           onYearStartChange(null);
+
           onYearEndChange(null);
         },
       });
@@ -132,7 +207,9 @@ export function DashboardHeader({
     if (isOfflineOnly) {
       badges.push({
         id: 'offline',
+
         label: 'Offline Only',
+
         onClear: () => onOfflineOnlyChange?.(false),
       });
     }
@@ -140,14 +217,23 @@ export function DashboardHeader({
     return badges;
   }, [
     sortBy,
+
     readStatus,
+
     yearStart,
+
     yearEnd,
+
     isOfflineOnly,
+
     onSortChange,
+
     onReadStatusChange,
+
     onYearStartChange,
+
     onYearEndChange,
+
     onOfflineOnlyChange,
   ]);
 
@@ -159,10 +245,12 @@ export function DashboardHeader({
       >
         <div className="flex items-center gap-2 md:gap-4 w-full">
           {/* Persistent Search Input */}
+
           <div className="relative h-10 md:h-12 flex-1 max-w-[260px] md:max-w-[360px] flex items-center bg-neutral-50 hover:bg-neutral-100/80 hover:border-neutral-200 focus-within:bg-white focus-within:border-comet-accent focus-within:ring-2 focus-within:ring-comet-accent/40 rounded-xl md:rounded-3xl border border-neutral-100 transition-all duration-300 shadow-sm">
             <div className="absolute left-0 w-10 md:w-12 h-10 md:h-12 flex items-center justify-center shrink-0">
               <Search className="text-neutral-500 w-4 h-4 md:w-5 md:h-5" />
             </div>
+
             <input
               type="text"
               placeholder="Search library..."
@@ -171,6 +259,7 @@ export function DashboardHeader({
               className="w-full bg-transparent border-none py-2 pl-10 md:pl-12 pr-10 text-xs md:text-sm font-bold text-neutral-800 placeholder:text-neutral-500"
               aria-label="Search library"
             />
+
             {searchQuery && (
               <button
                 onClick={() => onSearchChange('')}
@@ -183,19 +272,24 @@ export function DashboardHeader({
           </div>
 
           {/* Floating Filter Popover Button */}
+
           <button
             onClick={() => setShowFilters(!showFilters)}
             aria-label="Toggle filters"
             aria-expanded={showFilters}
-            className={cn('p-3 md:p-4 rounded-xl md:rounded-3xl border transition-all', showFilters
-                ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20'
-                : 'bg-white border-neutral-100 text-neutral-500 hover:border-neutral-300 shadow-sm')}
+            className={cn(
+              'p-3 md:p-4 rounded-xl md:rounded-3xl border transition-all',
+              showFilters
+                ? 'bg-comet-accent border-comet-accent text-white shadow-lg shadow-comet-accent/20'
+                : 'bg-white border-neutral-100 text-neutral-500 hover:border-neutral-300 shadow-sm',
+            )}
           >
             <Filter className="w-5 h-5 md:w-6 md:h-6" />
           </button>
         </div>
 
         {/* Floating Filter Popover Content */}
+
         <AnimatePresence>
           {showFilters && (
             <SearchFilterBar
@@ -216,6 +310,7 @@ export function DashboardHeader({
         </AnimatePresence>
 
         {/* Active Filter Badges */}
+
         <AnimatePresence>
           {activeBadges.length > 0 && (
             <motion.div
@@ -231,18 +326,20 @@ export function DashboardHeader({
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-50/80 text-blue-600 text-[10px] md:text-xs font-black uppercase tracking-wider rounded-full border border-blue-100 shadow-sm"
+                  className="flex items-center gap-1 px-3 py-1 bg-comet-accent/10 text-comet-accent text-[10px] md:text-xs font-black uppercase tracking-wider rounded-full border border-comet-accent/20 shadow-sm"
                 >
                   <span>{badge.label}</span>
+
                   <button
                     onClick={badge.onClear}
-                    className="p-0.5 rounded-full hover:bg-blue-100 text-blue-400 hover:text-blue-600 transition-colors"
+                    className="p-0.5 rounded-full hover:bg-comet-accent/15 text-comet-accent/70 hover:text-comet-accent transition-colors"
                     aria-label={`Remove ${badge.label} filter`}
                   >
                     <X size={10} strokeWidth={3} />
                   </button>
                 </motion.div>
               ))}
+
               <button
                 onClick={onResetFilters}
                 className="text-[10px] md:text-xs font-black uppercase tracking-wider text-neutral-500 hover:text-neutral-600 transition-colors pl-1"
@@ -260,6 +357,7 @@ export function DashboardHeader({
           className="bg-black text-white px-4 md:px-10 py-2.5 md:py-5 rounded-xl md:rounded-3xl font-black text-xs uppercase tracking-widest flex items-center gap-2 md:gap-4 hover:scale-[1.02] active:scale-95 transition-all shadow-2xl"
         >
           <UploadCloud className="w-5 h-5 md:w-5 md:h-5" strokeWidth={2.5} />
+
           <span className="hidden md:inline">Upload</span>
         </button>
 
@@ -268,12 +366,16 @@ export function DashboardHeader({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className={cn('p-3 md:p-5 border rounded-xl md:rounded-2xl transition-all relative shadow-sm', showNotifications
-                ? 'bg-blue-600 border-blue-500 text-white'
-                : 'bg-white border-neutral-100 text-neutral-500 hover:text-blue-500')}
+            className={cn(
+              'p-3 md:p-5 border rounded-xl md:rounded-2xl transition-all relative shadow-sm',
+              showNotifications
+                ? 'bg-comet-accent border-comet-accent text-white'
+                : 'bg-white border-neutral-100 text-neutral-500 hover:text-comet-accent',
+            )}
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5 md:w-6 md:h-6" />
+
             {unreadCount > 0 && (
               <span
                 className="absolute top-2 right-2 md:top-4 md:right-4 w-4 h-4 md:w-5 md:h-5 bg-red-500 text-white text-[9px] md:text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black"
@@ -296,6 +398,7 @@ export function DashboardHeader({
             <span className="text-sm font-black tracking-tighter text-neutral-900">
               {session?.user?.name || session?.user?.email?.split('@')[0] || 'Reader'}
             </span>
+
             <button
               onClick={session?.user?.plan === 'PREMIUM' ? handlePortal : handleCheckout}
               disabled={isSubscriptionLoading}
@@ -308,6 +411,7 @@ export function DashboardHeader({
                   : 'Upgrade to Premium'}
             </button>
           </div>
+
           <Link href="/settings" className="shrink-0 group">
             {session?.user?.image ? (
               <Image
@@ -315,10 +419,10 @@ export function DashboardHeader({
                 alt={session?.user?.name || 'User profile'}
                 width={44}
                 height={44}
-                className="rounded-full object-cover border border-slate-200 group-hover:border-blue-500 transition-colors w-9 h-9 md:w-11 md:h-11"
+                className="rounded-full object-cover border border-slate-200 group-hover:border-comet-accent transition-colors w-9 h-9 md:w-11 md:h-11"
               />
             ) : (
-              <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-black text-xs md:text-sm border border-slate-200 group-hover:border-blue-500 transition-colors">
+              <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-gradient-to-br from-comet-accent/80 to-comet-accent-hover flex items-center justify-center text-white font-black text-xs md:text-sm border border-slate-200 group-hover:border-comet-accent transition-colors">
                 {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : 'M'}
               </div>
             )}

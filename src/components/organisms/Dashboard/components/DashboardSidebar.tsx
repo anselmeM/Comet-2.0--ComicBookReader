@@ -1,30 +1,44 @@
 'use client';
 
 import React from 'react';
+
 import { cn } from '@/lib/cn';
+
 import { motion } from 'framer-motion';
+
 import { LogOut, Settings } from 'lucide-react';
+
 import { signOut as nextAuthSignOut, useSession } from 'next-auth/react';
+
 import { navItems } from '@/lib/dashboard';
+
 import { deleteUserDB, deleteLegacyDB } from '@/lib/idb';
+
 import { logger } from '@/lib/logger';
 
 interface DashboardSidebarProps {
   isOpen: boolean;
+
   activeView: string;
+
   onNavClick: (viewId: string) => void;
+
   onToggle: () => void;
 }
 
 const bottomNavItems = [
   { name: 'Settings', icon: Settings, id: 'settings' },
+
   { name: 'Log out', icon: LogOut, id: 'logout' },
 ];
 
 export function DashboardSidebar({
   isOpen,
+
   activeView,
+
   onNavClick,
+
   onToggle,
 }: DashboardSidebarProps) {
   const { data: session } = useSession();
@@ -32,19 +46,26 @@ export function DashboardSidebar({
   const handleLogout = async () => {
     try {
       const userId = session?.user?.id;
+
       // Clear user-scoped cache database
+
       if (userId) {
         await deleteUserDB(userId);
       }
+
       // Also delete the legacy database to keep client clean
+
       await deleteLegacyDB();
     } catch (err) {
       logger.error(
         '[DashboardSidebar] Failed to clean cache DBs:',
+
         {},
+
         err instanceof Error ? err : undefined,
       );
     }
+
     nextAuthSignOut({ callbackUrl: '/login' });
   };
 
@@ -67,14 +88,16 @@ export function DashboardSidebar({
           aria-label={isOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
           aria-expanded={isOpen}
           title={isOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
-          className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-blue-500/30 font-black rotate-6 hover:rotate-0 transition-transform cursor-pointer text-2xl shrink-0"
+          className="w-12 h-12 bg-comet-accent rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-comet-accent/30 font-black rotate-6 hover:rotate-0 transition-transform cursor-pointer text-2xl shrink-0"
         >
           C
         </button>
+
         <motion.h1
           initial={false}
           animate={{
             opacity: isOpen ? 1 : 0,
+
             width: isOpen ? 'auto' : 0,
           }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
@@ -91,22 +114,29 @@ export function DashboardSidebar({
             onClick={() => onNavClick(item.id)}
             title={!isOpen ? item.name : undefined}
             aria-current={activeView === item.id ? 'page' : undefined}
-            className={cn('flex items-center transition-all', isOpen
+            className={cn(
+              'flex items-center transition-all',
+              isOpen
                 ? 'w-full px-6 py-5 rounded-3xl justify-start text-lg font-bold'
-                : 'w-12 h-12 rounded-2xl justify-center mx-auto', activeView === item.id
-                ? 'bg-blue-500 text-white shadow-xl shadow-blue-500/40'
-                : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900')}
+                : 'w-12 h-12 rounded-2xl justify-center mx-auto',
+              activeView === item.id
+                ? 'bg-comet-accent/100 text-white shadow-xl shadow-comet-accent/40'
+                : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900',
+            )}
           >
             <item.icon
               size={24}
               strokeWidth={2.5}
               className={cn('shrink-0', activeView === item.id ? 'text-white' : '')}
             />
+
             <motion.span
               initial={false}
               animate={{
                 opacity: isOpen ? 1 : 0,
+
                 width: isOpen ? 'auto' : 0,
+
                 marginLeft: isOpen ? 20 : 0,
               }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
@@ -119,7 +149,10 @@ export function DashboardSidebar({
       </nav>
 
       <div
-        className={cn('space-y-4 mt-auto border-t border-neutral-50 pt-10 pb-10', isOpen ? 'px-6' : 'px-4')}
+        className={cn(
+          'space-y-4 mt-auto border-t border-neutral-50 pt-10 pb-10',
+          isOpen ? 'px-6' : 'px-4',
+        )}
       >
         {bottomNavItems.map((item) => (
           <button
@@ -127,16 +160,23 @@ export function DashboardSidebar({
             onClick={() => (item.id === 'logout' ? handleLogout() : onNavClick(item.id))}
             title={!isOpen ? item.name : undefined}
             aria-current={activeView === item.id ? 'page' : undefined}
-            className={cn('flex items-center transition-all', isOpen
+            className={cn(
+              'flex items-center transition-all',
+              isOpen
                 ? 'w-full px-6 py-5 rounded-3xl justify-start text-lg font-bold text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
-                : 'w-12 h-12 rounded-2xl justify-center mx-auto text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900', item.id === 'logout' ? 'hover:text-red-400' : '')}
+                : 'w-12 h-12 rounded-2xl justify-center mx-auto text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900',
+              item.id === 'logout' ? 'hover:text-red-400' : '',
+            )}
           >
             <item.icon size={24} strokeWidth={2.5} className="shrink-0" />
+
             <motion.span
               initial={false}
               animate={{
                 opacity: isOpen ? 1 : 0,
+
                 width: isOpen ? 'auto' : 0,
+
                 marginLeft: isOpen ? 20 : 0,
               }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}

@@ -9,8 +9,8 @@
   --color-border:      #2a2a3d;   /* Subtle dividers */
   --color-text:        #e8e8f0;   /* Primary body text */
   --color-text-muted:  #6b6b8a;   /* Secondary / placeholder text */
-  --color-accent:      #ff5a00;   /* Comet orange — CTAs, active states */
-  --color-accent-hover:#ff7830;   /* Accent on hover */
+  --color-accent:      #8b7cf6;   /* Comet violet — CTAs, active states (A2) */
+  --color-accent-hover:#a08ff8;   /* Accent on hover */
   --color-success:     #4caf82;   /* Success / completed */
   --color-warning:     #f5a623;   /* Warning */
   --color-error:       #e05c5c;   /* Destructive / error */
@@ -23,8 +23,8 @@
   --color-border:      #d4d4d8;
   --color-text:        #18181b;
   --color-text-muted:  #71717a;
-  --color-accent:      #3b82f6;
-  --color-accent-hover:#2563eb;
+  --color-accent:      #6d5ce8;
+  --color-accent-hover:#5a49d9;
 }
 
 .theme-sepia {
@@ -34,8 +34,8 @@
   --color-border:      #d2c4a0;
   --color-text:        #433422;
   --color-text-muted:  #7b6a58;
-  --color-accent:      #926239;
-  --color-accent-hover:#7d512d;
+  --color-accent:      #6d5ce8;
+  --color-accent-hover:#5a49d9;
 }
 
 :root {

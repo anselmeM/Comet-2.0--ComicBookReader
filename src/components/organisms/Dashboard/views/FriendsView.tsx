@@ -107,7 +107,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
         <div className="flex items-center gap-6">
           <button
             onClick={() => setActiveView('dashboard')}
-            className="p-4 bg-comet-surface border border-comet-border rounded-2xl hover:bg-comet-surface-2 transition-all text-comet-muted hover:text-blue-500 shadow-sm cursor-pointer"
+            className="p-4 bg-comet-surface border border-comet-border rounded-2xl hover:bg-comet-surface-2 transition-all text-comet-muted hover:text-comet-accent shadow-sm cursor-pointer"
           >
             <ChevronLeft size={24} />
           </button>
@@ -126,28 +126,28 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
         <div className="flex items-center gap-2 bg-comet-surface-2 p-1.5 rounded-2xl w-full md:w-auto overflow-x-auto">
           <button
             onClick={() => setActiveTab('feed')}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${activeTab === 'feed' ? 'bg-comet-surface text-blue-600 shadow-sm' : 'text-comet-muted hover:text-comet-text'}`}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${activeTab === 'feed' ? 'bg-comet-surface text-comet-accent shadow-sm' : 'text-comet-muted hover:text-comet-text'}`}
           >
             Feed
           </button>
 
           <button
             onClick={() => setActiveTab('clubs')}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${activeTab === 'clubs' ? 'bg-comet-surface text-blue-600 shadow-sm' : 'text-comet-muted hover:text-comet-text'}`}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${activeTab === 'clubs' ? 'bg-comet-surface text-comet-accent shadow-sm' : 'text-comet-muted hover:text-comet-text'}`}
           >
             Clubs {(clubs?.length || 0) > 0 && `(${clubs?.length})`}
           </button>
 
           <button
             onClick={() => setActiveTab('list')}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${activeTab === 'list' ? 'bg-comet-surface text-blue-600 shadow-sm' : 'text-comet-muted hover:text-comet-text'}`}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${activeTab === 'list' ? 'bg-comet-surface text-comet-accent shadow-sm' : 'text-comet-muted hover:text-comet-text'}`}
           >
             Friends {(friends?.length || 0) > 0 && `(${friends?.length})`}
           </button>
 
           <button
             onClick={() => setActiveTab('pending')}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all relative whitespace-nowrap cursor-pointer ${activeTab === 'pending' ? 'bg-comet-surface text-blue-600 shadow-sm' : 'text-comet-muted hover:text-comet-text'}`}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all relative whitespace-nowrap cursor-pointer ${activeTab === 'pending' ? 'bg-comet-surface text-comet-accent shadow-sm' : 'text-comet-muted hover:text-comet-text'}`}
           >
             Pending
             {pendingCount > 0 && (
@@ -159,7 +159,7 @@ export const FriendsView = ({ setActiveView }: FriendsViewProps) => {
 
           <button
             onClick={() => setActiveTab('discover')}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${activeTab === 'discover' ? 'bg-comet-surface text-blue-600 shadow-sm' : 'text-comet-muted hover:text-comet-text'}`}
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap cursor-pointer ${activeTab === 'discover' ? 'bg-comet-surface text-comet-accent shadow-sm' : 'text-comet-muted hover:text-comet-text'}`}
           >
             Discover
           </button>

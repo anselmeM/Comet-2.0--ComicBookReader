@@ -1,16 +1,20 @@
 import React from 'react';
+
 import { ChevronLeft, Users } from 'lucide-react';
+
 import Image from 'next/image';
 
 import { FavouriteHero, heroAvatarClass } from '@/lib/dashboard';
 
 interface FavouriteHeroesViewProps {
   favouriteHeroes: FavouriteHero[];
+
   setActiveView: (view: string) => void;
 }
 
 export const FavouriteHeroesView = ({
   favouriteHeroes,
+
   setActiveView,
 }: FavouriteHeroesViewProps) => (
   <div className="space-y-12 animate-in fade-in duration-500 pb-20">
@@ -18,14 +22,16 @@ export const FavouriteHeroesView = ({
       <div className="flex items-center gap-6">
         <button
           onClick={() => setActiveView('dashboard')}
-          className="p-4 bg-white border border-neutral-100 rounded-2xl hover:bg-neutral-50 transition-all text-neutral-400 hover:text-blue-500 shadow-sm"
+          className="p-4 bg-white border border-neutral-100 rounded-2xl hover:bg-neutral-50 transition-all text-neutral-400 hover:text-comet-accent shadow-sm"
         >
           <ChevronLeft size={24} />
         </button>
+
         <div>
           <h2 className="text-3xl md:text-4xl font-black text-neutral-900 tracking-tighter italic">
             Favourite Heroes
           </h2>
+
           <p className="text-sm font-bold text-neutral-400 uppercase tracking-widest mt-1">
             Discover your top rated characters
           </p>
@@ -54,12 +60,15 @@ export const FavouriteHeroesView = ({
                 {hero.name.charAt(0).toUpperCase()}
               </div>
             )}
+
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
+
           <div className="text-center space-y-1">
-            <h4 className="text-lg font-black text-neutral-800 group-hover:text-blue-500 transition-colors tracking-tight">
+            <h4 className="text-lg font-black text-neutral-800 group-hover:text-comet-accent transition-colors tracking-tight">
               {hero.name}
             </h4>
+
             <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
               {hero.count} Comics
             </p>
@@ -68,16 +77,18 @@ export const FavouriteHeroesView = ({
       ))}
 
       {/* Add Hero Placeholder */}
+
       <div className="flex flex-col items-center gap-6 cursor-pointer group">
-        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-neutral-50 flex items-center justify-center border-4 border-dashed border-neutral-200 transition-all group-hover:border-blue-500 group-hover:bg-blue-50 group-hover:text-blue-500">
+        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-neutral-50 flex items-center justify-center border-4 border-dashed border-neutral-200 transition-all group-hover:border-comet-accent group-hover:bg-comet-accent/10 group-hover:text-comet-accent">
           <Users
             size={48}
             strokeWidth={1.5}
-            className="text-neutral-300 group-hover:text-blue-500 transition-colors"
+            className="text-neutral-300 group-hover:text-comet-accent transition-colors"
           />
         </div>
+
         <div className="text-center">
-          <h4 className="text-lg font-black text-neutral-300 group-hover:text-blue-500 transition-colors tracking-tight">
+          <h4 className="text-lg font-black text-neutral-300 group-hover:text-comet-accent transition-colors tracking-tight">
             Add Hero
           </h4>
         </div>

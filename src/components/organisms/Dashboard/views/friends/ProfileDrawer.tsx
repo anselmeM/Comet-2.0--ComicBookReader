@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+
 import {
   X,
   Loader2,
@@ -9,30 +10,44 @@ import {
   Zap,
   BookOpen,
 } from 'lucide-react';
+
 import Image from 'next/image';
+
 import { formatTimeAgo } from '@/lib/format';
+
 import { getErrorMessage } from '@/lib/errors';
+
 import { useUserProfile } from '@/hooks/useFriends';
+
 import { useSendFriendRequest } from '@/hooks/useFriends';
+
 import { useRemoveFriend } from '@/hooks/useFriends';
+
 import { useNotification } from '@/components/atoms/Toast';
 
 interface ProfileDrawerProps {
   userId: string | null;
+
   onClose: () => void;
+
   onMessage: (userId: string, name: string) => void;
 }
 
 /** Slide-over: public profile (stats, badges, activity, friend actions). */
+
 export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps) => {
   const { triggerNotification } = useNotification();
+
   const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile(userId);
+
   const sendRequest = useSendFriendRequest();
+
   const removeFriend = useRemoveFriend();
 
   const handleSendRequest = async (id: string) => {
     try {
       await sendRequest.mutateAsync(id);
+
       triggerNotification('Friend request sent!', 'success');
     } catch (err) {
       triggerNotification(getErrorMessage(err) || 'Failed to send request', 'error');
@@ -43,6 +58,7 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
     if (confirm('Are you sure you want to remove this friend?')) {
       try {
         await removeFriend.mutateAsync(id);
+
         triggerNotification('Friend removed.', 'info');
       } catch (err) {
         triggerNotification(getErrorMessage(err), 'error');
@@ -71,12 +87,13 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
           >
             {isLoadingProfile ? (
               <div className="flex-1 flex flex-col items-center justify-center">
-                <Loader2 size={40} className="text-blue-500 animate-spin mb-4" />
+                <Loader2 size={40} className="text-comet-accent animate-spin mb-4" />
+
                 <p className="text-comet-muted font-bold text-sm">Loading profile...</p>
               </div>
             ) : userProfile ? (
               <div className="flex-1">
-                <div className="relative h-48 bg-gradient-to-br from-blue-600 to-indigo-800 flex items-end px-8 pb-8 pt-6 justify-between">
+                <div className="relative h-48 bg-gradient-to-br from-comet-accent to-comet-accent-hover flex items-end px-8 pb-8 pt-6 justify-between">
                   <button
                     onClick={onClose}
                     className="absolute top-6 right-6 p-2 bg-black/20 text-white hover:bg-black/40 rounded-full transition-all cursor-pointer backdrop-blur-md"
@@ -104,7 +121,8 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
                       <h2 className="text-2xl font-black tracking-tight drop-shadow-md">
                         {userProfile.name || 'Anonymous'}
                       </h2>
-                      <p className="text-xs font-bold text-blue-200 uppercase tracking-widest drop-shadow-md">
+
+                      <p className="text-xs font-bold text-comet-accent/80 uppercase tracking-widest drop-shadow-md">
                         Joined {new Date(userProfile.createdAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -117,15 +135,17 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
                       <p className="text-2xl font-black text-comet-text">
                         {userProfile.stats.libraryCount}
                       </p>
+
                       <p className="text-[10px] font-bold text-comet-muted uppercase tracking-widest mt-1">
                         Comics
                       </p>
                     </div>
 
                     <div className="bg-comet-surface-2 rounded-2xl p-4 text-center border border-comet-border">
-                      <p className="text-2xl font-black text-blue-600">
+                      <p className="text-2xl font-black text-comet-accent">
                         {userProfile.stats.completedCount}
                       </p>
+
                       <p className="text-[10px] font-bold text-comet-muted uppercase tracking-widest mt-1">
                         Finished
                       </p>
@@ -135,6 +155,7 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
                       <p className="text-xl font-black text-comet-text">
                         {Math.round(userProfile.stats.totalTimeSpent / 3600)}h
                       </p>
+
                       <p className="text-[10px] font-bold text-comet-muted uppercase tracking-widest mt-1">
                         Read Time
                       </p>
@@ -155,9 +176,10 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
                           <button
                             onClick={() => {
                               onClose();
+
                               onMessage(userProfile.id, userProfile.name || 'Anonymous');
                             }}
-                            className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-blue-700 transition-all flex justify-center gap-2"
+                            className="flex-1 bg-comet-accent text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-comet-accent-hover transition-all flex justify-center gap-2"
                           >
                             <MessageSquare size={16} /> Message
                           </button>
@@ -165,6 +187,7 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
                           <button
                             onClick={() => {
                               onClose();
+
                               handleRemoveFriend(userProfile.id);
                             }}
                             className="px-6 bg-comet-surface-2 text-comet-muted py-4 rounded-2xl font-black shadow-inner hover:bg-red-50 hover:text-red-500 transition-all"
@@ -180,6 +203,7 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
                     <h3 className="text-lg font-black text-comet-text flex items-center gap-2 uppercase tracking-widest mb-4">
                       <Trophy className="text-yellow-500" size={20} /> Trophy Room
                     </h3>
+
                     {userProfile.badges && userProfile.badges.length > 0 ? (
                       <div className="grid grid-cols-4 gap-3">
                         {userProfile.badges.map((b) => (
@@ -203,8 +227,9 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
 
                   <div>
                     <h3 className="text-lg font-black text-comet-text flex items-center gap-2 uppercase tracking-widest mb-4">
-                      <Zap className="text-blue-500" size={20} /> Recent Activity
+                      <Zap className="text-comet-accent" size={20} /> Recent Activity
                     </h3>
+
                     {userProfile.recentActivity && userProfile.recentActivity.length > 0 ? (
                       <div className="space-y-4">
                         {userProfile.recentActivity.map((activity) => (
@@ -232,6 +257,7 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
                               <h4 className="font-black text-comet-text text-sm truncate">
                                 {activity.title}
                               </h4>
+
                               <p className="text-[10px] font-bold text-comet-muted uppercase mt-0.5">
                                 {activity.readStatus === 'COMPLETED'
                                   ? 'Finished'
