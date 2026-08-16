@@ -7,13 +7,21 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-require-imports": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "@next/next/no-img-element": "off",
       "react-hooks/rules-of-hooks": "off",
       "react-hooks/exhaustive-deps": "off",
       "react-hooks/set-state-in-effect": "off"
+    }
+  },
+  // Test files deliberately use loose types (prisma/response mocks); keep the
+  // no-explicit-any gate on production code only.
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "src/test/**"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off"
     }
   },
   // Override default ignores of eslint-config-next.

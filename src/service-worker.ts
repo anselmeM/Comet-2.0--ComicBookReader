@@ -4,13 +4,13 @@ import { clientsClaim } from 'workbox-core';
 
 import { ExpirationPlugin } from 'workbox-expiration';
 
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches, type PrecacheEntry } from 'workbox-precaching';
 
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 
 import { NetworkFirst, CacheFirst, StaleWhileRevalidate, NetworkOnly } from 'workbox-strategies';
 
-declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: any };
+declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: (string | PrecacheEntry)[] };
 
 // Claim clients immediately
 
@@ -28,9 +28,15 @@ precacheAndRoute(self.__WB_MANIFEST);
 
 /**
 
+
+
  * Processes the sync queue from IndexedDB.
 
+
+
  * This can be called from the 'sync' event or regular main-thread logic.
+
+
 
  */
 
@@ -44,11 +50,19 @@ async function processSyncQueue() {
   await processQueue();
 }
 
-self.addEventListener('sync', (event: any) => {
-  if (event.tag === 'comet-sync') {
-    event.waitUntil(processSyncQueue());
+interface SyncEventShape extends Event {
+  tag: string;
+
+  waitUntil(promise: Promise<unknown>): void;
+}
+
+self.addEventListener('sync', ((event: Event) => {
+  const syncEvent = event as SyncEventShape;
+
+  if (syncEvent.tag === 'comet-sync') {
+    syncEvent.waitUntil(processSyncQueue());
   }
-});
+}) as EventListener);
 
 // --- Runtime Caching ---
 

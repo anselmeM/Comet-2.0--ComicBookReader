@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { Prisma } from '@prisma/client';
+
 import { withAuth } from '@/lib/api-middleware';
 
 import { db } from '@/lib/db';
@@ -12,7 +14,11 @@ import { PostCommentSchema } from '@/types/schemas';
 
 /**
 
+
+
  * GET /api/comics/[id]/comments — Fetch comments for this issue from self and friends
+
+
 
  */
 
@@ -57,7 +63,7 @@ export const GET = withAuth(
 
       // 3. Construct matching filter for the same issue/volume
 
-      const matchConditions: any[] = [];
+      const matchConditions: Prisma.ComicCommentWhereInput[] = [];
 
       if (comic.comicVineId) {
         matchConditions.push({ comic: { comicVineId: comic.comicVineId } });
@@ -114,7 +120,11 @@ export const GET = withAuth(
 
 /**
 
+
+
  * POST /api/comics/[id]/comments — Post a new message/comment for this issue
+
+
 
  */
 

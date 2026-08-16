@@ -6,13 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { RefreshCw, X } from 'lucide-react';
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import type { BeforeInstallPromptEvent } from '@/types/pwa';
 
 /**
+
+
+
+
 
 
 
@@ -20,7 +20,15 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 
+
+
+
+
  * and prompts the user to reload.
+
+
+
+
 
 
 
