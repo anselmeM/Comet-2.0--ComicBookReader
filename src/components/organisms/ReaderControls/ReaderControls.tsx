@@ -1,17 +1,31 @@
 'use client';
 
 // cSpell:ignore customizer mozfullscreenchange
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+
 import Link from 'next/link';
+
 import { useReaderStore } from '@/stores/readerStore';
+
 import { useParams } from 'next/navigation';
+
 import { useLibrary } from '@/hooks/useLibrary';
+
 import { useBookmarks } from '@/hooks/useBookmarks';
+
 import { useSession } from 'next-auth/react';
+
 import { useComicPages } from '@/hooks/useComicPages';
+
+import { ReaderSettingsPanel } from './ReaderSettingsPanel';
+
 import { BlobImage } from '@/components/atoms/BlobImage';
+
 import { BookmarkPanel } from '@/components/organisms/BookmarkPanel';
+
 import { PremiumModal } from '@/components/atoms/PremiumModal';
+
 import {
   Settings,
   Sun,
@@ -31,24 +45,36 @@ import {
   Sparkles,
   Sliders,
 } from 'lucide-react';
+
 import { logger } from '@/lib/logger';
 
 // Extended types for vendor-prefixed fullscreen APIs
+
 interface ExtendedDocument extends Document {
   webkitFullscreenEnabled?: boolean;
+
   mozFullScreenEnabled?: boolean;
+
   msFullscreenEnabled?: boolean;
+
   webkitFullscreenElement?: Element | null;
+
   mozFullScreenElement?: Element | null;
+
   msFullscreenElement?: Element | null;
+
   webkitExitFullscreen?: () => Promise<void>;
+
   mozCancelFullScreen?: () => Promise<void>;
+
   msExitFullscreen?: () => Promise<void>;
 }
 
 interface ExtendedElement extends HTMLElement {
   webkitRequestFullscreen?: () => Promise<void>;
+
   mozRequestFullScreen?: () => Promise<void>;
+
   msRequestFullscreen?: () => Promise<void>;
 }
 
@@ -58,26 +84,39 @@ interface ReaderControlsProps {
 
 export function ReaderControls({ type }: ReaderControlsProps) {
   const params = useParams();
+
   const comicId = params.comicId as string;
+
   const { data: libraryData } = useLibrary();
+
   const library = libraryData?.data ?? [];
+
   const comic = library.find((c) => c.id === comicId);
 
   const [showBookmarkPanel, setShowBookmarkPanel] = useState(false);
+
   const [fullscreenError, setFullscreenError] = useState<string | null>(null);
+
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+
   const [showReaderSettings, setShowReaderSettings] = useState(false);
+
   const [showFullscreenBtn, setShowFullscreenBtn] = useState(true);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
     const isStandaloneMode =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as Navigator & { standalone?: boolean }).standalone;
+
     const ua = window.navigator.userAgent;
-    const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
+
+    const isIOSDevice =
+      /iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream;
 
     // Hide fullscreen button if it's iOS (API unsupported) or already running as a standalone PWA
+
     if (isStandaloneMode || isIOSDevice) {
       setShowFullscreenBtn(false);
     }
@@ -86,70 +125,86 @@ export function ReaderControls({ type }: ReaderControlsProps) {
   const { data: session } = useSession();
 
   const mode = useReaderStore((state) => state.mode);
+
   const setMode = useReaderStore((state) => state.setMode);
+
   const isGuidedViewEnabled = useReaderStore((state) => state.isGuidedViewEnabled);
+
   const toggleGuidedView = useReaderStore((state) => state.toggleGuidedView);
+
   const zoomLevel = useReaderStore((state) => state.zoomLevel);
+
   const setZoomLevel = useReaderStore((state) => state.setZoomLevel);
 
   const currentPage = useReaderStore((state) => state.currentPage);
+
   const totalPages = useReaderStore((state) => state.totalPages);
+
   const setPage = useReaderStore((state) => state.setPage);
+
   const nextPage = useReaderStore((state) => state.nextPage);
+
   const prevPage = useReaderStore((state) => state.prevPage);
 
   const brightness = useReaderStore((state) => state.brightness);
+
   const setBrightness = useReaderStore((state) => state.setBrightness);
+
   const isFullscreen = useReaderStore((state) => state.isFullscreen);
+
   const toggleFullscreen = useReaderStore((state) => state.toggleFullscreen);
+
   const resetZoom = useReaderStore((state) => state.resetZoom);
 
   // Visual scan filters
-  const sepia = useReaderStore((state) => state.sepia);
-  const setSepia = useReaderStore((state) => state.setSepia);
-  const contrast = useReaderStore((state) => state.contrast);
-  const setContrast = useReaderStore((state) => state.setContrast);
-  const grayscale = useReaderStore((state) => state.grayscale);
-  const setGrayscale = useReaderStore((state) => state.setGrayscale);
-  const sharpen = useReaderStore((state) => state.sharpen);
-  const setSharpen = useReaderStore((state) => state.setSharpen);
 
   // Guided view customizer & Autoplay
-  const panSpeed = useReaderStore((state) => state.panSpeed);
-  const setPanSpeed = useReaderStore((state) => state.setPanSpeed);
-  const panEase = useReaderStore((state) => state.panEase);
-  const setPanEase = useReaderStore((state) => state.setPanEase);
+
   const autoplayDelay = useReaderStore((state) => state.autoplayDelay);
+
   const setAutoplayDelay = useReaderStore((state) => state.setAutoplayDelay);
+
   const isAutoplayActive = useReaderStore((state) => state.isAutoplayActive);
+
   const setAutoplayActive = useReaderStore((state) => state.setAutoplayActive);
+
   const toggleAutoplay = useReaderStore((state) => state.toggleAutoplay);
 
   const filmstripRef = useRef<HTMLDivElement>(null);
+
   const { comic: comicPages, loading: comicPagesLoading } = useComicPages(comicId);
 
   // Center active filmstrip thumbnail
+
   useEffect(() => {
     if (!filmstripRef.current) return;
+
     const activeEl = filmstripRef.current.querySelector(`[data-filmstrip-thumb="${currentPage}"]`);
+
     if (activeEl) {
       activeEl.scrollIntoView({
         behavior: 'smooth',
+
         block: 'nearest',
+
         inline: 'center',
       });
     }
   }, [currentPage]);
 
   // Guided View / Reader Autoplay Loop
+
   useEffect(() => {
     if (!isAutoplayActive) return;
 
     const interval = setInterval(() => {
       const state = useReaderStore.getState();
+
       const currentPanels = state.pagePanels[state.currentPage] || [];
+
       const isLastPanel =
         !state.isGuidedViewEnabled || state.guidedStep >= currentPanels.length - 1;
+
       const isLastPage = state.currentPage >= state.totalPages - 1;
 
       if (isLastPage && isLastPanel) {
@@ -166,7 +221,9 @@ export function ReaderControls({ type }: ReaderControlsProps) {
 
   const handleBookmarkToggle = async () => {
     if (!comicId) return;
+
     const existing = bookmarks.find((b) => b.pageNumber === currentPage);
+
     if (existing) {
       await removeBookmark(existing.id);
     } else {
@@ -175,6 +232,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
   };
 
   // Check if fullscreen API is supported (only in browser)
+
   const isFullscreenSupported =
     typeof window !== 'undefined' &&
     (document.fullscreenEnabled ||
@@ -183,9 +241,11 @@ export function ReaderControls({ type }: ReaderControlsProps) {
       (document as ExtendedDocument).msFullscreenEnabled);
 
   // Handle fullscreen with browser API
+
   const handleFullscreen = useCallback(async () => {
     if (!isFullscreenSupported || typeof window === 'undefined') {
       setFullscreenError('Fullscreen is not supported in this browser');
+
       return;
     }
 
@@ -194,6 +254,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
     try {
       if (!isFullscreen) {
         // Enter fullscreen
+
         if (docEl.requestFullscreen) {
           await docEl.requestFullscreen();
         } else if (docEl.webkitRequestFullscreen) {
@@ -203,9 +264,11 @@ export function ReaderControls({ type }: ReaderControlsProps) {
         } else if (docEl.msRequestFullscreen) {
           await docEl.msRequestFullscreen();
         }
+
         toggleFullscreen();
       } else {
         // Exit fullscreen
+
         if (document.exitFullscreen) {
           await document.exitFullscreen();
         } else if ((document as ExtendedDocument).webkitExitFullscreen) {
@@ -215,16 +278,20 @@ export function ReaderControls({ type }: ReaderControlsProps) {
         } else if ((document as ExtendedDocument).msExitFullscreen) {
           await (document as ExtendedDocument).msExitFullscreen!();
         }
+
         toggleFullscreen();
       }
+
       setFullscreenError(null);
     } catch (err) {
       logger.error('Fullscreen error:', {}, err instanceof Error ? err : undefined);
+
       setFullscreenError(err instanceof Error ? err.message : 'Failed to toggle fullscreen');
     }
   }, [isFullscreenSupported, isFullscreen, toggleFullscreen]);
 
   // Listen for fullscreen changes (Escape key, etc.)
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -236,21 +303,29 @@ export function ReaderControls({ type }: ReaderControlsProps) {
         (document as ExtendedDocument).msFullscreenElement;
 
       // Sync store state with actual fullscreen state
+
       const isInFullscreen = !!fullscreenElement;
+
       if (isInFullscreen !== isFullscreen) {
         toggleFullscreen();
       }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
   }, [isFullscreen, toggleFullscreen]);
@@ -268,12 +343,15 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               aria-label="Return to library"
             >
               <Home size={20} />
+
               <span className="font-medium hidden sm:inline">Library</span>
             </Link>
           </div>
+
           <div className="font-semibold truncate max-w-[50%] text-center px-2">
             {comic ? comic.title : 'Loading...'}
           </div>
+
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -292,12 +370,14 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                 className="w-5 h-5 sm:w-6 sm:h-6"
                 fill={bookmarked ? 'currentColor' : 'none'}
               />
+
               {bookmarks.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center">
                   {bookmarks.length > 9 ? '9+' : bookmarks.length}
                 </span>
               )}
             </button>
+
             {showFullscreenBtn && (
               <button
                 type="button"
@@ -309,6 +389,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                 {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
               </button>
             )}
+
             <Link
               href="/settings"
               className="p-2 text-comet-muted hover:text-comet-text hover:bg-comet-surface-2 rounded-lg transition-colors"
@@ -321,6 +402,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
       ) : (
         <div className="flex flex-col gap-4 w-full bg-comet-surface/90 backdrop-blur-md p-4 rounded-3xl text-comet-text pointer-events-auto border border-comet-border shadow-xl mb-4 max-w-2xl mx-auto">
           {/* ProgressBar (Scrubber) */}
+
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -331,11 +413,13 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             >
               <ChevronLeft size={20} />
             </button>
+
             <span className="text-xs text-comet-muted font-mono min-w-[40px] text-center flex-shrink-0">
               {currentPage + 1}
             </span>
 
             {/* Horizontal Filmstrip */}
+
             <div
               ref={filmstripRef}
               className="hidden md:flex flex-1 items-center gap-2 overflow-x-auto py-2 px-1 scrollbar-none scroll-smooth select-none snap-x"
@@ -350,6 +434,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               ) : (
                 comicPages?.pages.map((page, idx) => {
                   const isActive = idx === currentPage;
+
                   return (
                     <button
                       key={`filmstrip-${idx}`}
@@ -370,6 +455,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                         alt={`Page ${idx + 1}`}
                         className="w-full h-full object-cover"
                       />
+
                       <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-center font-mono py-0.5 text-neutral-300">
                         {idx + 1}
                       </div>
@@ -382,6 +468,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
             <span className="text-xs text-comet-muted font-mono min-w-[40px] text-center flex-shrink-0">
               {totalPages}
             </span>
+
             <button
               type="button"
               onClick={() => nextPage()}
@@ -394,6 +481,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
           </div>
 
           {/* Controls Row */}
+
           <div className="flex items-center justify-between mt-2 gap-4">
             <div className="flex items-center gap-1 bg-comet-surface-2 p-1 rounded-xl overflow-x-auto no-scrollbar">
               <ModeButton
@@ -402,31 +490,37 @@ export function ReaderControls({ type }: ReaderControlsProps) {
                 icon={<File size={18} />}
                 label="Single"
               />
+
               <ModeButton
                 active={mode === 'single-vertical'}
                 onClick={() => setMode('single-vertical')}
                 icon={<List size={18} />}
                 label="Vertical"
               />
+
               <ModeButton
                 active={mode === 'dual-spread'}
                 onClick={() => setMode('dual-spread')}
                 icon={<Columns size={18} />}
                 label="Spread"
               />
+
               <ModeButton
                 active={mode === 'manga-rtl'}
                 onClick={() => setMode('manga-rtl')}
                 icon={<AlignRight size={18} />}
                 label="Manga"
               />
+
               <ModeButton
                 active={isGuidedViewEnabled}
                 onClick={() => {
                   if (session?.user?.plan !== 'PREMIUM') {
                     setIsPremiumModalOpen(true);
+
                     return;
                   }
+
                   toggleGuidedView();
                 }}
                 icon={
@@ -448,6 +542,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               >
                 <ZoomOut size={18} />
               </button>
+
               <button
                 type="button"
                 onClick={() => resetZoom()}
@@ -456,6 +551,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               >
                 {Math.round(zoomLevel * 100)}%
               </button>
+
               <button
                 type="button"
                 onClick={() => setZoomLevel(Math.min(5, zoomLevel + 0.25))}
@@ -468,6 +564,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
 
             <div className="flex items-center gap-2 flex-1 max-w-[120px]">
               <Sun size={16} className="text-comet-muted" />
+
               <input
                 type="range"
                 min={0.1}
@@ -497,174 +594,7 @@ export function ReaderControls({ type }: ReaderControlsProps) {
         </div>
       )}
 
-      {showReaderSettings && (
-        <div className="fixed inset-x-0 bottom-24 mx-auto max-w-lg bg-comet-surface/95 backdrop-blur-xl border border-comet-border rounded-3xl p-6 text-comet-text shadow-2xl z-50 animate-in slide-in-from-bottom duration-300 pointer-events-auto">
-          <div className="flex items-center justify-between border-b border-comet-border pb-3 mb-4">
-            <h3 className="font-semibold text-sm tracking-wide uppercase text-comet-muted">
-              Reader Preferences
-            </h3>
-            <button
-              type="button"
-              onClick={() => setShowReaderSettings(false)}
-              className="text-comet-muted hover:text-comet-text text-xs font-medium bg-comet-surface-2 hover:bg-comet-surface-2/80 px-2.5 py-1 rounded-full transition-colors"
-            >
-              Done
-            </button>
-          </div>
-
-          <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
-            {/* Visual Filters */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-comet-muted uppercase tracking-wider">
-                Visual Enhancements
-              </h4>
-
-              {/* Sepia Slider */}
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-comet-text min-w-[70px]">Sepia Overlay</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={sepia}
-                  onChange={(e) => setSepia(parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer"
-                />
-                <span className="text-xs font-mono text-comet-muted w-8 text-right">
-                  {Math.round(sepia * 100)}%
-                </span>
-              </div>
-
-              {/* Grayscale Slider */}
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-comet-text min-w-[70px]">Grayscale</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={grayscale}
-                  onChange={(e) => setGrayscale(parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer"
-                />
-                <span className="text-xs font-mono text-comet-muted w-8 text-right">
-                  {Math.round(grayscale * 100)}%
-                </span>
-              </div>
-
-              {/* Contrast Slider */}
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-comet-text min-w-[70px]">Contrast</span>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="2"
-                  step="0.1"
-                  value={contrast}
-                  onChange={(e) => setContrast(parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer"
-                />
-                <span className="text-xs font-mono text-comet-muted w-8 text-right">
-                  {contrast.toFixed(1)}x
-                </span>
-              </div>
-
-              {/* Sharpen Toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-comet-text">Sharpen Scans (SVG filter)</span>
-                <button
-                  type="button"
-                  onClick={() => setSharpen(!sharpen)}
-                  className={`w-10 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${sharpen ? 'bg-comet-accent' : 'bg-comet-surface-2'}`}
-                >
-                  <span
-                    className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${sharpen ? 'translate-x-4' : 'translate-x-0'}`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            {/* Guided View Preferences */}
-            <div className="space-y-4 pt-4 border-t border-comet-border">
-              <h4 className="text-xs font-bold text-comet-muted uppercase tracking-wider">
-                Guided View Camera
-              </h4>
-
-              {/* Pan Speed Slider */}
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-comet-text min-w-[70px]">Pan Duration</span>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="2"
-                  step="0.1"
-                  value={panSpeed}
-                  onChange={(e) => setPanSpeed(parseFloat(e.target.value))}
-                  className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer"
-                />
-                <span className="text-xs font-mono text-comet-muted w-8 text-right">
-                  {panSpeed.toFixed(1)}s
-                </span>
-              </div>
-
-              {/* Easing Dropdown */}
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-comet-text">Camera Easing</span>
-                <select
-                  value={panEase}
-                  onChange={(e) => setPanEase(e.target.value)}
-                  className="bg-comet-surface-2 text-xs text-comet-text border border-comet-border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-comet-accent cursor-pointer"
-                >
-                  <option value="linear">Linear</option>
-                  <option value="easeIn">Ease In</option>
-                  <option value="easeOut">Ease Out</option>
-                  <option value="easeInOut">Ease In Out</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Autoplay Section */}
-            <div className="space-y-4 pt-4 border-t border-comet-border">
-              <h4 className="text-xs font-bold text-comet-muted uppercase tracking-wider">
-                Smart Autoplay
-              </h4>
-
-              {/* Autoplay Toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-comet-text">Enable Autoplay</span>
-                <button
-                  type="button"
-                  onClick={() => toggleAutoplay()}
-                  className={`w-10 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${isAutoplayActive ? 'bg-comet-accent' : 'bg-comet-surface-2'}`}
-                >
-                  <span
-                    className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${isAutoplayActive ? 'translate-x-4' : 'translate-x-0'}`}
-                  />
-                </button>
-              </div>
-
-              {/* Autoplay Delay Slider */}
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-comet-text min-w-[70px]">Page Hold</span>
-                <input
-                  type="range"
-                  min="1500"
-                  max="10000"
-                  step="500"
-                  value={autoplayDelay}
-                  onChange={(e) => setAutoplayDelay(parseInt(e.target.value, 10))}
-                  disabled={!isAutoplayActive}
-                  className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer disabled:opacity-30"
-                />
-                <span className="text-xs font-mono text-comet-muted w-8 text-right">
-                  {(autoplayDelay / 1000).toFixed(1)}s
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ReaderSettingsPanel open={showReaderSettings} onClose={() => setShowReaderSettings(false)} />
 
       {showBookmarkPanel && comicId && (
         <BookmarkPanel comicId={comicId} onClose={() => setShowBookmarkPanel(false)} />
@@ -681,13 +611,19 @@ export function ReaderControls({ type }: ReaderControlsProps) {
 
 function ModeButton({
   active,
+
   onClick,
+
   icon,
+
   label,
 }: {
   active: boolean;
+
   onClick: () => void;
+
   icon: React.ReactNode;
+
   label: string;
 }) {
   return (
