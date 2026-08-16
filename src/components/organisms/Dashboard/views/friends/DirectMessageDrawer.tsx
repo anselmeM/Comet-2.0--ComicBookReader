@@ -44,8 +44,11 @@ export const DirectMessageDrawer = ({
 
   const {
     data: directMessages,
+
     isLoading: isLoadingDMs,
+
     nextCursor,
+
     refetch,
   } = useDirectMessages(friendId);
 
@@ -126,7 +129,7 @@ export const DirectMessageDrawer = ({
           >
             <div className="p-4 sm:p-6 border-b border-comet-border flex items-center justify-between bg-comet-surface shadow-sm z-10">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black shadow-inner">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-comet-accent to-comet-accent-hover flex items-center justify-center text-white font-black shadow-inner">
                   {(friendName || 'A')[0].toUpperCase()}
                 </div>
 
@@ -152,7 +155,7 @@ export const DirectMessageDrawer = ({
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-comet-surface-2/50">
               {isLoadingDMs ? (
                 <div className="flex justify-center py-10">
-                  <Loader2 size={24} className="text-blue-500 animate-spin" />
+                  <Loader2 size={24} className="text-comet-accent animate-spin" />
                 </div>
               ) : directMessages && directMessages.length > 0 ? (
                 <>
@@ -160,7 +163,7 @@ export const DirectMessageDrawer = ({
                     <button
                       onClick={handleLoadOlder}
                       disabled={loadOlder.isPending}
-                      className="mx-auto flex items-center gap-2 px-4 py-2 rounded-full bg-comet-surface border border-comet-border text-[10px] font-black uppercase tracking-widest text-comet-muted hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-50 cursor-pointer"
+                      className="mx-auto flex items-center gap-2 px-4 py-2 rounded-full bg-comet-surface border border-comet-border text-[10px] font-black uppercase tracking-widest text-comet-muted hover:text-comet-accent hover:border-comet-accent/40 transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {loadOlder.isPending ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -198,7 +201,7 @@ export const DirectMessageDrawer = ({
                           <div
                             className={`px-4 py-3 text-sm leading-relaxed ${
                               isSelf
-                                ? 'bg-blue-600 text-white rounded-[1.2rem] rounded-tr-sm shadow-md'
+                                ? 'bg-comet-accent text-white rounded-[1.2rem] rounded-tr-sm shadow-md'
                                 : 'bg-comet-surface text-comet-text border border-comet-border rounded-[1.2rem] rounded-tl-sm shadow-sm'
                             }`}
                           >
@@ -237,7 +240,7 @@ export const DirectMessageDrawer = ({
                 placeholder="Type a message..."
                 value={dmMessage}
                 onChange={(e) => setDmMessage(e.target.value)}
-                className="flex-1 bg-comet-surface-2 px-5 py-3.5 rounded-2xl border-2 border-transparent focus:border-blue-500 focus:bg-comet-surface text-sm outline-none transition-all font-medium"
+                className="flex-1 bg-comet-surface-2 px-5 py-3.5 rounded-2xl border-2 border-transparent focus:border-comet-accent focus:bg-comet-surface text-sm outline-none transition-all font-medium"
                 maxLength={1000}
               />
 

@@ -14,9 +14,15 @@ interface BeforeInstallPromptEvent extends Event {
 
 /**
 
+
+
  * Component that detects when a new Service Worker is available
 
+
+
  * and prompts the user to reload.
+
+
 
  */
 
@@ -120,7 +126,7 @@ export function PWAUpdater() {
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
-          className="fixed bottom-6 right-6 z-[100] p-4 bg-comet-blue/90 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl flex flex-col gap-3 min-w-[280px]"
+          className="fixed bottom-6 right-6 z-[100] p-4 bg-comet-accent/90 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl flex flex-col gap-3 min-w-[280px]"
         >
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
@@ -154,7 +160,7 @@ export function PWAUpdater() {
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
-          className="fixed bottom-6 right-6 z-[100] p-4 bg-comet-blue/90 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl flex flex-col gap-3 min-w-[280px]"
+          className="fixed bottom-6 right-6 z-[100] p-4 bg-comet-accent/90 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl flex flex-col gap-3 min-w-[280px]"
         >
           <div className="flex items-start justify-between">
             <div className="flex flex-col">

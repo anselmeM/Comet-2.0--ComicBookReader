@@ -1,17 +1,22 @@
 'use client';
 
 import React from 'react';
+
 import { cn } from '@/lib/cn';
+
 import { navItems } from '@/lib/dashboard';
+
 import { motion } from 'framer-motion';
 
 interface MobileBottomNavProps {
   activeView: string;
+
   onNavClick: (viewId: string) => void;
 }
 
 export function MobileBottomNav({ activeView, onNavClick }: MobileBottomNavProps) {
   // Combine existing nav items
+
   const bottomNavItems = [
     ...navItems.filter((item) =>
       ['dashboard', 'collections', 'favourites', 'history', 'friends'].includes(item.id),
@@ -23,6 +28,7 @@ export function MobileBottomNav({ activeView, onNavClick }: MobileBottomNavProps
       <div className="flex items-center min-w-max w-full justify-between gap-2 px-2">
         {bottomNavItems.map((item) => {
           const isActive = activeView === item.id;
+
           return (
             <button
               key={item.id}
@@ -34,17 +40,25 @@ export function MobileBottomNav({ activeView, onNavClick }: MobileBottomNavProps
               {isActive && (
                 <motion.div
                   layoutId="mobileNavIndicator"
-                  className="absolute top-1 w-8 h-1 bg-blue-500 rounded-full"
+                  className="absolute top-1 w-8 h-1 bg-comet-accent/100 rounded-full"
                   transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                 />
               )}
+
               <item.icon
                 size={22}
                 strokeWidth={isActive ? 2.5 : 2}
-                className={cn('transition-colors', isActive ? 'text-blue-600' : 'text-neutral-500')}
+                className={cn(
+                  'transition-colors',
+                  isActive ? 'text-comet-accent' : 'text-neutral-500',
+                )}
               />
+
               <span
-                className={cn('text-[10px] font-bold transition-colors text-center leading-tight', isActive ? 'text-blue-600' : 'text-neutral-500')}
+                className={cn(
+                  'text-[10px] font-bold transition-colors text-center leading-tight',
+                  isActive ? 'text-comet-accent' : 'text-neutral-500',
+                )}
               >
                 {item.name}
               </span>

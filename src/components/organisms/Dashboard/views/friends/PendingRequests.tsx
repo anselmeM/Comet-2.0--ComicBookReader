@@ -1,18 +1,26 @@
 import { Check, X, Loader2 } from 'lucide-react';
+
 import Image from 'next/image';
+
 import { getErrorMessage } from '@/lib/errors';
+
 import { useFriendRequests, useHandleFriendRequest } from '@/hooks/useFriends';
+
 import { useNotification } from '@/components/atoms/Toast';
 
 /** TAB: Pending Requests — incoming (accept/decline) and sent requests. */
+
 export const PendingRequests = () => {
   const { data: requests } = useFriendRequests();
+
   const handleRequest = useHandleFriendRequest();
+
   const { triggerNotification } = useNotification();
 
   const handleAccept = async (requestId: string) => {
     try {
       await handleRequest.mutateAsync({ requestId, action: 'ACCEPT' });
+
       triggerNotification('Friend request accepted!', 'success');
     } catch (err) {
       triggerNotification(getErrorMessage(err), 'error');
@@ -22,6 +30,7 @@ export const PendingRequests = () => {
   const handleDecline = async (requestId: string) => {
     try {
       await handleRequest.mutateAsync({ requestId, action: 'DECLINE' });
+
       triggerNotification('Friend request declined.', 'info');
     } catch (err) {
       triggerNotification(getErrorMessage(err), 'error');
@@ -37,11 +46,12 @@ export const PendingRequests = () => {
             <span className="text-comet-muted font-medium lowercase tracking-normal">(None)</span>
           )}
         </h3>
+
         <div className="space-y-4">
           {requests?.incoming.map((req) => (
             <div
               key={req.id}
-              className="bg-comet-surface p-4 sm:p-6 rounded-[2rem] border border-comet-border shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all"
+              className="bg-comet-surface p-4 sm:p-6 rounded-[2rem] border border-comet-border shadow-sm flex items-center justify-between group hover:border-comet-accent/40 transition-all"
             >
               <div className="flex items-center gap-5">
                 <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-inner bg-comet-surface-2">
@@ -58,10 +68,12 @@ export const PendingRequests = () => {
                     </div>
                   )}
                 </div>
+
                 <div>
                   <h4 className="text-base font-black text-comet-text tracking-tight">
                     {req.sender?.name || 'Anonymous'}
                   </h4>
+
                   <p className="text-[10px] font-bold text-comet-muted uppercase tracking-widest">
                     {req.sender?.email}
                   </p>
@@ -76,6 +88,7 @@ export const PendingRequests = () => {
                 >
                   <Check size={20} />
                 </button>
+
                 <button
                   onClick={() => handleDecline(req.id)}
                   className="bg-comet-surface-2 text-comet-muted p-3 rounded-xl hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer"
@@ -96,6 +109,7 @@ export const PendingRequests = () => {
             <span className="text-comet-muted font-medium lowercase tracking-normal">(None)</span>
           )}
         </h3>
+
         <div className="space-y-4">
           {requests?.outgoing.map((req) => (
             <div
@@ -117,10 +131,12 @@ export const PendingRequests = () => {
                     </div>
                   )}
                 </div>
+
                 <div>
                   <h4 className="text-base font-black text-comet-text tracking-tight opacity-60">
                     {req.receiver?.name || 'Anonymous'}
                   </h4>
+
                   <p className="text-[10px] font-bold text-comet-muted uppercase tracking-widest">
                     Awaiting response
                   </p>

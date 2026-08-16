@@ -1,25 +1,40 @@
 import { motion, AnimatePresence } from 'framer-motion';
+
 import { X, MessageSquare, Loader2, Send } from 'lucide-react';
+
 import Image from 'next/image';
+
 import { useEffect, useRef, useState } from 'react';
+
 import { useSession } from 'next-auth/react';
+
 import { formatTimeAgo } from '@/lib/format';
+
 import { getErrorMessage } from '@/lib/errors';
+
 import { useComicComments } from '@/hooks/useSocialFeatures';
+
 import { useNotification } from '@/components/atoms/Toast';
 
 interface ClubChatDrawerProps {
   comicId: string | null;
+
   title: string | null;
+
   onClose: () => void;
 }
 
 /** Slide-over: shared-queue club discussion thread. */
+
 export const ClubChatDrawer = ({ comicId, title, onClose }: ClubChatDrawerProps) => {
   const { data: session } = useSession();
+
   const { triggerNotification } = useNotification();
+
   const { comments, postComment } = useComicComments(comicId || '');
+
   const [chatMessage, setChatMessage] = useState('');
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,9 +43,12 @@ export const ClubChatDrawer = ({ comicId, title, onClose }: ClubChatDrawerProps)
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!chatMessage.trim() || !comicId) return;
+
     try {
       await postComment.mutateAsync(chatMessage.trim());
+
       setChatMessage('');
     } catch (err) {
       triggerNotification(getErrorMessage(err) || 'Failed to post comment', 'error');
@@ -61,6 +79,7 @@ export const ClubChatDrawer = ({ comicId, title, onClose }: ClubChatDrawerProps)
                 <h3 className="text-lg font-black text-comet-text tracking-tight italic">
                   Club Discussion
                 </h3>
+
                 <p className="text-xs font-bold text-comet-muted uppercase tracking-widest max-w-[280px] truncate mt-0.5">
                   {title}
                 </p>
@@ -78,6 +97,7 @@ export const ClubChatDrawer = ({ comicId, title, onClose }: ClubChatDrawerProps)
               {comments && comments.length > 0 ? (
                 comments.map((comment) => {
                   const isSelf = comment.userId === session?.user?.id;
+
                   return (
                     <div
                       key={comment.id}
@@ -104,15 +124,17 @@ export const ClubChatDrawer = ({ comicId, title, onClose }: ClubChatDrawerProps)
                         >
                           {comment.user.name || 'Anonymous'}
                         </span>
+
                         <div
                           className={`p-3.5 rounded-2xl text-sm leading-relaxed ${
                             isSelf
-                              ? 'bg-blue-500 text-white rounded-tr-none'
+                              ? 'bg-comet-accent/100 text-white rounded-tr-none'
                               : 'bg-comet-surface text-comet-text border border-comet-border rounded-tl-none shadow-sm'
                           }`}
                         >
                           <p>{comment.message}</p>
                         </div>
+
                         <span
                           className={`text-[8px] font-bold text-comet-muted uppercase block ${isSelf ? 'text-right' : ''}`}
                         >
@@ -125,6 +147,7 @@ export const ClubChatDrawer = ({ comicId, title, onClose }: ClubChatDrawerProps)
               ) : (
                 <div className="text-center py-20">
                   <MessageSquare size={32} className="text-comet-muted mx-auto mb-3" />
+
                   <p className="text-comet-muted text-xs font-bold italic">
                     No club comments yet. Start the discussion!
                   </p>
@@ -143,13 +166,14 @@ export const ClubChatDrawer = ({ comicId, title, onClose }: ClubChatDrawerProps)
                 placeholder="Type a club message..."
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
-                className="flex-1 bg-comet-surface-2 px-4 py-3 rounded-xl border border-transparent focus:border-blue-500 focus:bg-comet-surface text-sm outline-none transition-all"
+                className="flex-1 bg-comet-surface-2 px-4 py-3 rounded-xl border border-transparent focus:border-comet-accent focus:bg-comet-surface text-sm outline-none transition-all"
                 maxLength={500}
               />
+
               <button
                 type="submit"
                 disabled={!chatMessage.trim() || postComment.isPending}
-                className="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                className="bg-comet-accent text-white px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
               >
                 {postComment.isPending ? (
                   <Loader2 size={16} className="animate-spin" />

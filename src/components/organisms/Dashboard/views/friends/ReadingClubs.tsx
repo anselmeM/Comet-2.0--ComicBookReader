@@ -1,6 +1,9 @@
 import { Users, Loader2, BookOpen, MessageCircle } from 'lucide-react';
+
 import Image from 'next/image';
+
 import { useReadingClubs } from '@/hooks/useSocialFeatures';
+
 import { useNotification } from '@/components/atoms/Toast';
 
 interface ReadingClubsProps {
@@ -8,18 +11,21 @@ interface ReadingClubsProps {
 }
 
 /** TAB: Shared Reading Clubs — group progress + discussion entry points. */
+
 export const ReadingClubs = ({ onOpenDiscussion }: ReadingClubsProps) => {
   const { data: clubs, isLoading: isLoadingClubs } = useReadingClubs();
+
   const { triggerNotification } = useNotification();
 
   return (
     <div className="max-w-5xl mx-auto w-full space-y-8">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-black text-comet-text tracking-tight flex items-center gap-3 uppercase tracking-widest">
-          <Users size={20} className="text-blue-500" />
+          <Users size={20} className="text-comet-accent" />
           Shared Reading Clubs
         </h3>
-        {isLoadingClubs && <Loader2 size={16} className="text-blue-500 animate-spin" />}
+
+        {isLoadingClubs && <Loader2 size={16} className="text-comet-accent animate-spin" />}
       </div>
 
       {clubs && clubs.length > 0 ? (
@@ -27,7 +33,7 @@ export const ReadingClubs = ({ onOpenDiscussion }: ReadingClubsProps) => {
           {clubs.map((club) => (
             <div
               key={club.key}
-              className="bg-comet-surface p-4 sm:p-6 lg:p-8 rounded-[2.5rem] border border-comet-border shadow-sm flex gap-6 hover:shadow-xl hover:border-blue-100 transition-all"
+              className="bg-comet-surface p-4 sm:p-6 lg:p-8 rounded-[2.5rem] border border-comet-border shadow-sm flex gap-6 hover:shadow-xl hover:border-comet-accent/20 transition-all"
             >
               <div className="relative w-24 h-36 rounded-2xl overflow-hidden shrink-0 shadow-md bg-comet-surface-2">
                 {club.coverUrl ? (
@@ -42,6 +48,7 @@ export const ReadingClubs = ({ onOpenDiscussion }: ReadingClubsProps) => {
                   <h4 className="text-xl font-black text-comet-text tracking-tighter truncate leading-tight">
                     {club.title}
                   </h4>
+
                   <p className="text-[10px] font-bold text-comet-muted uppercase tracking-widest">
                     {club.series} {club.issue !== null && `#${club.issue}`}
                   </p>
@@ -50,10 +57,11 @@ export const ReadingClubs = ({ onOpenDiscussion }: ReadingClubsProps) => {
                 <div className="space-y-3 pt-2">
                   <div className="flex flex-wrap gap-2 items-center">
                     {club.userProgress && (
-                      <div className="bg-blue-500/10 text-blue-600 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                      <div className="bg-comet-accent/10 text-comet-accent px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
                         You: {club.userProgress.percent}%
                       </div>
                     )}
+
                     {club.activeReaders.map((r) => (
                       <div
                         key={r.userId}
@@ -74,6 +82,7 @@ export const ReadingClubs = ({ onOpenDiscussion }: ReadingClubsProps) => {
                             </span>
                           )}
                         </div>
+
                         <span>
                           {r.userName}: {r.percent}%
                         </span>
@@ -88,13 +97,15 @@ export const ReadingClubs = ({ onOpenDiscussion }: ReadingClubsProps) => {
                       } else {
                         triggerNotification(
                           'You must have this comic in your library to join the discussion.',
+
                           'error',
                         );
                       }
                     }}
-                    className="bg-black text-white w-full py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2.5 hover:bg-blue-500 hover:shadow-lg transition-all cursor-pointer shadow-sm"
+                    className="bg-black text-white w-full py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2.5 hover:bg-comet-accent/100 hover:shadow-lg transition-all cursor-pointer shadow-sm"
                   >
                     <MessageCircle size={14} />
+
                     <span>
                       Discuss Issue ({club.activeReaders.length + (club.userProgress ? 1 : 0)}{' '}
                       Readers)
@@ -108,9 +119,11 @@ export const ReadingClubs = ({ onOpenDiscussion }: ReadingClubsProps) => {
       ) : !isLoadingClubs ? (
         <div className="text-center py-32 bg-comet-surface rounded-[3rem] border border-dashed border-comet-border">
           <Users size={80} className="text-comet-muted mx-auto mb-8" />
+
           <h4 className="text-2xl font-black text-comet-muted tracking-tighter italic">
             No active reading clubs
           </h4>
+
           <p className="text-comet-muted text-sm mt-2 max-w-sm mx-auto font-bold">
             When you and your friends read the same issues simultaneously, they will show up here as
             shared queues!
@@ -124,9 +137,12 @@ export const ReadingClubs = ({ onOpenDiscussion }: ReadingClubsProps) => {
               className="bg-comet-surface p-4 sm:p-6 lg:p-8 rounded-[2.5rem] border border-comet-border shadow-sm flex gap-6 animate-pulse"
             >
               <div className="w-24 h-36 bg-comet-surface-2 rounded-2xl shrink-0" />
+
               <div className="flex-1 space-y-4 py-1">
                 <div className="h-6 bg-comet-surface-2 rounded-lg w-3/4" />
+
                 <div className="h-4 bg-comet-surface-2 rounded-lg w-1/3" />
+
                 <div className="h-10 bg-comet-surface-2 rounded-xl w-full" />
               </div>
             </div>
