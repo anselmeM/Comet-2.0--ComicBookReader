@@ -117,11 +117,19 @@ const SandboxDemo = dynamic(() => import('@/components/organisms/Landing/Sandbox
 
 /**
 
+
+
  * Mounts the sandbox demo only when it scrolls near the viewport: the parsing
+
+
 
  * stack (JSZip, workers, panel detection) and its framer-motion UI stay out of
 
+
+
  * the initial bundle and hydration, cutting main-thread work (TBT/TTI).
+
+
 
  */
 
@@ -270,21 +278,25 @@ export default function Home() {
     : staggerContainer;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#09090b] text-[#e8e8f0] font-sans bg-halftone">
+    <div className="relative min-h-screen overflow-hidden bg-comet-ink text-[#e8e8f0] font-sans bg-halftone">
       {/* ── Background Gradients (Warm Sunset Nebula - No Blues/Purples) ── */}
 
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         {/* CSS-animated (compositor), not framer-motion: infinite JS rAF
 
+
+
             loops burned ~8s of main-thread work per page load. The global
+
+
 
             prefers-reduced-motion rule freezes these. */}
 
         <div className="absolute top-[-5%] left-[-5%] w-[55%] h-[55%] bg-lime-500/8 rounded-full blur-[140px] animate-comet-blob-slow" />
 
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#ff5a00]/8 rounded-full blur-[140px] animate-comet-blob-slower" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-comet-orange/8 rounded-full blur-[140px] animate-comet-blob-slower" />
 
-        <div className="absolute top-[30%] right-[10%] w-[45%] h-[45%] bg-[#eab308]/5 rounded-full blur-[120px] animate-comet-blob-breathe" />
+        <div className="absolute top-[30%] right-[10%] w-[45%] h-[45%] bg-comet-gold/5 rounded-full blur-[120px] animate-comet-blob-breathe" />
       </div>
 
       {/* ── Navigation ─────────────────────────────────────────────────── */}
@@ -295,7 +307,7 @@ export default function Home() {
         variants={animatedNav}
         className={`sticky top-4 z-50 mx-auto w-[calc(100%-2rem)] max-w-7xl flex items-center justify-between px-6 py-4 rounded-[1.5rem] border transition-all duration-300 ${
           scrolled
-            ? 'bg-zinc-950/70 backdrop-blur-2xl border-[#ff5a00]/20 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_15px_rgba(255,90,0,0.05)]'
+            ? 'bg-zinc-950/70 backdrop-blur-2xl border-comet-orange/20 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_15px_rgba(255,90,0,0.05)]'
             : 'bg-zinc-950/30 backdrop-blur-xl border-white/10 shadow-[0_15px_35px_rgba(0,0,0,0.4)]'
         }`}
       >
@@ -303,7 +315,7 @@ export default function Home() {
           whileHover={isReduced ? {} : { scale: 1.03 }}
           className="flex items-center gap-3 cursor-pointer group"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ff5a00] border-2 border-neutral-900 shadow-[2px_2px_0px_0px_#000] transition-transform group-hover:-translate-y-0.5 group-hover:-translate-x-0.5 group-hover:shadow-[4px_4px_0px_0px_#000]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-comet-orange border-2 border-neutral-900 shadow-[2px_2px_0px_0px_#000] transition-transform group-hover:-translate-y-0.5 group-hover:-translate-x-0.5 group-hover:shadow-[4px_4px_0px_0px_#000]">
             <Rocket className="text-white" size={18} aria-hidden="true" />
           </div>
 
@@ -326,7 +338,7 @@ export default function Home() {
                 >
                   <Link
                     href="/pricing"
-                    className="inline-flex items-center justify-center rounded-xl border-2 border-neutral-850 hover:border-[#ff5a00] hover:text-white bg-neutral-950/40 px-5 py-2.5 text-xs font-heading font-black uppercase tracking-wider text-neutral-300 transition-all focus-visible:outline-2 focus-visible:outline-[#ff5a00] cursor-pointer"
+                    className="inline-flex items-center justify-center rounded-xl border-2 border-neutral-850 hover:border-comet-orange hover:text-white bg-neutral-950/40 px-5 py-2.5 text-xs font-heading font-black uppercase tracking-wider text-neutral-300 transition-all focus-visible:outline-2 focus-visible:outline-comet-orange cursor-pointer"
                   >
                     Pricing
                   </Link>
@@ -338,7 +350,7 @@ export default function Home() {
                 >
                   <Link
                     href="/login"
-                    className="inline-flex items-center justify-center rounded-xl border-2 border-neutral-850 hover:border-[#ff5a00] hover:text-white bg-neutral-950/40 px-5 py-2.5 text-xs font-heading font-black uppercase tracking-wider text-neutral-300 transition-all focus-visible:outline-2 focus-visible:outline-[#ff5a00] cursor-pointer"
+                    className="inline-flex items-center justify-center rounded-xl border-2 border-neutral-850 hover:border-comet-orange hover:text-white bg-neutral-950/40 px-5 py-2.5 text-xs font-heading font-black uppercase tracking-wider text-neutral-300 transition-all focus-visible:outline-2 focus-visible:outline-comet-orange cursor-pointer"
                   >
                     Log in
                   </Link>
@@ -350,7 +362,7 @@ export default function Home() {
                 >
                   <Link
                     href="/register"
-                    className="inline-flex items-center justify-center rounded-xl bg-[#ff5a00] hover:bg-[#e65100] border-2 border-neutral-950 px-5 py-2.5 text-xs font-heading font-black uppercase tracking-wider text-white shadow-[3px_3px_0px_0px_#000] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none transition-all focus-visible:outline-2 focus-visible:outline-white cursor-pointer"
+                    className="inline-flex items-center justify-center rounded-xl bg-comet-orange hover:bg-comet-orange-hover border-2 border-neutral-950 px-5 py-2.5 text-xs font-heading font-black uppercase tracking-wider text-white shadow-[3px_3px_0px_0px_#000] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none transition-all focus-visible:outline-2 focus-visible:outline-white cursor-pointer"
                   >
                     Sign up
                   </Link>
@@ -363,7 +375,7 @@ export default function Home() {
                 <motion.button
                   whileTap={isReduced ? {} : { scale: 0.95 }}
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-neutral-900 border-2 border-neutral-800 text-neutral-400 hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-[#ff5a00]"
+                  className="flex items-center justify-center w-10 h-10 rounded-xl bg-neutral-900 border-2 border-neutral-800 text-neutral-400 hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-comet-orange"
                   aria-label="Open menu"
                   aria-expanded={mobileMenuOpen}
                 >
@@ -381,7 +393,7 @@ export default function Home() {
                     >
                       <Link
                         href="/pricing"
-                        className="block w-full text-left px-4 py-2.5 rounded-xl text-xs font-heading font-black uppercase tracking-wider text-neutral-300 hover:text-white hover:bg-neutral-900 border border-transparent hover:border-[#ff5a00]/30 transition-colors"
+                        className="block w-full text-left px-4 py-2.5 rounded-xl text-xs font-heading font-black uppercase tracking-wider text-neutral-300 hover:text-white hover:bg-neutral-900 border border-transparent hover:border-comet-orange/30 transition-colors"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Pricing
@@ -389,7 +401,7 @@ export default function Home() {
 
                       <Link
                         href="/login"
-                        className="block w-full text-left px-4 py-2.5 rounded-xl text-xs font-heading font-black uppercase tracking-wider text-neutral-300 hover:text-white hover:bg-neutral-900 border border-transparent hover:border-[#ff5a00]/30 transition-colors"
+                        className="block w-full text-left px-4 py-2.5 rounded-xl text-xs font-heading font-black uppercase tracking-wider text-neutral-300 hover:text-white hover:bg-neutral-900 border border-transparent hover:border-comet-orange/30 transition-colors"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Log in
@@ -397,7 +409,7 @@ export default function Home() {
 
                       <Link
                         href="/register"
-                        className="block w-full text-center px-4 py-2.5 mt-1 rounded-xl text-xs font-heading font-black uppercase tracking-wider bg-[#ff5a00] text-white hover:bg-[#e65100] border border-black shadow-[2px_2px_0px_0px_#000] transition-colors"
+                        className="block w-full text-center px-4 py-2.5 mt-1 rounded-xl text-xs font-heading font-black uppercase tracking-wider bg-comet-orange text-white hover:bg-comet-orange-hover border border-black shadow-[2px_2px_0px_0px_#000] transition-colors"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Sign up
@@ -452,7 +464,7 @@ export default function Home() {
                     : { initial: { opacity: 0, scale: 0.9 }, animate: { opacity: 1, scale: 1 } }
                 }
                 transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-                className="inline-flex items-center gap-2 rounded-lg border border-[#a3e635]/20 bg-[#a3e635]/5 px-3 py-1 text-[10px] font-display font-black tracking-widest text-[#a3e635] uppercase"
+                className="inline-flex items-center gap-2 rounded-lg border border-comet-lime/20 bg-comet-lime/5 px-3 py-1 text-[10px] font-display font-black tracking-widest text-comet-lime uppercase"
               >
                 <Zap size={10} aria-hidden="true" className="animate-pulse" />
                 COMET 2.0
@@ -464,7 +476,7 @@ export default function Home() {
               >
                 READ BEYOND <br />
                 THE{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff5a00] via-[#eab308] to-[#a3e635] italic">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-comet-orange via-comet-gold to-comet-lime italic">
                   GUTTERS
                 </span>
                 .
@@ -491,7 +503,7 @@ export default function Home() {
                   >
                     <Link
                       href="/register"
-                      className="flex h-14 w-full sm:w-auto items-center justify-center gap-3 rounded-xl bg-[#ff5a00] hover:bg-[#e65100] px-8 text-sm font-heading font-black uppercase tracking-wider text-white border-2 border-neutral-950 shadow-[4px_4px_0px_0px_#000] hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px]"
+                      className="flex h-14 w-full sm:w-auto items-center justify-center gap-3 rounded-xl bg-comet-orange hover:bg-comet-orange-hover px-8 text-sm font-heading font-black uppercase tracking-wider text-white border-2 border-neutral-950 shadow-[4px_4px_0px_0px_#000] hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px]"
                     >
                       Start Reading
                     </Link>
@@ -503,7 +515,7 @@ export default function Home() {
                   >
                     <Link
                       href="/library"
-                      className="flex h-14 w-full sm:w-auto items-center justify-center gap-3 rounded-xl bg-[#ff5a00] hover:bg-[#e65100] px-8 text-sm font-heading font-black uppercase tracking-wider text-white border-2 border-neutral-950 shadow-[4px_4px_0px_0px_#000] hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px]"
+                      className="flex h-14 w-full sm:w-auto items-center justify-center gap-3 rounded-xl bg-comet-orange hover:bg-comet-orange-hover px-8 text-sm font-heading font-black uppercase tracking-wider text-white border-2 border-neutral-950 shadow-[4px_4px_0px_0px_#000] hover:shadow-[5px_5px_0px_0px_#000] active:translate-x-[1px] active:translate-y-[1px]"
                     >
                       Enter Library
                     </Link>
@@ -542,10 +554,10 @@ export default function Home() {
 
                 y: isReduced ? 0 : mousePos.y * 25,
               }}
-              className="absolute top-8 left-8 w-48 aspect-[3/4] rounded-[2rem] bg-neutral-950 border-3 border-neutral-855 p-4 shadow-2xl flex flex-col justify-between hover:border-[#ff5a00] transition-colors rotate-[-6deg] z-20 animate-float-slow"
+              className="absolute top-8 left-8 w-48 aspect-[3/4] rounded-[2rem] bg-neutral-950 border-3 border-neutral-855 p-4 shadow-2xl flex flex-col justify-between hover:border-comet-orange transition-colors rotate-[-6deg] z-20 animate-float-slow"
             >
               <div className="flex justify-between items-start">
-                <span className="text-[9px] font-display font-black text-[#ff5a00] tracking-widest bg-[#ff5a00]/10 px-2 py-0.5 rounded uppercase">
+                <span className="text-[9px] font-display font-black text-comet-orange tracking-widest bg-comet-orange/10 px-2 py-0.5 rounded uppercase">
                   Sci-Fi
                 </span>
 
@@ -553,10 +565,10 @@ export default function Home() {
               </div>
 
               <div className="flex-1 flex flex-col justify-center items-center text-center my-2 bg-gradient-to-br from-orange-500/10 to-transparent rounded-xl border border-white/5 relative overflow-hidden">
-                <SparklesIcon size={24} className="text-[#ff5a00] animate-pulse" />
+                <SparklesIcon size={24} className="text-comet-orange animate-pulse" />
 
                 <div className="absolute bottom-2 inset-x-2 h-1.5 bg-neutral-900 rounded-full overflow-hidden">
-                  <div className="bg-[#ff5a00] h-full w-[80%]" />
+                  <div className="bg-comet-orange h-full w-[80%]" />
                 </div>
               </div>
 
@@ -577,14 +589,14 @@ export default function Home() {
 
                 y: isReduced ? 0 : mousePos.y * -35,
               }}
-              className="absolute bottom-12 left-16 bg-neutral-950 border-3 border-neutral-855 p-4 rounded-2xl shadow-xl w-44 flex items-center gap-3 hover:border-[#a3e635] transition-colors rotate-[4deg] z-30 animate-float-medium"
+              className="absolute bottom-12 left-16 bg-neutral-950 border-3 border-neutral-855 p-4 rounded-2xl shadow-xl w-44 flex items-center gap-3 hover:border-comet-lime transition-colors rotate-[4deg] z-30 animate-float-medium"
             >
-              <div className="h-10 w-10 rounded-xl bg-[#a3e635]/10 border border-[#a3e635]/20 flex items-center justify-center text-[#a3e635]">
+              <div className="h-10 w-10 rounded-xl bg-comet-lime/10 border border-comet-lime/20 flex items-center justify-center text-comet-lime">
                 <Zap size={16} className="animate-bounce" />
               </div>
 
               <div>
-                <div className="font-display font-black text-xl text-[#a3e635] leading-none">
+                <div className="font-display font-black text-xl text-comet-lime leading-none">
                   60 FPS
                 </div>
 
@@ -602,10 +614,10 @@ export default function Home() {
 
                 y: isReduced ? 0 : mousePos.y * 15,
               }}
-              className="absolute top-20 right-6 w-48 aspect-[3/4] rounded-[2rem] bg-neutral-950 border-3 border-neutral-855 p-4 shadow-2xl flex flex-col justify-between hover:border-[#eab308] transition-colors rotate-[8deg] z-10 animate-float-fast"
+              className="absolute top-20 right-6 w-48 aspect-[3/4] rounded-[2rem] bg-neutral-950 border-3 border-neutral-855 p-4 shadow-2xl flex flex-col justify-between hover:border-comet-gold transition-colors rotate-[8deg] z-10 animate-float-fast"
             >
               <div className="flex justify-between items-start">
-                <span className="text-[9px] font-display font-black text-[#eab308] tracking-widest bg-[#eab308]/10 px-2 py-0.5 rounded uppercase">
+                <span className="text-[9px] font-display font-black text-comet-gold tracking-widest bg-comet-gold/10 px-2 py-0.5 rounded uppercase">
                   Manga
                 </span>
 
@@ -645,7 +657,7 @@ export default function Home() {
               viewport={{ once: true }}
               variants={animatedFadeIn}
             >
-              <div className="inline-flex items-center gap-2 text-[#eab308] font-display font-black uppercase tracking-widest text-xs mb-6">
+              <div className="inline-flex items-center gap-2 text-comet-gold font-display font-black uppercase tracking-widest text-xs mb-6">
                 <Target size={14} aria-hidden="true" />
                 CINEMATIC PANNING
               </div>
@@ -686,7 +698,7 @@ export default function Home() {
               {/* Demo selector header */}
 
               <div className="flex items-center justify-between z-10">
-                <div className="flex bg-[#09090b] p-1 rounded-xl border border-neutral-850">
+                <div className="flex bg-comet-ink p-1 rounded-xl border border-neutral-850">
                   <button
                     type="button"
                     onClick={() => {
@@ -696,7 +708,7 @@ export default function Home() {
                     }}
                     className={`px-4 py-1.5 rounded-lg text-[10px] font-heading font-black uppercase tracking-wider transition-all ${
                       demoMode === 'guided'
-                        ? 'bg-[#ff5a00] text-white shadow-md'
+                        ? 'bg-comet-orange text-white shadow-md'
                         : 'text-neutral-500 hover:text-white'
                     }`}
                   >
@@ -712,7 +724,7 @@ export default function Home() {
                     }}
                     className={`px-4 py-1.5 rounded-lg text-[10px] font-heading font-black uppercase tracking-wider transition-all ${
                       demoMode === 'spread'
-                        ? 'bg-[#ff5a00] text-white shadow-md'
+                        ? 'bg-comet-orange text-white shadow-md'
                         : 'text-neutral-500 hover:text-white'
                     }`}
                   >
@@ -732,7 +744,7 @@ export default function Home() {
 
               {/* Main Demo Viewport */}
 
-              <div className="flex-1 relative w-full overflow-hidden rounded-xl bg-[#09090b] border border-neutral-855 flex items-center justify-center my-4">
+              <div className="flex-1 relative w-full overflow-hidden rounded-xl bg-comet-ink border border-neutral-855 flex items-center justify-center my-4">
                 {demoMode === 'guided' ? (
                   <div className="relative w-[280px] h-[380px] overflow-hidden rounded-xl border border-neutral-855 shadow-2xl flex items-center justify-center">
                     <motion.div
@@ -752,7 +764,7 @@ export default function Home() {
                         {/* Panel 1 */}
 
                         <div
-                          className={`absolute top-[2%] left-[2%] w-[96%] h-[26%] border-2 rounded transition-all duration-300 ${activePanelIndex === 1 ? 'border-[#ff5a00] bg-[#ff5a00]/10 shadow-[0_0_15px_rgba(255,90,0,0.2)]' : 'border-neutral-800 bg-neutral-900/50'}`}
+                          className={`absolute top-[2%] left-[2%] w-[96%] h-[26%] border-2 rounded transition-all duration-300 ${activePanelIndex === 1 ? 'border-comet-orange bg-comet-orange/10 shadow-[0_0_15px_rgba(255,90,0,0.2)]' : 'border-neutral-800 bg-neutral-900/50'}`}
                         >
                           <span className="absolute bottom-1 left-2 font-mono text-[7px] text-neutral-600">
                             Panel 1
@@ -762,7 +774,7 @@ export default function Home() {
                         {/* Panel 2 */}
 
                         <div
-                          className={`absolute top-[32%] left-[2%] w-[46%] h-[32%] border-2 rounded transition-all duration-300 ${activePanelIndex === 2 ? 'border-[#ff5a00] bg-[#ff5a00]/10 shadow-[0_0_15px_rgba(255,90,0,0.2)]' : 'border-neutral-800 bg-neutral-900/50'}`}
+                          className={`absolute top-[32%] left-[2%] w-[46%] h-[32%] border-2 rounded transition-all duration-300 ${activePanelIndex === 2 ? 'border-comet-orange bg-comet-orange/10 shadow-[0_0_15px_rgba(255,90,0,0.2)]' : 'border-neutral-800 bg-neutral-900/50'}`}
                         >
                           <span className="absolute bottom-1 left-2 font-mono text-[7px] text-neutral-600">
                             Panel 2
@@ -772,7 +784,7 @@ export default function Home() {
                         {/* Panel 3 */}
 
                         <div
-                          className={`absolute top-[32%] left-[52%] w-[46%] h-[32%] border-2 rounded transition-all duration-300 ${activePanelIndex === 3 ? 'border-[#ff5a00] bg-[#ff5a00]/10 shadow-[0_0_15px_rgba(255,90,0,0.2)]' : 'border-neutral-800 bg-neutral-900/50'}`}
+                          className={`absolute top-[32%] left-[52%] w-[46%] h-[32%] border-2 rounded transition-all duration-300 ${activePanelIndex === 3 ? 'border-comet-orange bg-comet-orange/10 shadow-[0_0_15px_rgba(255,90,0,0.2)]' : 'border-neutral-800 bg-neutral-900/50'}`}
                         >
                           <span className="absolute bottom-1 left-2 font-mono text-[7px] text-neutral-600">
                             Panel 3
@@ -782,7 +794,7 @@ export default function Home() {
                         {/* Panel 4 */}
 
                         <div
-                          className={`absolute top-[68%] left-[2%] w-[96%] h-[30%] border-2 rounded transition-all duration-300 ${activePanelIndex === 4 ? 'border-[#ff5a00] bg-[#ff5a00]/10 shadow-[0_0_15px_rgba(255,90,0,0.2)]' : 'border-neutral-800 bg-neutral-900/50'}`}
+                          className={`absolute top-[68%] left-[2%] w-[96%] h-[30%] border-2 rounded transition-all duration-300 ${activePanelIndex === 4 ? 'border-comet-orange bg-comet-orange/10 shadow-[0_0_15px_rgba(255,90,0,0.2)]' : 'border-neutral-800 bg-neutral-900/50'}`}
                         >
                           <span className="absolute bottom-1 left-2 font-mono text-[7px] text-neutral-600">
                             Panel 4
@@ -810,7 +822,7 @@ export default function Home() {
                           </span>
 
                           <div className="flex-1 flex flex-col justify-center items-center text-center">
-                            <BookOpen size={24} className="text-[#ff5a00] mb-2" />
+                            <BookOpen size={24} className="text-comet-orange mb-2" />
 
                             <h4 className="font-heading font-black italic text-[11px] text-white">
                               Spread View
@@ -828,7 +840,7 @@ export default function Home() {
                           </span>
 
                           <div className="flex-1 flex flex-col justify-center items-center text-center">
-                            <SparklesIcon size={24} className="text-[#a3e635] mb-2" />
+                            <SparklesIcon size={24} className="text-comet-lime mb-2" />
 
                             <h4 className="font-heading font-black italic text-[11px] text-white">
                               Zero Shifts
@@ -862,7 +874,7 @@ export default function Home() {
                           }}
                           className={`w-2 h-2 rounded-full transition-all ${
                             activePanelIndex === idx
-                              ? 'bg-[#ff5a00] w-4'
+                              ? 'bg-comet-orange w-4'
                               : 'bg-neutral-800 hover:bg-neutral-600'
                           }`}
                         >
@@ -889,7 +901,7 @@ export default function Home() {
                           }}
                           className={`w-2 h-2 rounded-full transition-all ${
                             dualSpreadPage === page
-                              ? 'bg-[#ff5a00] w-4'
+                              ? 'bg-comet-orange w-4'
                               : 'bg-neutral-800 hover:bg-neutral-600'
                           }`}
                         >
@@ -915,7 +927,7 @@ export default function Home() {
             className="bg-neutral-950/40 border-3 border-neutral-850 rounded-[2.5rem] p-12 md:p-20 text-white text-center relative overflow-hidden"
           >
             <div className="relative z-10 max-w-2xl mx-auto">
-              <div className="inline-flex items-center gap-2 rounded-lg border border-[#a3e635]/20 bg-[#a3e635]/5 px-3 py-1 text-[10px] font-display font-black tracking-widest text-[#a3e635] uppercase mb-6">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-comet-lime/20 bg-comet-lime/5 px-3 py-1 text-[10px] font-display font-black tracking-widest text-comet-lime uppercase mb-6">
                 <Users size={10} aria-hidden="true" />
                 COMET CIRCLE
               </div>
@@ -935,6 +947,8 @@ export default function Home() {
             <div className="relative w-full overflow-hidden py-4 select-none mask-fade-edges">
               {/* CSS marquee (compositor) — was a framer-motion x-loop that
 
+
+
                   kept the main thread busy every frame. */}
 
               <div className="flex gap-6 whitespace-nowrap w-max animate-comet-ticker">
@@ -943,9 +957,9 @@ export default function Home() {
                 {[...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS].map((item, idx) => (
                   <div
                     key={idx}
-                    className="inline-flex items-center gap-4 bg-neutral-950 border-2 border-neutral-855 p-4 rounded-2xl shadow-md hover:border-[#ff5a00] transition-colors"
+                    className="inline-flex items-center gap-4 bg-neutral-950 border-2 border-neutral-855 p-4 rounded-2xl shadow-md hover:border-comet-orange transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center font-heading font-black text-xs text-[#a3e635]">
+                    <div className="w-8 h-8 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center font-heading font-black text-xs text-comet-lime">
                       {item.user.charAt(1).toUpperCase()}
                     </div>
 
@@ -959,7 +973,7 @@ export default function Home() {
                       </span>
                     </div>
 
-                    <span className="text-[8px] font-mono font-bold bg-[#ff5a00]/10 text-[#ff5a00] border border-[#ff5a00]/20 px-2 py-0.5 rounded">
+                    <span className="text-[8px] font-mono font-bold bg-comet-orange/10 text-comet-orange border border-comet-orange/20 px-2 py-0.5 rounded">
                       {item.tag}
                     </span>
                   </div>
@@ -982,7 +996,7 @@ export default function Home() {
             <h2 className="text-5xl md:text-7xl font-heading font-black mb-12 italic tracking-tighter uppercase leading-none">
               YOUR LIBRARY.
               <br />
-              <span className="text-[#ff5a00]">RECONFIGURED.</span>
+              <span className="text-comet-orange">RECONFIGURED.</span>
             </h2>
 
             <motion.div
@@ -991,7 +1005,7 @@ export default function Home() {
             >
               <Link
                 href="/register"
-                className="inline-flex h-16 items-center justify-center gap-3 rounded-xl bg-white text-black border-3 border-neutral-950 px-10 text-base font-heading font-black uppercase tracking-widest shadow-[5px_5px_0px_0px_#ff5a00] hover:shadow-[3px_3px_0px_0px_#ff5a00] hover:translate-x-[2px] hover:translate-y-[2px] active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all"
+                className="inline-flex h-16 items-center justify-center gap-3 rounded-xl bg-white text-black border-3 border-neutral-950 px-10 text-base font-heading font-black uppercase tracking-widest shadow-[5px_5px_0px_0px_var(--color-comet-orange)] hover:shadow-[3px_3px_0px_0px_var(--color-comet-orange)] hover:translate-x-[2px] hover:translate-y-[2px] active:translate-x-[5px] active:translate-y-[5px] active:shadow-none transition-all"
               >
                 Join the Orbit
               </Link>
