@@ -14,6 +14,17 @@
   --color-success:     #4caf82;   /* Success / completed */
   --color-warning:     #f5a623;   /* Warning */
   --color-error:       #e05c5c;   /* Destructive / error */
+
+  /* Brand palette — landing/auth accents (theme-independent) */
+  --color-comet-orange:       #ff5a00; /* Primary CTA / brand accent */
+  --color-comet-orange-hover: #e65100; /* Orange hover state */
+  --color-comet-orange-light: #ff7830; /* Orange on dark surfaces */
+  --color-comet-lime:         #a3e635; /* Engine / speed accent */
+  --color-comet-lime-light:   #b4f04c; /* Lime highlight */
+  --color-comet-gold:         #eab308; /* Gold / warning-ish accent */
+  --color-comet-red:          #ef4444; /* Danger red */
+  --color-comet-ink:          #09090b; /* Near-black bg/borders */
+  --color-comet-ink-2:        #18181b; /* Elevated ink surfaces */
 }
 
 .theme-light {

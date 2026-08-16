@@ -1,43 +1,65 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
+
 import { LogIn, Rocket, KeyRound, Mail, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+
 import Link from 'next/link';
+
 import { getErrorMessage } from '@/lib/errors';
+
 import { useSearchParams, useRouter } from 'next/navigation';
+
 import { Suspense, useState, useEffect, useRef } from 'react';
+
 import { signIn, useSession } from 'next-auth/react';
 
 import { logger } from '@/lib/logger';
+
 import { getSafeRedirect } from '@/lib/url';
 
 function LoginForm() {
   const router = useRouter();
+
   const searchParams = useSearchParams();
+
   const { status } = useSession();
+
   const shouldReduceMotion = useReducedMotion();
+
   const isReduced = !!shouldReduceMotion;
 
   // Get callback URL from query params (set by middleware)
+
   const rawCallbackUrl = searchParams.get('callbackUrl');
+
   const callbackUrl = getSafeRedirect(rawCallbackUrl, '/library');
+
   const errorParam = searchParams.get('error');
 
   const [email, setEmail] = useState('');
+
   const [password, setPassword] = useState('');
+
   const [showPassword, setShowPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
+
   const [errorMsg, setErrorMsg] = useState('');
 
   const emailRef = useRef<HTMLInputElement>(null);
 
   // Framer Motion variants
+
   const containerVariants = {
     hidden: { opacity: 0 },
+
     visible: {
       opacity: 1,
+
       transition: {
         staggerChildren: 0.1,
+
         delayChildren: 0.1,
       },
     },
@@ -45,14 +67,18 @@ function LoginForm() {
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
+
     visible: {
       y: 0,
+
       opacity: 1,
+
       transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
     },
   };
 
   // Redirect if already authenticated
+
   useEffect(() => {
     if (status === 'authenticated') {
       router.push(callbackUrl);
@@ -60,6 +86,7 @@ function LoginForm() {
   }, [status, router, callbackUrl]);
 
   // Focus the first input field on load
+
   useEffect(() => {
     if (status !== 'loading') {
       emailRef.current?.focus();
@@ -67,6 +94,7 @@ function LoginForm() {
   }, [status]);
 
   // Initialize error message from URL parameter (if present)
+
   useEffect(() => {
     if (errorParam === 'SessionExpired') {
       setErrorMsg('Your session has expired. Please sign in again to continue.');
@@ -79,24 +107,31 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
+
     setErrorMsg('');
 
     if (!email || !password) {
       setErrorMsg('Please enter both email and password.');
+
       setLoading(false);
+
       return;
     }
 
     try {
       const result = await signIn('credentials', {
         email: email.trim().toLowerCase(),
+
         password,
+
         redirect: false,
       });
 
       if (result?.error) {
         // NextAuth returns specific error codes or strings.
+
         if (result.error === 'CredentialsSignin' || result.error.includes('CallbackRouteError')) {
           setErrorMsg('Invalid email or password.');
         } else if (result.error.includes('Account locked')) {
@@ -104,23 +139,29 @@ function LoginForm() {
         } else {
           setErrorMsg(`Login Failed: ${result.error}`);
         }
+
         setLoading(false);
       } else if (result?.ok) {
         // Force a hard refresh to the callback URL so session state is fully initialized
+
         window.location.href = callbackUrl;
       }
     } catch (err) {
       logger.error('[LoginForm] Client sign in error:', {}, err instanceof Error ? err : undefined);
+
       setErrorMsg(`Crash: ${getErrorMessage(err)}`);
+
       setLoading(false);
     }
   };
 
   // Render the form
+
   if (status === 'loading') {
     return (
       <div className="w-full max-w-md flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-[#ff5a00]/20 border-t-[#ff5a00] rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-comet-orange/20 border-t-comet-orange rounded-full animate-spin" />
+
         <p className="text-neutral-400 text-sm font-semibold">Checking session...</p>
       </div>
     );
@@ -134,17 +175,19 @@ function LoginForm() {
       animate="visible"
     >
       {/* Neo-brutalist Panel */}
-      <div className="bg-neutral-950 border-3 border-neutral-950 rounded-[2rem] shadow-[8px_8px_0px_0px_#ff5a00] p-8 md:p-10 relative z-10">
+
+      <div className="bg-neutral-950 border-3 border-neutral-950 rounded-[2rem] shadow-[8px_8px_0px_0px_var(--color-comet-orange)] p-8 md:p-10 relative z-10">
         <motion.div variants={itemVariants} className="flex justify-center mb-8">
           <div className="relative">
-            <div className="bg-[#ff5a00] border-2 border-neutral-950 shadow-[3px_3px_0px_0px_#000] p-4 rounded-2xl">
+            <div className="bg-comet-orange border-2 border-neutral-950 shadow-[3px_3px_0px_0px_#000] p-4 rounded-2xl">
               <Rocket className="w-8 h-8 text-white" />
             </div>
+
             {email && email.includes('@') && (
               <motion.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="absolute -top-2 -right-2 w-10 h-10 bg-[#a3e635] text-neutral-950 rounded-full flex items-center justify-center font-heading font-black text-lg border-2 border-neutral-950 shadow-[2px_2px_0px_0px_#000]"
+                className="absolute -top-2 -right-2 w-10 h-10 bg-comet-lime text-neutral-950 rounded-full flex items-center justify-center font-heading font-black text-lg border-2 border-neutral-950 shadow-[2px_2px_0px_0px_#000]"
               >
                 {email.split('@')[0].charAt(0).toUpperCase()}
               </motion.div>
@@ -156,6 +199,7 @@ function LoginForm() {
           <h1 className="text-3xl font-heading font-black uppercase italic text-white mb-2">
             {email && email.includes('@') ? `Hi, ${email.split('@')[0]}!` : 'Welcome back'}
           </h1>
+
           <p className="text-neutral-400 text-sm font-medium">
             {email && email.includes('@')
               ? 'Great to see you again.'
@@ -169,6 +213,7 @@ function LoginForm() {
             className="mb-6 p-4 bg-red-500/10 border-2 border-red-500/30 rounded-xl flex items-start gap-3"
           >
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+
             <p className="text-sm text-red-200 font-semibold">{errorMsg}</p>
           </motion.div>
         )}
@@ -184,13 +229,14 @@ function LoginForm() {
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-neutral-500" />
               </div>
+
               <input
                 ref={emailRef}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="block w-full pl-11 pr-4 py-3 bg-neutral-900/50 border-2 border-neutral-850 hover:border-[#ff5a00]/40 focus:border-[#ff5a00] rounded-xl text-white placeholder-neutral-500 transition-all outline-none font-medium focus:ring-2 focus:ring-[#ff5a00]/10"
+                className="block w-full pl-11 pr-4 py-3 bg-neutral-900/50 border-2 border-neutral-850 hover:border-comet-orange/40 focus:border-comet-orange rounded-xl text-white placeholder-neutral-500 transition-all outline-none font-medium focus:ring-2 focus:ring-comet-orange/10"
                 required
                 disabled={loading}
               />
@@ -200,15 +246,17 @@ function LoginForm() {
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <KeyRound className="h-5 w-5 text-neutral-500" />
               </div>
+
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="block w-full pl-11 pr-12 py-3 bg-neutral-900/50 border-2 border-neutral-850 hover:border-[#ff5a00]/40 focus:border-[#ff5a00] rounded-xl text-white placeholder-neutral-500 transition-all outline-none font-medium focus:ring-2 focus:ring-[#ff5a00]/10"
+                className="block w-full pl-11 pr-12 py-3 bg-neutral-900/50 border-2 border-neutral-850 hover:border-comet-orange/40 focus:border-comet-orange rounded-xl text-white placeholder-neutral-500 transition-all outline-none font-medium focus:ring-2 focus:ring-comet-orange/10"
                 required
                 disabled={loading}
               />
+
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -223,7 +271,7 @@ function LoginForm() {
             <div className="flex items-center justify-between">
               <Link
                 href="/forgot-password"
-                className={`text-xs font-heading font-black uppercase tracking-wider text-[#ff5a00] hover:text-[#ff7830] transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}
+                className={`text-xs font-heading font-black uppercase tracking-wider text-comet-orange hover:text-comet-orange-light transition-colors ${loading ? 'pointer-events-none opacity-50' : ''}`}
               >
                 Forgot password?
               </Link>
@@ -232,13 +280,14 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-[#ff5a00] hover:bg-[#e65100] disabled:bg-[#ff5a00]/50 disabled:cursor-not-allowed text-white font-heading font-black uppercase tracking-wider py-3.5 px-4 border-2 border-neutral-950 rounded-xl transition-all active:scale-[0.98] shadow-[3px_3px_0px_0px_#000] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none mt-2 cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 bg-comet-orange hover:bg-comet-orange-hover disabled:bg-comet-orange/50 disabled:cursor-not-allowed text-white font-heading font-black uppercase tracking-wider py-3.5 px-4 border-2 border-neutral-950 rounded-xl transition-all active:scale-[0.98] shadow-[3px_3px_0px_0px_#000] hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none mt-2 cursor-pointer"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
                   <LogIn className="w-4 h-4" />
+
                   <span>Sign In</span>
                 </>
               )}
@@ -246,10 +295,12 @@ function LoginForm() {
           </motion.form>
 
           {/* Divider */}
+
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
               <div className="w-full border-t border-neutral-850"></div>
             </div>
+
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-neutral-950 px-3 text-neutral-500 rounded-full border-2 border-neutral-850">
                 Or continue with
@@ -258,13 +309,15 @@ function LoginForm() {
           </div>
 
           {/* Social Logins */}
+
           <div className="grid grid-cols-3 gap-3">
             {/* Google Button */}
+
             <button
               type="button"
               onClick={() => signIn('google')}
               disabled={loading}
-              className="flex items-center justify-center py-2.5 border-2 border-neutral-950 rounded-xl bg-neutral-900 hover:bg-neutral-850 transition-all text-neutral-300 hover:text-white disabled:opacity-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#ff5a00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none cursor-pointer"
+              className="flex items-center justify-center py-2.5 border-2 border-neutral-950 rounded-xl bg-neutral-900 hover:bg-neutral-850 transition-all text-neutral-300 hover:text-white disabled:opacity-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_var(--color-comet-orange)] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none cursor-pointer"
               title="Sign in with Google"
             >
               <svg
@@ -277,14 +330,17 @@ function LoginForm() {
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
                 />
+
                 <path
                   d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
                   fill="#34A853"
                 />
+
                 <path
                   d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.47-.46-.83-.99-1.09-1.63z"
                   fill="#FBBC05"
                 />
+
                 <path
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   fill="#EA4335"
@@ -293,11 +349,12 @@ function LoginForm() {
             </button>
 
             {/* GitHub Button */}
+
             <button
               type="button"
               onClick={() => signIn('github')}
               disabled={loading}
-              className="flex items-center justify-center py-2.5 border-2 border-neutral-950 rounded-xl bg-neutral-900 hover:bg-neutral-850 transition-all text-neutral-300 hover:text-white disabled:opacity-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#ff5a00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none cursor-pointer"
+              className="flex items-center justify-center py-2.5 border-2 border-neutral-950 rounded-xl bg-neutral-900 hover:bg-neutral-850 transition-all text-neutral-300 hover:text-white disabled:opacity-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_var(--color-comet-orange)] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none cursor-pointer"
               title="Sign in with GitHub"
             >
               <svg
@@ -314,11 +371,12 @@ function LoginForm() {
             </button>
 
             {/* Discord Button */}
+
             <button
               type="button"
               onClick={() => signIn('discord')}
               disabled={loading}
-              className="flex items-center justify-center py-2.5 border-2 border-neutral-950 rounded-xl bg-neutral-900 hover:bg-neutral-850 transition-all text-neutral-300 hover:text-white disabled:opacity-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#ff5a00] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none cursor-pointer"
+              className="flex items-center justify-center py-2.5 border-2 border-neutral-950 rounded-xl bg-neutral-900 hover:bg-neutral-850 transition-all text-neutral-300 hover:text-white disabled:opacity-50 shadow-[2px_2px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_var(--color-comet-orange)] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0 active:translate-y-0 active:shadow-none cursor-pointer"
               title="Sign in with Discord"
             >
               <svg
@@ -337,7 +395,7 @@ function LoginForm() {
             Don&apos;t have an account?{' '}
             <Link
               href="/register"
-              className="text-[#ff5a00] hover:text-[#ff7830] font-heading font-black uppercase tracking-wider text-xs transition-colors"
+              className="text-comet-orange hover:text-comet-orange-light font-heading font-black uppercase tracking-wider text-xs transition-colors"
             >
               Create one now
             </Link>
@@ -350,11 +408,13 @@ function LoginForm() {
 
 export default function LoginPage() {
   const shouldReduceMotion = useReducedMotion();
+
   const isReduced = !!shouldReduceMotion;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#09090b] text-[#e8e8f0] p-4 relative overflow-hidden bg-halftone">
+    <div className="min-h-screen flex items-center justify-center bg-comet-ink text-[#e8e8f0] p-4 relative overflow-hidden bg-halftone">
       {/* Background Gradients (Warm Sunset Nebula) */}
+
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <motion.div
           animate={
@@ -362,39 +422,45 @@ export default function LoginPage() {
               ? {}
               : {
                   scale: [1, 1.1, 1],
+
                   rotate: [0, 5, 0],
                 }
           }
           transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
           className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-lime-500/5 rounded-full blur-[140px]"
         />
+
         <motion.div
           animate={
             isReduced
               ? {}
               : {
                   scale: [1, 1.15, 1],
+
                   rotate: [0, -8, 0],
                 }
           }
           transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#ff5a00]/5 rounded-full blur-[140px]"
+          className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-comet-orange/5 rounded-full blur-[140px]"
         />
       </div>
 
       {/* Back to Home Link */}
+
       <Link
         href="/"
-        className="absolute top-6 left-6 inline-flex items-center gap-2 rounded-xl border-2 border-neutral-850 bg-neutral-950/40 px-4 py-2 text-xs font-heading font-black uppercase text-neutral-300 hover:text-white hover:border-[#ff5a00] transition-all z-50 cursor-pointer"
+        className="absolute top-6 left-6 inline-flex items-center gap-2 rounded-xl border-2 border-neutral-850 bg-neutral-950/40 px-4 py-2 text-xs font-heading font-black uppercase text-neutral-300 hover:text-white hover:border-comet-orange transition-all z-50 cursor-pointer"
       >
         <ArrowLeft size={14} />
+
         <span>Back to home</span>
       </Link>
 
       <Suspense
         fallback={
-          <div className="bg-neutral-950 border-3 border-neutral-950 p-8 rounded-[2rem] shadow-[8px_8px_0px_0px_#ff5a00] relative z-10 w-full max-w-md flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-[#ff5a00]/20 border-t-[#ff5a00] rounded-full animate-spin" />
+          <div className="bg-neutral-950 border-3 border-neutral-950 p-8 rounded-[2rem] shadow-[8px_8px_0px_0px_var(--color-comet-orange)] relative z-10 w-full max-w-md flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-comet-orange/20 border-t-comet-orange rounded-full animate-spin" />
+
             <p className="text-neutral-400 text-sm font-semibold">Loading login...</p>
           </div>
         }

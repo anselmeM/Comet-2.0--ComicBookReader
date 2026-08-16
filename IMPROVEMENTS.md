@@ -51,10 +51,15 @@ first). **Effort: M — convention PR.**
   TTI low as more content is added)
 - Hero typography/visual pass (LCP element is the h1 — keep it transform-only)
 
-### A7. Theme & consistency
+### A7. Theme & consistency ✅ (hex audit; skeleton pass open)
 - Audit hardcoded hexes (`#ff5a00`, `#a3e635`, `#eab308`, `#ef4444`, …) against
-  tokens; move to `@theme` where they're used repeatedly
-- Consistent loading skeletons vs spinners (one pattern per context)
+  tokens; move to `@theme` where they're used repeatedly — **done**: 9 brand
+  tokens (`comet-orange`, `-orange-hover/light`, `comet-lime`, `-lime-light`,
+  `comet-gold`, `comet-red`, `comet-ink`, `comet-ink-2`) added to `globals.css`;
+  ~214 hardcoded hexes across the landing/auth pages → `utility-comet-*`
+  classes (sticker shadows + framer `borderColor` use `var(--color-*)`). Only
+  runtime canvas paints in the sandbox demo keep literal hexes.
+- Consistent loading skeletons vs spinners (one pattern per context) — still open.
 
 ### A8. PWA / offline
 - Offline reading: cache downloaded comics for offline mode (IndexedDB + SW)
