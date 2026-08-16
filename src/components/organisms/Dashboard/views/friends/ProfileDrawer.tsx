@@ -122,7 +122,7 @@ export const ProfileDrawer = ({ userId, onClose, onMessage }: ProfileDrawerProps
                         {userProfile.name || 'Anonymous'}
                       </h2>
 
-                      <p className="text-xs font-bold text-comet-accent/80 uppercase tracking-widest drop-shadow-md">
+                      <p className="text-xs font-bold text-white/85 uppercase tracking-widest drop-shadow-md">
                         Joined {new Date(userProfile.createdAt).toLocaleDateString()}
                       </p>
                     </div>
