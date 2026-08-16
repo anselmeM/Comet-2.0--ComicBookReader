@@ -103,10 +103,14 @@ Fail fast with a clear message when critical env is missing in production
 LCP 4.5→4.0s (h1 transform-only), TBT 6.9→0.2s (CSS-compositor decorations),
 TTI 13→4.5s, lazy sandbox (−440 lines page.tsx), tightened Lighthouse budgets.
 
-### C2. `library/upload` — stop 1GB in-memory buffering (P1)
-Upload buffers the whole archive in memory (1 GB cap). Stream to storage (S3
-multipart / temp file) instead. Also the least-tested storage surface — add
-route tests (infra exists: `src/test/api-helpers.ts`).
+### C2. `library/upload` — stop 1GB in-memory buffering (P1) ✅
+The live upload path was already streaming: `useCloudSync` multipart-uploads
+via presigned per-part PUTs (10 MB, retried), so the server never holds the
+file. The old `POST /api/library/upload` (whole-file `formData` + `Buffer` in
+memory) had zero callers — removed it and its tests. Its 1 GB cap now lives on
+the live path (`multipart/init` → 413) with 5 new route tests (auth, fields,
+size cap, ownership, presigned response). Client-side magic-byte validation
+(`validateComicArchive`, pipeline step 1) still guards format integrity.
 
 ### C3. User-search N+1 (~30 queries) (P1)
 `/api/users/search` batches friend lookups; currently a query per result.
