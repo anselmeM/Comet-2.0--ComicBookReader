@@ -4,7 +4,11 @@ import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 /**
- * GET /api/friends/[friendId]/messages — Fetch DM history with a specific friend
+ * GET /api/friends/[friendId]/messages — Fetch DM history with a specific friend.
+ *
+ * Cursor pagination: newest-first, `?limit=` (default 50, max 100) and
+ * `?cursor=<createdAt ISO>` to page into older messages. The response is
+ * `{ messages, nextCursor }` — `nextCursor` is null when there is no older page.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ friendId: string }> }) {
   try {
@@ -27,14 +31,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ frie
       return NextResponse.json({ error: 'You are not friends with this user' }, { status: 403 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const cursor = searchParams.get('cursor');
+    const limit = Math.min(Math.max(Number(searchParams.get('limit') ?? 50), 1), 100);
+
     const messages = await db.directMessage.findMany({
       where: {
         OR: [
           { senderId: session.user.id, receiverId: friendId },
           { senderId: friendId, receiverId: session.user.id },
         ],
+        ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
       include: {
         sender: {
           select: {
@@ -45,6 +55,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ frie
         },
       },
     });
+
+    const nextCursor =
+      messages.length === limit && messages.length > 0
+        ? messages[messages.length - 1].createdAt.toISOString()
+        : null;
 
     // Mark received messages as read
     const unreadMessages = messages.filter((m) => m.receiverId === session.user.id && !m.isRead);
@@ -57,7 +72,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ frie
       });
     }
 
-    return NextResponse.json({ messages });
+    return NextResponse.json({ messages, nextCursor });
   } catch (error) {
     logger.error('Messages GET error', {}, error as Error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

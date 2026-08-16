@@ -72,6 +72,11 @@ export function createMockDb() {
       findMany: vi.fn(),
       updateMany: vi.fn(),
     },
+    directMessage: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+      updateMany: vi.fn(),
+    },
     friendship: {
       create: vi.fn(),
       findMany: vi.fn(),
