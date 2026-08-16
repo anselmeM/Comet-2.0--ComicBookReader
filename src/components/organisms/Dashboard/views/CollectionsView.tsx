@@ -45,6 +45,8 @@ import { CreateCollectionModal } from './collections/CreateCollectionModal';
 
 import { DroppableCollectionButton } from './collections/DroppableCollectionButton';
 
+import { CollectionsToolbar } from './collections/CollectionsToolbar';
+
 import { useStats } from '@/hooks/useStats';
 
 import { useResetProgress, useUpdateProgress } from '@/hooks/useLibrary';
@@ -630,117 +632,18 @@ export const CollectionsView = ({
           </div>
         </div>
 
-        {/* View & Settings Control Bar */}
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-neutral-100/60 border border-neutral-150 p-4 rounded-3xl shadow-sm">
-          {/* Left: View Mode Toggles */}
-
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-1.5 p-1 bg-white rounded-xl border border-neutral-150 shadow-inner">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === 'grid'
-                    ? 'bg-comet-accent/100 text-white shadow-md'
-                    : 'text-neutral-400 hover:text-neutral-700'
-                }`}
-                title="Grid View"
-              >
-                <LayoutGrid size={18} />
-              </button>
-
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === 'list'
-                    ? 'bg-comet-accent/100 text-white shadow-md'
-                    : 'text-neutral-400 hover:text-neutral-700'
-                }`}
-                title="List View"
-              >
-                <List size={18} />
-              </button>
-            </div>
-
-            {/* Grid Density Controls */}
-
-            {viewMode === 'grid' && (
-              <div className="flex items-center gap-1 p-1 bg-white rounded-xl border border-neutral-150 shadow-inner">
-                <button
-                  onClick={() => setDensity('compact')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                    density === 'compact'
-                      ? 'bg-neutral-800 text-white shadow-sm'
-                      : 'text-neutral-400 hover:text-neutral-700'
-                  }`}
-                >
-                  Compact
-                </button>
-
-                <button
-                  onClick={() => setDensity('default')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                    density === 'default'
-                      ? 'bg-neutral-800 text-white shadow-sm'
-                      : 'text-neutral-400 hover:text-neutral-700'
-                  }`}
-                >
-                  Default
-                </button>
-
-                <button
-                  onClick={() => setDensity('large')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                    density === 'large'
-                      ? 'bg-neutral-800 text-white shadow-sm'
-                      : 'text-neutral-400 hover:text-neutral-700'
-                  }`}
-                >
-                  Large
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Right: Details Toggles */}
-
-          <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-neutral-500 uppercase tracking-widest">
-            <span className="text-[10px] text-neutral-400 font-black">Show Details:</span>
-
-            <label className="flex items-center gap-2 cursor-pointer hover:text-neutral-700 select-none">
-              <input
-                type="checkbox"
-                checked={showPageCount}
-                onChange={(e) => setShowPageCount(e.target.checked)}
-                className="rounded border-neutral-300 text-comet-accent focus:ring-comet-accent cursor-pointer w-4 h-4"
-              />
-
-              <span>Pages</span>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer hover:text-neutral-700 select-none">
-              <input
-                type="checkbox"
-                checked={showYear}
-                onChange={(e) => setShowYear(e.target.checked)}
-                className="rounded border-neutral-300 text-comet-accent focus:ring-comet-accent cursor-pointer w-4 h-4"
-              />
-
-              <span>Year</span>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer hover:text-neutral-700 select-none">
-              <input
-                type="checkbox"
-                checked={showProgress}
-                onChange={(e) => setShowProgress(e.target.checked)}
-                className="rounded border-neutral-300 text-comet-accent focus:ring-comet-accent cursor-pointer w-4 h-4"
-              />
-
-              <span>Progress %</span>
-            </label>
-          </div>
-        </div>
+        <CollectionsToolbar
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          density={density}
+          onDensityChange={setDensity}
+          showPageCount={showPageCount}
+          onShowPageCountChange={setShowPageCount}
+          showYear={showYear}
+          onShowYearChange={setShowYear}
+          showProgress={showProgress}
+          onShowProgressChange={setShowProgress}
+        />
 
         {/* Collection Grid / List View */}
 
