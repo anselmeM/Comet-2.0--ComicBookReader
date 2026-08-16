@@ -156,10 +156,18 @@ throttle, webhook hardening — 163+ tests.
 
 ## E. Architecture / Code quality
 
-### E1. Kill the remaining `any`s (~100) (P1)
+### E1. Kill the remaining `any`s (~100) (P1) ✅
 Worst offenders: `ReaderViewport` (done), `page.tsx` sandbox remnants, route
 handlers (`(subscription as any)` — done in webhook), DashboardLayout
-`comics as any`/`collections as any`. Add `no-explicit-any` to eslint
+`comics as any`/`collections as any`. Add `no-explicit-any` to eslint.
+Zero `any` left in production code (was ~100): typed `matchConditions`
+(`Prisma.ComicCommentWhereInput[]`), the library search filters + DTO mapping
+(no more `mappedComics as any`), cache store (`CacheEntry<unknown>`),
+`withAuth` generics (`unknown` defaults), logger meta (`Record<string, unknown>`),
+icon map (`LucideIcon`), shared `BeforeInstallPromptEvent` type, SW
+`__WB_MANIFEST`/sync handler, and the Stripe pinned API version
+(`@ts-expect-error`, the SDK's documented pattern). `no-explicit-any` is now
+an eslint **error** for production code (off only in test files).
 incrementally (allowlist → zero).
 
 ### E2. Duplication extraction (P2)

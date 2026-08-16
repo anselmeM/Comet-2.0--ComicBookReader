@@ -1,8 +1,11 @@
 'use client';
 
 import React from 'react';
+
 import { motion, Variants } from 'framer-motion';
+
 import { BADGES } from '@/lib/badges';
+
 import {
   Trophy,
   Flame,
@@ -15,30 +18,47 @@ import {
   Lock,
 } from 'lucide-react';
 
-const iconMap: Record<string, any> = {
+import type { LucideIcon } from 'lucide-react';
+
+const iconMap: Record<string, LucideIcon> = {
   Trophy,
+
   Flame,
+
   FlameKindling: Flame, // fallback
+
   Moon,
+
   BookOpenCheck,
+
   Archive,
+
   SunMedium,
+
   Timer,
+
   LibraryBig,
 };
 
 const tierColors: Record<string, string> = {
   BRONZE: 'from-amber-900/40 to-amber-950/40 border-amber-700/50 text-amber-500',
+
   SILVER: 'from-slate-700/40 to-slate-800/40 border-slate-500/50 text-slate-300',
+
   GOLD: 'from-yellow-900/40 to-yellow-950/40 border-yellow-600/50 text-yellow-400',
+
   PLATINUM: 'from-cyan-900/40 to-blue-900/40 border-cyan-500/50 text-cyan-300',
 };
 
 // Sort tiers conceptually:
+
 const tierOrder: Record<string, number> = {
   PLATINUM: 0,
+
   GOLD: 1,
+
   SILVER: 2,
+
   BRONZE: 3,
 };
 
@@ -52,16 +72,22 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
   );
 
   const earnedCount = earnedBadges.length;
+
   const totalCount = BADGES.length;
+
   const progressPercent = Math.round((earnedCount / totalCount) * 100);
 
   // Group badges by Tier
+
   const groupedBadges = BADGES.reduce(
     (acc, badge) => {
       if (!acc[badge.tier]) acc[badge.tier] = [];
+
       acc[badge.tier].push(badge);
+
       return acc;
     },
+
     {} as Record<string, typeof BADGES>,
   );
 
@@ -69,8 +95,10 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
+
     show: {
       opacity: 1,
+
       transition: {
         staggerChildren: 0.1,
       },
@@ -79,22 +107,27 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
 
   const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
+
     show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
   };
 
   return (
     <div className="space-y-12">
       {/* Progress Header */}
+
       <div className="bg-comet-surface/40 border border-comet-border rounded-2xl p-6 sm:p-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 relative z-10">
           <div>
             <h2 className="text-2xl font-bold text-comet-text mb-1">Overall Progress</h2>
+
             <p className="text-comet-muted text-sm font-medium">
               You have unlocked <span className="text-indigo-400">{earnedCount}</span> out of{' '}
               {totalCount} badges.
             </p>
           </div>
+
           <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 drop-shadow-sm">
             {progressPercent}%
           </div>
@@ -111,12 +144,14 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
       </div>
 
       {/* Tiers */}
+
       {sortedTiers.map((tier) => (
         <div key={tier} className="space-y-6">
           <div className="flex items-center gap-4">
             <h2 className="text-2xl font-bold tracking-tight text-comet-text capitalize">
               {tier.toLowerCase()} Tier
             </h2>
+
             <div className="h-px bg-comet-border flex-1" />
           </div>
 
@@ -128,7 +163,9 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
           >
             {groupedBadges[tier].map((badge) => {
               const earnedAt = earnedBadgeMap.get(badge.id);
+
               const isEarned = !!earnedAt;
+
               const Icon = iconMap[badge.icon] || Trophy;
 
               return (
@@ -172,11 +209,14 @@ export function AchievementsList({ earnedBadges }: AchievementsListProps) {
                     >
                       {badge.tier}
                     </span>
+
                     {earnedAt && (
                       <span className="text-[11px] text-comet-muted font-medium">
                         {new Intl.DateTimeFormat('en-US', {
                           month: 'short',
+
                           day: 'numeric',
+
                           year: 'numeric',
                         }).format(earnedAt)}
                       </span>

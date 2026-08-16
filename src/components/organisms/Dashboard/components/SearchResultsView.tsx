@@ -11,7 +11,7 @@ import { DashboardComicCard, DashboardComic } from '@/components/molecules/Dashb
 import { SearchResult } from '@/lib/search';
 
 interface SearchResultsViewProps {
-  results: SearchResult<{ id: string; title: string; isFavorite?: boolean }>;
+  results: SearchResult<DashboardComic>;
 
   onClearSearch: () => void;
 
@@ -74,7 +74,7 @@ export function SearchResultsView({
             {results.comics.map((comic) => (
               <DashboardComicCard
                 key={comic.id}
-                comic={comic as any}
+                comic={comic}
                 isFav={comic.isFavorite}
                 onToggleFav={() => onToggleFavorite(comic.id, !!comic.isFavorite)}
                 isEditMode={isEditMode}
