@@ -41,6 +41,10 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 
 import { useCollections } from '@/hooks/useCollections';
 
+import { CreateCollectionModal } from './collections/CreateCollectionModal';
+
+import { DroppableCollectionButton } from './collections/DroppableCollectionButton';
+
 import { useStats } from '@/hooks/useStats';
 
 import { useResetProgress, useUpdateProgress } from '@/hooks/useLibrary';
@@ -54,44 +58,6 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import Image from 'next/image';
 
 import Link from 'next/link';
-
-interface DroppableCollectionButtonProps {
-  id: string;
-
-  isActive: boolean;
-
-  onClick: () => void;
-
-  children: React.ReactNode;
-
-  className?: string;
-}
-
-const DroppableCollectionButton = ({
-  id,
-
-  isActive,
-
-  onClick,
-
-  children,
-
-  className = '',
-}: DroppableCollectionButtonProps) => {
-  const { isOver, setNodeRef } = useDroppable({ id });
-
-  return (
-    <button
-      ref={setNodeRef}
-      onClick={onClick}
-      className={`${className} relative transition-all cursor-pointer ${
-        isOver ? 'ring-4 ring-comet-accent ring-offset-2 scale-105 bg-comet-accent/8' : ''
-      }`}
-    >
-      {children}
-    </button>
-  );
-};
 
 interface CollectionsViewProps {
   comics: DashboardComic[];
@@ -164,8 +130,6 @@ export const CollectionsView = ({
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-  const [newCollectionName, setNewCollectionName] = useState('');
 
   const { data: currentCollectionData, isLoading: isLoadingCollection } = useCollection(
     selectedCollectionId && !selectedCollectionId.startsWith('smart-')
@@ -385,24 +349,6 @@ export const CollectionsView = ({
 
     overscan: 6,
   });
-
-  const handleCreateCollection = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!newCollectionName.trim()) return;
-
-    try {
-      await createCollection.mutateAsync({ name: newCollectionName });
-
-      triggerNotification(`Collection "${newCollectionName}" created!`, 'success');
-
-      setNewCollectionName('');
-
-      setIsCreateModalOpen(false);
-    } catch (err) {
-      triggerNotification(getErrorMessage(err) || 'Failed to create collection', 'error');
-    }
-  };
 
   const handleDeleteCollection = async (id: string, name: string) => {
     if (
@@ -1088,56 +1034,10 @@ export const CollectionsView = ({
 
         {/* Create Modal */}
 
-        <AnimatePresence>
-          {isCreateModalOpen && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden"
-              >
-                <div className="p-8 border-b border-neutral-50 flex items-center justify-between">
-                  <h3 className="text-2xl font-black text-neutral-900 tracking-tighter italic">
-                    New Collection
-                  </h3>
-
-                  <button
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="p-2 hover:bg-neutral-50 rounded-xl transition-all text-neutral-400"
-                  >
-                    <X size={24} />
-                  </button>
-                </div>
-
-                <form onSubmit={handleCreateCollection} className="p-8 space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 ml-1">
-                      Collection Name
-                    </label>
-
-                    <input
-                      type="text"
-                      autoFocus
-                      value={newCollectionName}
-                      onChange={(e) => setNewCollectionName(e.target.value)}
-                      placeholder="e.g. Spider-Man Favorites"
-                      className="w-full bg-neutral-50 border-none rounded-2xl py-4 px-6 text-base font-bold text-neutral-800 placeholder:text-neutral-300 focus:ring-4 focus:ring-comet-accent/5 transition-all outline-none"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={!newCollectionName.trim() || createCollection.isPending}
-                    className="w-full bg-comet-accent/100 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-comet-accent disabled:opacity-50 transition-all shadow-xl shadow-comet-accent/20"
-                  >
-                    {createCollection.isPending ? 'Creating...' : 'Create Collection'}
-                  </button>
-                </form>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+        <CreateCollectionModal
+          open={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+        />
       </div>
     </DndContext>
   );
