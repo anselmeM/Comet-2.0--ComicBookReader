@@ -63,3 +63,7 @@ blob-report/
 /prisma/prisma/dev.db-shm
 /prisma/prisma/dev.db-wal
 
+
+# agent-local tooling (never commit)
+.reasonix/
+reasonix.toml
