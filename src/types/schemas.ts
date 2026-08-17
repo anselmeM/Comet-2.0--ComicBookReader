@@ -2,9 +2,15 @@ import { z } from 'zod';
 
 /**
 
+
+
  * @file Shared Zod Schemas (API Contracts)
 
+
+
  * Used for both runtime validation and type inference.
+
+
 
  */
 
@@ -151,7 +157,7 @@ export const ReactToActivitySchema = z.object({
 });
 
 export const PostCommentSchema = z.object({
-  message: z.string().min(1, 'Message content is required').max(500, 'Comment is too long'),
+  message: z.string().trim().min(1, 'Message content is required').max(500, 'Comment is too long'),
 });
 
 export const UploadSchema = z.object({
