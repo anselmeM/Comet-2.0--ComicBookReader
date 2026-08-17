@@ -18,14 +18,6 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-vi.mock('@/lib/cache', () => ({
-  getCache: vi.fn(),
-
-  setCache: vi.fn(),
-
-  genCacheKey: vi.fn(),
-}));
-
 const auth = vi.hoisted(() => ({ validateSession: vi.fn() }));
 
 vi.mock('@/lib/auth-utils', () => ({
