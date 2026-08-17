@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Folder,
   BookOpen,
-  CheckCircle2,
   Edit3,
   Plus,
   Trash2,
@@ -22,7 +21,6 @@ import {
   BookOpenCheck,
   Check,
   AlertCircle,
-  Loader2,
   CloudOff,
   Circle,
 } from 'lucide-react';
@@ -37,8 +35,6 @@ import {
   useDroppable,
 } from '@dnd-kit/core';
 
-import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
-
 import { useCollections } from '@/hooks/useCollections';
 
 import { CreateCollectionModal } from './collections/CreateCollectionModal';
@@ -47,6 +43,8 @@ import { DroppableCollectionButton } from './collections/DroppableCollectionButt
 
 import { CollectionsToolbar } from './collections/CollectionsToolbar';
 
+import { CollectionsGrid } from './collections/CollectionsGrid';
+
 import { useStats } from '@/hooks/useStats';
 
 import { useResetProgress, useUpdateProgress } from '@/hooks/useLibrary';
@@ -54,12 +52,6 @@ import { useResetProgress, useUpdateProgress } from '@/hooks/useLibrary';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { Flame, Clock, Trophy } from 'lucide-react';
-
-import { useVirtualizer } from '@tanstack/react-virtual';
-
-import Image from 'next/image';
-
-import Link from 'next/link';
 
 interface CollectionsViewProps {
   comics: DashboardComic[];
@@ -278,79 +270,15 @@ export const CollectionsView = ({
 
   // Virtualization Scroll Container Ref
 
-  const parentRef = useRef<HTMLDivElement>(null);
-
   // Calculate Grid Column count dynamically
-
-  const columnsCount = useMemo(() => {
-    const isMobile = windowWidth < 640;
-
-    const isTablet = windowWidth >= 640 && windowWidth < 1024;
-
-    const isDesktop = windowWidth >= 1024 && windowWidth < 1536;
-
-    if (density === 'compact') {
-      if (isMobile) return 3;
-
-      if (isTablet) return 5;
-
-      if (isDesktop) return 7;
-
-      return 9;
-    } else if (density === 'large') {
-      if (isMobile) return 1;
-
-      if (isTablet) return 2;
-
-      if (isDesktop) return 4;
-
-      return 5;
-    } else {
-      if (isMobile) return 2;
-
-      if (isTablet) return 3;
-
-      if (isDesktop) return 5;
-
-      return 7;
-    }
-  }, [windowWidth, density]);
 
   // Virtual Grid Rows calculations
 
-  const rowsCount = useMemo(() => {
-    return Math.ceil(activeComics.length / columnsCount);
-  }, [activeComics.length, columnsCount]);
-
   // Row height estimate based on density
-
-  const estimatedRowHeight = useMemo(() => {
-    return density === 'compact' ? 240 : density === 'large' ? 440 : 340;
-  }, [density]);
 
   // Row Virtualizer for Grid view
 
-  const rowVirtualizer = useVirtualizer({
-    count: rowsCount,
-
-    getScrollElement: () => parentRef.current,
-
-    estimateSize: () => estimatedRowHeight,
-
-    overscan: 3,
-  });
-
   // Row Virtualizer for List view
-
-  const rowVirtualizerList = useVirtualizer({
-    count: activeComics.length,
-
-    getScrollElement: () => parentRef.current,
-
-    estimateSize: () => 64,
-
-    overscan: 6,
-  });
 
   const handleDeleteCollection = async (id: string, name: string) => {
     if (
@@ -371,53 +299,6 @@ export const CollectionsView = ({
   };
 
   // Sync Status Badge for List row
-
-  const renderListSyncBadge = (syncStatus?: string) => {
-    const badgeBase =
-      'flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm';
-
-    if (syncStatus === 'SYNCED') {
-      return (
-        <div className={`${badgeBase} bg-green-500/10 text-green-600 border border-green-500/20`}>
-          <Check size={9} strokeWidth={3} />
-
-          <span>Synced</span>
-        </div>
-      );
-    }
-
-    if (syncStatus === 'PENDING') {
-      return (
-        <div
-          className={`${badgeBase} bg-amber-500/10 text-amber-600 border border-amber-500/20 animate-pulse`}
-        >
-          <Loader2 size={9} className="animate-spin" />
-
-          <span>Syncing</span>
-        </div>
-      );
-    }
-
-    if (syncStatus === 'ERROR') {
-      return (
-        <div className={`${badgeBase} bg-red-500/10 text-red-600 border border-red-500/20`}>
-          <AlertCircle size={9} />
-
-          <span>Error</span>
-        </div>
-      );
-    }
-
-    // LOCAL
-
-    return (
-      <div className={`${badgeBase} bg-zinc-100 text-zinc-500 border border-zinc-200`}>
-        <CloudOff size={9} />
-
-        <span>Local</span>
-      </div>
-    );
-  };
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -691,248 +572,21 @@ export const CollectionsView = ({
             )}
           </div>
 
-          {selectedCollectionId && isLoadingCollection ? (
-            <div className="py-20 flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-4 border-comet-accent border-t-transparent rounded-full animate-spin" />
-
-              <p className="text-sm font-black text-neutral-300 uppercase tracking-widest">
-                Loading Collection...
-              </p>
-            </div>
-          ) : activeComics.length === 0 ? (
-            <div className="col-span-full py-40 text-center bg-white/50 rounded-[3rem] border-2 border-dashed border-neutral-100">
-              <Folder size={64} className="mx-auto mb-4 text-neutral-200" />
-
-              <h4 className="text-xl font-black text-neutral-400 uppercase tracking-tighter italic">
-                This collection is empty
-              </h4>
-
-              <p className="text-neutral-400 mt-2">
-                Add comics to this collection using the bulk action menu.
-              </p>
-            </div>
-          ) : viewMode === 'grid' ? (
-            /* ── VIRTUALIZED GRID VIEW ── */
-
-            <div
-              ref={parentRef}
-              className="overflow-y-auto pr-2 h-[65vh] scrollbar-thin rounded-2xl relative"
-            >
-              <div
-                style={{
-                  height: `${rowVirtualizer.getTotalSize()}px`,
-
-                  width: '100%',
-
-                  position: 'relative',
-                }}
-              >
-                <SortableContext
-                  items={activeComics.map((c) => c.id)}
-                  strategy={rectSortingStrategy}
-                >
-                  {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-                    const rowIndex = virtualItem.index;
-
-                    const startIdx = rowIndex * columnsCount;
-
-                    const rowComics = activeComics.slice(startIdx, startIdx + columnsCount);
-
-                    return (
-                      <div
-                        key={virtualItem.key}
-                        data-index={rowIndex}
-                        ref={rowVirtualizer.measureElement}
-                        className="absolute top-0 left-0 w-full"
-                        style={{
-                          transform: `translateY(${virtualItem.start}px)`,
-
-                          paddingBottom: '24px',
-                        }}
-                      >
-                        <div
-                          className="grid gap-6"
-                          style={{
-                            gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))`,
-                          }}
-                        >
-                          {rowComics.map((comic) => (
-                            <DashboardComicCard
-                              key={comic.id}
-                              comic={comic}
-                              onNotification={triggerNotification}
-                              onRestoreFromCloud={onRestoreFromCloud}
-                              isFav={comic.isFavorite}
-                              onToggleFav={() => toggleFavorite(comic.id, !!comic.isFavorite)}
-                              isEditMode={isEditMode}
-                              isSelected={selectedIds.includes(comic.id)}
-                              onToggleSelect={(id) =>
-                                setSelectedIds((prev) =>
-                                  prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
-                                )
-                              }
-                              density={density}
-                              showPageCount={showPageCount}
-                              showYear={showYear}
-                              showProgress={showProgress}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </SortableContext>
-              </div>
-            </div>
-          ) : (
-            /* ── VIRTUALIZED SPREADSHEET LIST VIEW ── */
-
-            <div
-              ref={parentRef}
-              className="overflow-y-auto pr-2 h-[65vh] border border-neutral-150 rounded-[2rem] bg-white shadow-inner scrollbar-thin relative"
-            >
-              <div className="min-w-[800px] w-full">
-                {/* Sticky Table Header */}
-
-                <div className="sticky top-0 bg-neutral-900 text-white flex items-center px-6 py-4 font-bold text-xs uppercase tracking-widest z-30 select-none">
-                  <div className="w-[8%]">Select</div>
-
-                  <div className="w-[37%]">Title</div>
-
-                  <div className="w-[20%]">Series / Author</div>
-
-                  <div className="w-[10%] text-center">Pages</div>
-
-                  <div className="w-[10%] text-center">Year</div>
-
-                  <div className="w-[15%] flex justify-end pr-4">Sync Status</div>
-                </div>
-
-                {/* Virtualized Body */}
-
-                <div
-                  style={{
-                    height: `${rowVirtualizerList.getTotalSize()}px`,
-
-                    width: '100%',
-
-                    position: 'relative',
-                  }}
-                >
-                  {rowVirtualizerList.getVirtualItems().map((virtualItem) => {
-                    const comic = activeComics[virtualItem.index];
-
-                    if (!comic) return null;
-
-                    const isSelected = selectedIds.includes(comic.id);
-
-                    const progressPercent = comic.progress
-                      ? Math.round((comic.progress.lastPage / comic.progress.totalPages) * 100)
-                      : 0;
-
-                    return (
-                      <div
-                        key={virtualItem.key}
-                        data-index={virtualItem.index}
-                        ref={rowVirtualizerList.measureElement}
-                        className={`absolute top-0 left-0 w-full flex items-center px-6 py-3 border-b border-neutral-100 hover:bg-neutral-50 transition-colors ${
-                          isSelected ? 'bg-comet-accent/6' : ''
-                        }`}
-                        style={{
-                          transform: `translateY(${virtualItem.start}px)`,
-
-                          height: `${virtualItem.size}px`,
-                        }}
-                      >
-                        {/* Checkbox Select */}
-
-                        <div className="w-[8%]">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedIds((prev) =>
-                                prev.includes(comic.id)
-                                  ? prev.filter((i) => i !== comic.id)
-                                  : [...prev, comic.id],
-                              )
-                            }
-                            className="focus:outline-none"
-                          >
-                            {isSelected ? (
-                              <CheckCircle2 size={20} className="text-comet-accent fill-white" />
-                            ) : (
-                              <Circle size={20} className="text-neutral-200 fill-white" />
-                            )}
-                          </button>
-                        </div>
-
-                        {/* Cover Image & Title */}
-
-                        <div className="w-[37%] flex items-center gap-3">
-                          <div className="relative w-8 h-12 rounded-md overflow-hidden bg-neutral-100 shrink-0 border border-neutral-250">
-                            {comic.coverUrl ? (
-                              <Image
-                                src={comic.coverUrl}
-                                alt={comic.title}
-                                fill
-                                sizes="40px"
-                                className="object-cover"
-                                unoptimized
-                              />
-                            ) : (
-                              <BookOpen
-                                size={16}
-                                className="text-neutral-400 absolute inset-0 m-auto"
-                              />
-                            )}
-                          </div>
-
-                          <div className="flex flex-col truncate">
-                            <Link
-                              href={`/reader/${comic.id}`}
-                              className="font-bold text-sm text-neutral-800 hover:text-comet-accent truncate"
-                            >
-                              {comic.title}
-                            </Link>
-
-                            {showProgress && progressPercent > 0 && (
-                              <span className="text-[10px] text-comet-accent font-extrabold uppercase mt-0.5">
-                                {progressPercent === 100 ? 'Read' : `${progressPercent}% Complete`}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Author */}
-
-                        <div className="w-[20%] text-sm font-semibold text-neutral-600 truncate">
-                          {comic.author || 'Unknown'}
-                        </div>
-
-                        {/* Pages */}
-
-                        <div className="w-[10%] text-center text-sm font-semibold text-neutral-500">
-                          {showPageCount ? comic.pageCount : '-'}
-                        </div>
-
-                        {/* Year */}
-
-                        <div className="w-[10%] text-center text-sm font-semibold text-neutral-500">
-                          {showYear && comic.year ? comic.year : '-'}
-                        </div>
-
-                        {/* Sync Badge */}
-
-                        <div className="w-[15%] flex justify-end items-center gap-2 pr-4">
-                          {renderListSyncBadge(comic.syncStatus)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
+          <CollectionsGrid
+            comics={activeComics}
+            isLoadingCollection={!!selectedCollectionId && isLoadingCollection}
+            viewMode={viewMode}
+            density={density}
+            showPageCount={showPageCount}
+            showYear={showYear}
+            showProgress={showProgress}
+            isEditMode={isEditMode}
+            selectedIds={selectedIds}
+            setSelectedIds={setSelectedIds}
+            toggleFavorite={toggleFavorite}
+            onRestoreFromCloud={onRestoreFromCloud}
+            triggerNotification={triggerNotification}
+          />
         </section>
 
         {/* Create Modal */}
