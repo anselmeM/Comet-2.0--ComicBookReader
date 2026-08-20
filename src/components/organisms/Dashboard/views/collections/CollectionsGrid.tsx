@@ -38,11 +38,9 @@ interface CollectionsGridProps {
   selectedIds: string[];
 
   setSelectedIds: (fn: (prev: string[]) => string[]) => void;
-
   toggleFavorite: (id: string, currentStatus: boolean) => void;
-
   onRestoreFromCloud?: (id: string, title: string) => Promise<void>;
-
+  onSyncToCloud?: (id: string) => Promise<void>;
   triggerNotification: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
@@ -111,9 +109,8 @@ export const CollectionsGrid = ({
   setSelectedIds,
 
   toggleFavorite,
-
   onRestoreFromCloud,
-
+  onSyncToCloud,
   triggerNotification,
 }: CollectionsGridProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -249,6 +246,7 @@ export const CollectionsGrid = ({
                         comic={comic}
                         onNotification={triggerNotification}
                         onRestoreFromCloud={onRestoreFromCloud}
+                        onSyncToCloud={onSyncToCloud}
                         isFav={comic.isFavorite}
                         onToggleFav={() => toggleFavorite(comic.id, !!comic.isFavorite)}
                         isEditMode={isEditMode}

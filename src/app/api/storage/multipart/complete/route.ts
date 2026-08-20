@@ -31,14 +31,20 @@ export async function POST(req: Request) {
     }
 
     const normalizedParts = parts
-      .filter((p): p is { PartNumber: number; ETag: string } => p && typeof p.PartNumber === 'number' && typeof p.ETag === 'string')
+      .filter(
+        (p): p is { PartNumber: number; ETag: string } =>
+          p && typeof p.PartNumber === 'number' && typeof p.ETag === 'string',
+      )
       .sort((a, b) => a.PartNumber - b.PartNumber);
 
     if (normalizedParts.length !== parts.length) {
       return NextResponse.json({ error: 'Invalid parts list' }, { status: 400 });
     }
 
-    await completeMultipartUpload(comic.storageKey as string, uploadId, normalizedParts);
+    const isMock = typeof uploadId === 'string' && uploadId.startsWith('mock-upload-');
+    if (!isMock && comic.storageKey) {
+      await completeMultipartUpload(comic.storageKey, uploadId, normalizedParts);
+    }
 
     await db.comic.update({
       where: { id: comicId },

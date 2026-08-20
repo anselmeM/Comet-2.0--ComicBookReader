@@ -220,11 +220,7 @@ export async function runComicPipeline(file: File, deps: PipelineDeps): Promise<
     deps.uploadToCloud &&
     (deps.existingComicId || !deps.skipServerPOST)
   ) {
-    if (deps.existingComicId) {
-      await deps.uploadToCloud(serverComicId, file);
-    } else {
-      deps.uploadToCloud(serverComicId, file);
-    }
+    await deps.uploadToCloud(serverComicId, file);
   }
 
   return serverComicId;

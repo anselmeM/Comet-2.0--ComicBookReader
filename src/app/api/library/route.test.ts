@@ -28,6 +28,7 @@ vi.mock('@/lib/db', () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
       upsert: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     user: {
       findUnique: vi.fn(),

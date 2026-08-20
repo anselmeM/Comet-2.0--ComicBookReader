@@ -57,6 +57,7 @@ interface DashboardComicCardProps {
   variant?: 'dashboard' | 'standard';
   onNotification?: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   onRestoreFromCloud?: (id: string, title: string) => Promise<void>;
+  onSyncToCloud?: (id: string) => Promise<void>;
   isFav?: boolean;
   onToggleFav?: () => void | Promise<void>;
   isEditMode?: boolean;
@@ -77,6 +78,7 @@ export function DashboardComicCard({
   variant = 'dashboard',
   onNotification,
   onRestoreFromCloud,
+  onSyncToCloud,
   isFav,
   onToggleFav,
   isEditMode,
@@ -132,7 +134,10 @@ export function DashboardComicCard({
       await enrichment.mutateAsync(comic.id);
       if (onNotification) onNotification(`Metadata updated for "${comic.title}"!`, 'success');
     } catch (err) {
-      if (getErrorMessage(err)?.includes('Premium feature') || getErrorMessage(err)?.includes('PREMIUM_REQUIRED')) {
+      if (
+        getErrorMessage(err)?.includes('Premium feature') ||
+        getErrorMessage(err)?.includes('PREMIUM_REQUIRED')
+      ) {
         setIsPremiumModalOpen(true);
       } else {
         if (onNotification)
@@ -161,6 +166,14 @@ export function DashboardComicCard({
     if (onRestoreFromCloud) {
       if (onNotification) onNotification(`Starting restoration of "${comic.title}"...`, 'info');
       onRestoreFromCloud(comic.id, comic.title);
+    }
+  };
+
+  const handleSyncClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (onSyncToCloud) {
+      onSyncToCloud(comic.id);
     }
   };
 
@@ -273,6 +286,16 @@ export function DashboardComicCard({
                   <Sparkles size={16} />
                 )}
               </button>
+              {comic.isLocallyAvailable && comic.syncStatus !== 'SYNCED' && onSyncToCloud && (
+                <button
+                  onClick={handleSyncClick}
+                  className="hidden md:flex p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-green-400 hover:bg-black/80 transition-all"
+                  title={comic.syncStatus === 'ERROR' ? 'Retry cloud sync' : 'Sync to Cloud'}
+                  aria-label={comic.syncStatus === 'ERROR' ? 'Retry cloud sync' : 'Sync to Cloud'}
+                >
+                  <Cloud size={16} />
+                </button>
+              )}
               <button
                 onClick={handleMetadataClick}
                 className="hidden md:flex p-2 bg-black/60 backdrop-blur-md rounded-lg text-white hover:text-blue-400 hover:bg-black/80 transition-all"
@@ -390,6 +413,17 @@ export function DashboardComicCard({
               <Sparkles size={16} />
             )}
           </button>
+
+          {comic.isLocallyAvailable && comic.syncStatus !== 'SYNCED' && onSyncToCloud && (
+            <button
+              onClick={handleSyncClick}
+              className="hidden md:flex p-1.5 bg-white/90 rounded-xl shadow-lg hover:bg-white text-green-600 transition-all"
+              title={comic.syncStatus === 'ERROR' ? 'Retry cloud sync' : 'Sync to Cloud'}
+              aria-label={comic.syncStatus === 'ERROR' ? 'Retry cloud sync' : 'Sync to Cloud'}
+            >
+              <Cloud size={16} />
+            </button>
+          )}
 
           <button
             onClick={handleMetadataClick}

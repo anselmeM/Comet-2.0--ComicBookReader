@@ -17,6 +17,7 @@ const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Expose-Headers', 'ETag, Content-Type, Content-Length');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
@@ -35,7 +36,7 @@ const server = http.createServer((req, res) => {
     }
 
     ensureMockDir();
-    
+
     // Safety check against path traversal: block dot-dot and normalize key
     const normalizedKey = key.replace(/\\/g, '/').replace(/\.\./g, '');
     const filePath = path.join(MOCK_S3_DIR, normalizedKey.replace(/\//g, '_'));
@@ -61,7 +62,7 @@ const server = http.createServer((req, res) => {
         'Content-Disposition': `attachment; filename="${path.basename(key)}"`,
       });
       const readStream = fs.createReadStream(resolvedPath);
-      
+
       readStream.on('error', (err) => {
         console.error('[Mock S3 Server GET Stream Error]', err);
         if (!res.headersSent) {
@@ -71,10 +72,9 @@ const server = http.createServer((req, res) => {
       });
 
       readStream.pipe(res);
-
     } else if (req.method === 'PUT') {
       const writeStream = fs.createWriteStream(resolvedPath);
-      
+
       writeStream.on('error', (err) => {
         console.error('[Mock S3 Server Write Stream Error]', err);
         if (!res.headersSent) {
@@ -88,6 +88,7 @@ const server = http.createServer((req, res) => {
 
       writeStream.on('finish', () => {
         if (!res.headersSent) {
+          res.setHeader('ETag', '"mock-etag"');
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: true }));
         }
@@ -101,7 +102,6 @@ const server = http.createServer((req, res) => {
         }
         writeStream.destroy();
       });
-
     } else if (req.method === 'DELETE') {
       if (fs.existsSync(resolvedPath)) {
         fs.unlinkSync(resolvedPath);

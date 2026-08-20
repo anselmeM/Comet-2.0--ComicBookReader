@@ -61,7 +61,7 @@ export async function processSyncQueue(): Promise<number> {
   if (!isOnline) return 0;
 
   const db = await getDB();
-  const tasks = await db.getAll('sync_tasks');
+  const tasks = (await db.getAll('sync_tasks')) || [];
   let successCount = 0;
 
   for (const task of tasks) {
@@ -98,10 +98,21 @@ export async function processSyncQueue(): Promise<number> {
 }
 
 /**
- * Initializes the sync manager listeners.
+ * Initializes the sync manager listeners and flushes pending queue on startup.
  */
 export function initSyncManager() {
   if (typeof window === 'undefined') return;
+
+  // Process any tasks stranded from previous sessions if currently online
+  if (navigator.onLine) {
+    processSyncQueue().catch((err) => {
+      logger.warn(
+        '[SyncManager] Startup queue processing failed',
+        {},
+        err instanceof Error ? err : undefined,
+      );
+    });
+  }
 
   window.addEventListener('online', () => {
     logger.info('[SyncManager] Online detected, processing queue...');

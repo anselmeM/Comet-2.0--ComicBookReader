@@ -196,8 +196,21 @@ export const GET = withAuth(async (_req: Request, context, session) => {
 
     if (sortBy === 'rating_asc') orderBy = { rating: 'asc' };
 
-    // Get total count for pagination info
+    // Auto-reconcile stale PENDING sync statuses older than 2 minutes to LOCAL
+    if (db.comic.updateMany) {
+      await db.comic.updateMany({
+        where: {
+          userId: session.user.id,
+          syncStatus: 'PENDING',
+          addedAt: { lte: new Date(Date.now() - 2 * 60 * 1000) },
+        },
+        data: {
+          syncStatus: 'LOCAL',
+        },
+      });
+    }
 
+    // Get total count for pagination info
     const total = await db.comic.count({ where });
 
     const comics = await db.comic.findMany({
