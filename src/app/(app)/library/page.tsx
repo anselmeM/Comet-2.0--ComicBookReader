@@ -19,7 +19,11 @@ import { useDebounce } from '@/hooks/useDebounce';
 export default function LibraryPage() {
   const router = useRouter();
   const { parseComic, isParsing, progress } = useComicParser();
-  const { downloadFromCloud, isSyncing: isCloudDownloading } = useCloudSync();
+  const {
+    downloadFromCloud,
+    syncLocalComicToCloud,
+    isSyncing: isCloudDownloading,
+  } = useCloudSync();
 
   // State for pagination, search and sort
   const [currentPage, setCurrentPage] = useState(1);
@@ -147,7 +151,19 @@ export default function LibraryPage() {
       }
     } catch (e) {
       logger.error('Restore failed', {}, e instanceof Error ? e : undefined);
-      triggerNotification(`Restore failed: ${getErrorMessage(e) || 'Corrupted archive file'}`, 'error');
+      triggerNotification(
+        `Restore failed: ${getErrorMessage(e) || 'Corrupted archive file'}`,
+        'error',
+      );
+    }
+  };
+
+  const handleSyncToCloud = async (comicId: string) => {
+    try {
+      await syncLocalComicToCloud(comicId, session?.user?.id);
+      await refetch();
+    } catch (e) {
+      logger.error('Manual sync to cloud failed', {}, e instanceof Error ? e : undefined);
     }
   };
 
@@ -163,7 +179,8 @@ export default function LibraryPage() {
   }
 
   if (error) {
-    const errorMessage = error instanceof Error ? getErrorMessage(error) : 'Could not connect to the server';
+    const errorMessage =
+      error instanceof Error ? getErrorMessage(error) : 'Could not connect to the server';
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200 flex items-center justify-center text-comet-text">
         <div className="bg-comet-surface p-8 rounded-3xl shadow-xl flex flex-col items-center gap-4 max-w-md text-center border border-comet-border">
@@ -218,6 +235,7 @@ export default function LibraryPage() {
         comics={dashboardComics}
         onFileSelect={handleFileUpload}
         onRestoreFromCloud={handleRestoreFromCloud}
+        onSyncToCloud={handleSyncToCloud}
         onComicUpload={() => refetch()}
         pagination={libraryData?.pagination}
         onPageChange={setCurrentPage}

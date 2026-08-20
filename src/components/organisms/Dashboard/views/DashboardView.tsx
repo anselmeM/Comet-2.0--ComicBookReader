@@ -45,6 +45,8 @@ interface DashboardViewProps {
 
   onRestoreFromCloud?: (id: string, title: string) => Promise<void>;
 
+  onSyncToCloud?: (id: string) => Promise<void>;
+
   setActiveView: (view: string) => void;
 
   isEditMode: boolean;
@@ -82,6 +84,8 @@ export const DashboardView = ({
   toggleFavorite,
 
   onRestoreFromCloud,
+
+  onSyncToCloud,
 
   setActiveView,
 
@@ -459,6 +463,7 @@ export const DashboardView = ({
                   comic={comic}
                   onNotification={triggerNotification}
                   onRestoreFromCloud={onRestoreFromCloud}
+                  onSyncToCloud={onSyncToCloud}
                   isFav={comic.isFavorite}
                   onToggleFav={() => toggleFavorite(comic.id, !!comic.isFavorite)}
                   isEditMode={isEditMode}

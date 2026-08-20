@@ -122,19 +122,12 @@ export function useReadingProgress({ comicId }: UseReadingProgressOptions) {
     };
   }, [comicId]);
 
-  // 3. Initial sync to guarantee it shows up in "Continue Reading" immediately
+  // 3. Initialize lastSavedPage to current page on load to avoid clobbering remote progress
   useEffect(() => {
     if (comicId && totalPages > 0 && lastSavedPage.current === -1) {
-      logger.info(`[Sync] Initial load sync for comic ${comicId}`);
-      mutate({
-        lastPage: currentPage,
-        totalPages,
-        zoomLevel,
-        timeDelta: 0,
-      });
       lastSavedPage.current = currentPage;
     }
-  }, [comicId, totalPages, currentPage, zoomLevel, mutate]);
+  }, [comicId, totalPages, currentPage]);
 
   // 4. Automatically sync progress with a 2-second debounce after a page change.
   // NOTE: secondsSpent is intentionally NOT a dependency here — it increments

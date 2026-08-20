@@ -14,26 +14,20 @@ interface FavouritesViewProps {
   toggleFavorite: (id: string, currentStatus: boolean) => void;
 
   onRestoreFromCloud?: (id: string, title: string) => Promise<void>;
-
+  onSyncToCloud?: (id: string) => Promise<void>;
   setActiveView: (view: string) => void;
-
   isEditMode: boolean;
-
   selectedIds: string[];
-
   setSelectedIds: (ids: string[] | ((prev: string[]) => string[])) => void;
-
   triggerNotification: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
-
   sensors: SensorDescriptor<SensorOptions>[];
 }
 
 export const FavouritesView = ({
   comics,
-
   toggleFavorite,
-
   onRestoreFromCloud,
+  onSyncToCloud,
 
   setActiveView,
 
@@ -82,6 +76,7 @@ export const FavouritesView = ({
                   comic={comic}
                   onNotification={triggerNotification}
                   onRestoreFromCloud={onRestoreFromCloud}
+                  onSyncToCloud={onSyncToCloud}
                   isFav={true}
                   onToggleFav={() => toggleFavorite(comic.id, true)}
                   isEditMode={isEditMode}

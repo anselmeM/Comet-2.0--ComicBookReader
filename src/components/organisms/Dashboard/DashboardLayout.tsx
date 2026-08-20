@@ -64,7 +64,7 @@ interface DashboardLayoutProps {
   onFileSelect?: (file: File) => Promise<void>;
 
   onRestoreFromCloud?: (id: string, title: string) => Promise<void>;
-
+  onSyncToCloud?: (id: string) => Promise<void>;
   onBulkDelete?: (ids: string[]) => Promise<void>;
 
   pagination?: {
@@ -107,11 +107,9 @@ interface DashboardLayoutProps {
 export function DashboardLayout(props: DashboardLayoutProps) {
   const {
     comics,
-
     onFileSelect,
-
     onRestoreFromCloud,
-
+    onSyncToCloud,
     onBulkDelete,
 
     pagination,
@@ -233,11 +231,9 @@ export function DashboardLayout(props: DashboardLayoutProps) {
 
   const viewProps = {
     comics,
-
     toggleFavorite,
-
     onRestoreFromCloud,
-
+    onSyncToCloud,
     setActiveView,
 
     isEditMode,

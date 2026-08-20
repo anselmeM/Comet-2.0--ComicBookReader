@@ -59,40 +59,28 @@ interface CollectionsViewProps {
   toggleFavorite: (id: string, currentStatus: boolean) => void;
 
   onRestoreFromCloud?: (id: string, title: string) => Promise<void>;
-
+  onSyncToCloud?: (id: string) => Promise<void>;
   setActiveView: (view: string) => void;
-
   isEditMode: boolean;
-
   setIsEditMode: (mode: boolean) => void;
-
   selectedIds: string[];
-
   setSelectedIds: (ids: string[] | ((prev: string[]) => string[])) => void;
-
   pagination?: {
     page: number;
-
     limit: number;
-
     total: number;
-
     totalPages: number;
   };
-
   onPageChange?: (page: number) => void;
-
   triggerNotification: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
-
   sensors: SensorDescriptor<SensorOptions>[];
 }
 
 export const CollectionsView = ({
   comics,
-
   toggleFavorite,
-
   onRestoreFromCloud,
+  onSyncToCloud,
 
   setActiveView,
 
@@ -585,6 +573,7 @@ export const CollectionsView = ({
             setSelectedIds={setSelectedIds}
             toggleFavorite={toggleFavorite}
             onRestoreFromCloud={onRestoreFromCloud}
+            onSyncToCloud={onSyncToCloud}
             triggerNotification={triggerNotification}
           />
         </section>

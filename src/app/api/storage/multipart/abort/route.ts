@@ -31,7 +31,11 @@ export async function POST(req: Request) {
     }
 
     if (comic.storageKey) {
-      await abortMultipartUpload(comic.storageKey, uploadId);
+      try {
+        await abortMultipartUpload(comic.storageKey, uploadId);
+      } catch (s3Error) {
+        logger.warn('Failed to abort multipart upload in storage', { comicId }, s3Error as Error);
+      }
     }
 
     await db.comic.update({
