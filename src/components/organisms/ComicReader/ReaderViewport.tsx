@@ -173,10 +173,30 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
 
   const lastTapRef = useRef<number>(0);
   const singleTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pointerDownPosRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!e.isPrimary) return;
+    pointerDownPosRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  };
 
   const handlePointerUp = (e: React.PointerEvent) => {
     // Only process primary pointer (e.g. not multi-touch pinch)
     if (!e.isPrimary) return;
+
+    // Check if a drag or long pan occurred
+    if (pointerDownPosRef.current) {
+      const dx = e.clientX - pointerDownPosRef.current.x;
+      const dy = e.clientY - pointerDownPosRef.current.y;
+      const dist = Math.hypot(dx, dy);
+      const duration = Date.now() - pointerDownPosRef.current.time;
+      pointerDownPosRef.current = null;
+
+      // If pointer moved more than 8px or was held for pan (>800ms), treat as gesture, not tap
+      if (dist > 8 || duration > 800) {
+        return;
+      }
+    }
 
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300;
@@ -228,6 +248,7 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
   return (
     <div
       ref={containerRef}
+      onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       className="relative w-full h-full overflow-hidden bg-black touch-none cursor-grab active:cursor-grabbing"
     >

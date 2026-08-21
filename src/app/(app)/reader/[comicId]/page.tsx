@@ -41,15 +41,19 @@ export default function ReaderPage() {
       showMenuAndResetTimeout();
     };
 
-    window.addEventListener('mousemove', handleActivity);
-    window.addEventListener('keydown', handleActivity);
+    const events = ['mousemove', 'keydown', 'pointerdown', 'touchstart', 'pointermove'] as const;
+
+    events.forEach((evt) => {
+      window.addEventListener(evt, handleActivity, { passive: true });
+    });
 
     // Initial timeout
     timeoutId = setTimeout(hideMenu, 3000);
 
     return () => {
-      window.removeEventListener('mousemove', handleActivity);
-      window.removeEventListener('keydown', handleActivity);
+      events.forEach((evt) => {
+        window.removeEventListener(evt, handleActivity);
+      });
       clearTimeout(timeoutId);
     };
   }, [setMenuVisible]);

@@ -132,10 +132,18 @@ export const useReaderStore = create<ReaderState>()(
 
       // Actions implementation
       setMode: (mode) =>
-        set((state) => ({
-          mode,
-          ...updateSettings(state, { mode }),
-        })),
+        set((state) => {
+          const isDual = mode === 'dual-spread' || mode === 'manga-rtl';
+          const currentPage =
+            isDual && state.currentPage > 0 && state.currentPage % 2 === 0
+              ? state.currentPage - 1
+              : state.currentPage;
+          return {
+            mode,
+            currentPage,
+            ...updateSettings(state, { mode }),
+          };
+        }),
       setZoomLevel: (zoomLevel) =>
         set((state) => {
           const nextZoom = Math.max(0.5, Math.min(5, zoomLevel));
@@ -206,10 +214,14 @@ export const useReaderStore = create<ReaderState>()(
           brightness: 1.0,
           isGuidedViewEnabled: false,
         };
+        const isDual = existing.mode === 'dual-spread' || existing.mode === 'manga-rtl';
+        const startPage =
+          isDual && initialPage > 0 && initialPage % 2 === 0 ? initialPage - 1 : initialPage;
+
         set((state) => ({
           currentComicId: comicId,
           totalPages,
-          currentPage: initialPage,
+          currentPage: Math.min(Math.max(0, startPage), Math.max(0, totalPages - 1)),
           mode: existing.mode,
           zoomLevel: existing.zoomLevel,
           brightness: existing.brightness,
@@ -225,9 +237,12 @@ export const useReaderStore = create<ReaderState>()(
       },
 
       setPage: (pageIndex) => {
-        const { totalPages } = get();
+        const { totalPages, mode } = get();
         if (pageIndex >= 0 && pageIndex < totalPages) {
-          set({ currentPage: pageIndex, guidedStep: 0 });
+          const isDual = mode === 'dual-spread' || mode === 'manga-rtl';
+          const targetPage =
+            isDual && pageIndex > 0 && pageIndex % 2 === 0 ? pageIndex - 1 : pageIndex;
+          set({ currentPage: targetPage, guidedStep: 0 });
         }
       },
 
@@ -243,17 +258,27 @@ export const useReaderStore = create<ReaderState>()(
           return;
         }
 
-        // Dual mode spread increment logic
         const isDual = mode === 'dual-spread' || mode === 'manga-rtl';
-        let increment = 1;
-        if (isDual && currentPage > 0) {
-          increment = 2;
+
+        if (isDual) {
+          if (currentPage === 0) {
+            if (totalPages > 1) {
+              set({ currentPage: 1, guidedStep: 0 });
+            }
+            return;
+          }
+
+          const currentLeader = currentPage % 2 === 1 ? currentPage : currentPage - 1;
+          const nextLeader = currentLeader + 2;
+
+          if (nextLeader < totalPages) {
+            set({ currentPage: nextLeader, guidedStep: 0 });
+          }
+          return;
         }
 
-        if (currentPage + increment < totalPages) {
-          set({ currentPage: currentPage + increment, guidedStep: 0 });
-        } else if (currentPage < totalPages - 1) {
-          set({ currentPage: totalPages - 1, guidedStep: 0 });
+        if (currentPage + 1 < totalPages) {
+          set({ currentPage: currentPage + 1, guidedStep: 0 });
         }
       },
 
@@ -265,23 +290,38 @@ export const useReaderStore = create<ReaderState>()(
           return;
         }
 
-        // Dual mode spread decrement logic
         const isDual = mode === 'dual-spread' || mode === 'manga-rtl';
-        let decrement = 1;
-        if (isDual && currentPage > 2) {
-          decrement = 2;
+
+        if (isDual) {
+          if (currentPage === 0) return;
+
+          const currentLeader = currentPage % 2 === 1 ? currentPage : currentPage - 1;
+          const prevLeader = currentLeader - 2;
+
+          if (prevLeader >= 1) {
+            const prevPanels = pagePanels[prevLeader] || [];
+            set({
+              currentPage: prevLeader,
+              guidedStep: isGuidedViewEnabled ? Math.max(0, prevPanels.length - 1) : 0,
+            });
+          } else {
+            const prevPanels = pagePanels[0] || [];
+            set({
+              currentPage: 0,
+              guidedStep: isGuidedViewEnabled ? Math.max(0, prevPanels.length - 1) : 0,
+            });
+          }
+          return;
         }
 
-        if (currentPage - decrement >= 0) {
-          const prevPageIdx = currentPage - decrement;
+        if (currentPage > 0) {
+          const prevPageIdx = currentPage - 1;
           const prevPanels = pagePanels[prevPageIdx] || [];
 
           set({
             currentPage: prevPageIdx,
             guidedStep: isGuidedViewEnabled ? Math.max(0, prevPanels.length - 1) : 0,
           });
-        } else if (currentPage > 0) {
-          set({ currentPage: 0, guidedStep: 0 });
         }
       },
 
