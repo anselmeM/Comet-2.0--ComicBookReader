@@ -44,7 +44,10 @@ import {
   List,
   Sparkles,
   Sliders,
+  Hash,
+  X,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 import { logger } from '@/lib/logger';
 
@@ -171,8 +174,20 @@ export function ReaderControls({ type }: ReaderControlsProps) {
   const toggleAutoplay = useReaderStore((state) => state.toggleAutoplay);
 
   const filmstripRef = useRef<HTMLDivElement>(null);
-
   const { comic: comicPages, loading: comicPagesLoading } = useComicPages(comicId);
+
+  const [isJumpModalOpen, setIsJumpModalOpen] = useState(false);
+  const [jumpPageInput, setJumpPageInput] = useState('');
+
+  const handleJumpSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const pageNum = parseInt(jumpPageInput, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      setPage(pageNum - 1);
+      setIsJumpModalOpen(false);
+      setJumpPageInput('');
+    }
+  };
 
   // Center active filmstrip thumbnail
 
@@ -414,9 +429,18 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               <ChevronLeft size={20} />
             </button>
 
-            <span className="text-xs text-comet-muted font-mono min-w-[40px] text-center flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setJumpPageInput(String(currentPage + 1));
+                setIsJumpModalOpen(true);
+              }}
+              className="text-xs text-comet-muted hover:text-comet-accent hover:bg-comet-surface-2 px-1.5 py-1 rounded-lg font-mono min-w-[40px] text-center flex-shrink-0 transition-colors cursor-pointer"
+              title="Click to jump to page"
+              aria-label="Jump to page"
+            >
               {currentPage + 1}
-            </span>
+            </button>
 
             {/* Mobile Touch Scrubber Slider */}
             <div className="flex md:hidden flex-1 items-center gap-2 px-2">
@@ -480,9 +504,18 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               )}
             </div>
 
-            <span className="text-xs text-comet-muted font-mono min-w-[40px] text-center flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setJumpPageInput(String(totalPages));
+                setIsJumpModalOpen(true);
+              }}
+              className="text-xs text-comet-muted hover:text-comet-accent hover:bg-comet-surface-2 px-1.5 py-1 rounded-lg font-mono min-w-[40px] text-center flex-shrink-0 transition-colors cursor-pointer"
+              title="Click to jump to page"
+              aria-label="Jump to page"
+            >
               {totalPages}
-            </span>
+            </button>
 
             <button
               type="button"
@@ -620,6 +653,109 @@ export function ReaderControls({ type }: ReaderControlsProps) {
         onClose={() => setIsPremiumModalOpen(false)}
         featureName="Guided View"
       />
+
+      {/* Jump to Page Modal Dialog */}
+      <AnimatePresence>
+        {isJumpModalOpen && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setIsJumpModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-comet-surface border border-comet-border rounded-2xl p-5 shadow-2xl max-w-xs w-full text-comet-text flex flex-col gap-4 pointer-events-auto"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="jump-modal-title"
+            >
+              <div className="flex items-center justify-between">
+                <h3 id="jump-modal-title" className="text-sm font-semibold flex items-center gap-2">
+                  <Hash size={16} className="text-comet-accent" />
+                  Jump to Page
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsJumpModalOpen(false)}
+                  className="p-1 text-comet-muted hover:text-comet-text rounded-lg transition-colors cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={handleJumpSubmit} className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={Math.max(1, totalPages)}
+                    value={jumpPageInput}
+                    onChange={(e) => setJumpPageInput(e.target.value)}
+                    autoFocus
+                    placeholder={`1 - ${totalPages}`}
+                    className="w-full bg-comet-surface-2 border border-comet-border rounded-xl px-3 py-2 text-comet-text focus:outline-none focus:border-comet-accent focus:ring-1 focus:ring-comet-accent text-center font-mono font-bold text-lg"
+                  />
+                </div>
+
+                {/* Quick Jump Shortcuts */}
+                <div className="flex items-center justify-between gap-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPage(0);
+                      setIsJumpModalOpen(false);
+                    }}
+                    className="px-2 py-1 bg-comet-surface-2 hover:bg-comet-surface-3 rounded-lg text-comet-muted hover:text-comet-text transition-colors flex-1 text-center font-mono cursor-pointer"
+                  >
+                    Start (1)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const mid = Math.floor(totalPages / 2);
+                      setPage(mid);
+                      setIsJumpModalOpen(false);
+                    }}
+                    className="px-2 py-1 bg-comet-surface-2 hover:bg-comet-surface-3 rounded-lg text-comet-muted hover:text-comet-text transition-colors flex-1 text-center font-mono cursor-pointer"
+                  >
+                    Mid ({Math.floor(totalPages / 2) + 1})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPage(totalPages - 1);
+                      setIsJumpModalOpen(false);
+                    }}
+                    className="px-2 py-1 bg-comet-surface-2 hover:bg-comet-surface-3 rounded-lg text-comet-muted hover:text-comet-text transition-colors flex-1 text-center font-mono cursor-pointer"
+                  >
+                    End ({totalPages})
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsJumpModalOpen(false)}
+                    className="flex-1 px-3 py-2 rounded-xl text-xs font-medium text-comet-muted hover:text-comet-text hover:bg-comet-surface-2 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-3 py-2 rounded-xl text-xs font-medium bg-comet-accent text-white hover:bg-comet-accent/90 transition-colors shadow-md shadow-comet-accent/20 cursor-pointer font-semibold"
+                  >
+                    Go
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

@@ -34,7 +34,7 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useComicParser } from '@/hooks/useComicParser';
-import { UploadCloud, Loader2, ArrowLeft } from 'lucide-react';
+import { UploadCloud, Loader2, ArrowLeft, Bookmark, RotateCcw, X } from 'lucide-react';
 
 interface ComicReaderProps {
   comicId: string;
@@ -371,23 +371,42 @@ export function ComicReader({ comicId }: ComicReaderProps) {
     document.documentElement.style.setProperty('--comic-max-width', `${maxWidth}vw`);
   }, [zoomLevel]);
 
-  // Initialize the store when the comic loads
+  const [resumeInfo, setResumeInfo] = useState<{
+    page: number;
+    total: number;
+    percent: number;
+  } | null>(null);
 
+  // Initialize the store when the comic loads
   useEffect(() => {
     if (comic && !loading) {
       const currentId = useReaderStore.getState().currentComicId;
 
       if (currentId !== comic.comicId) {
         const initialPage = metadata?.progress?.lastPage ?? 0;
-
-        // Cast session user to any temporarily to access custom fields
-
         const initialMode = session?.user?.defaultReadingMode as ReaderMode | undefined;
 
         openComic(comic.comicId, comic.pages.length, initialPage, initialMode);
+
+        if (initialPage > 0 && initialPage < comic.pages.length) {
+          setResumeInfo({
+            page: initialPage,
+            total: comic.pages.length,
+            percent: Math.round(((initialPage + 1) / comic.pages.length) * 100),
+          });
+        }
       }
     }
   }, [comic, loading, openComic, metadata, session]);
+
+  // Auto-dismiss resume banner after 6 seconds
+  useEffect(() => {
+    if (!resumeInfo) return;
+    const timer = setTimeout(() => {
+      setResumeInfo(null);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [resumeInfo]);
 
   // Set up IntersectionObserver for vertical scroll mode
   useEffect(() => {
@@ -812,6 +831,47 @@ export function ComicReader({ comicId }: ComicReaderProps) {
           </defs>
         </svg>
 
+        {/* Floating Resume Banner */}
+        <AnimatePresence>
+          {resumeInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-comet-surface/95 border border-comet-accent/40 shadow-2xl backdrop-blur-md rounded-2xl px-4 py-2.5 flex items-center gap-3 text-xs md:text-sm text-comet-text max-w-[90vw] pointer-events-auto"
+            >
+              <Bookmark className="text-comet-accent flex-shrink-0" size={16} />
+              <span>
+                Resumed at <strong className="text-comet-accent">Page {resumeInfo.page + 1}</strong> of{' '}
+                {resumeInfo.total} ({resumeInfo.percent}%)
+              </span>
+              <div className="flex items-center gap-1.5 ml-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPage(0);
+                    setResumeInfo(null);
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs text-comet-muted hover:text-comet-text hover:bg-comet-surface-2 rounded-lg transition-colors font-medium cursor-pointer"
+                  title="Start from beginning"
+                >
+                  <RotateCcw size={12} />
+                  <span>Start from Page 1</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResumeInfo(null)}
+                  className="p-1 text-comet-muted hover:text-comet-text hover:bg-comet-surface-2 rounded-md transition-colors cursor-pointer"
+                  aria-label="Dismiss"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div
           ref={verticalContainerRef}
           onPointerDown={handleVerticalPointerDown}
@@ -886,6 +946,47 @@ export function ComicReader({ comicId }: ComicReaderProps) {
           </filter>
         </defs>
       </svg>
+
+      {/* Floating Resume Banner */}
+      <AnimatePresence>
+        {resumeInfo && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-comet-surface/95 border border-comet-accent/40 shadow-2xl backdrop-blur-md rounded-2xl px-4 py-2.5 flex items-center gap-3 text-xs md:text-sm text-comet-text max-w-[90vw] pointer-events-auto"
+          >
+            <Bookmark className="text-comet-accent flex-shrink-0" size={16} />
+            <span>
+              Resumed at <strong className="text-comet-accent">Page {resumeInfo.page + 1}</strong> of{' '}
+              {resumeInfo.total} ({resumeInfo.percent}%)
+            </span>
+            <div className="flex items-center gap-1.5 ml-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPage(0);
+                  setResumeInfo(null);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 text-xs text-comet-muted hover:text-comet-text hover:bg-comet-surface-2 rounded-lg transition-colors font-medium cursor-pointer"
+                title="Start from beginning"
+              >
+                <RotateCcw size={12} />
+                <span>Start from Page 1</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setResumeInfo(null)}
+                className="p-1 text-comet-muted hover:text-comet-text hover:bg-comet-surface-2 rounded-md transition-colors cursor-pointer"
+                aria-label="Dismiss"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ReaderViewport>
         <AnimatePresence mode="popLayout" initial={false}>
