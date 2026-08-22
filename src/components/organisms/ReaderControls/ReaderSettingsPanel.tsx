@@ -25,6 +25,10 @@ export const ReaderSettingsPanel = ({ open, onClose }: ReaderSettingsPanelProps)
   const toggleAutoplay = useReaderStore((state) => state.toggleAutoplay);
   const autoplayDelay = useReaderStore((state) => state.autoplayDelay);
   const setAutoplayDelay = useReaderStore((state) => state.setAutoplayDelay);
+  const guidedSpotlight = useReaderStore((state) => state.guidedSpotlight);
+  const setGuidedSpotlight = useReaderStore((state) => state.setGuidedSpotlight);
+  const guidedPadding = useReaderStore((state) => state.guidedPadding ?? 0.88);
+  const setGuidedPadding = useReaderStore((state) => state.setGuidedPadding);
 
   if (!open) return null;
 
@@ -129,6 +133,35 @@ export const ReaderSettingsPanel = ({ open, onClose }: ReaderSettingsPanelProps)
             />
             <span className="text-xs font-mono text-comet-muted w-8 text-right">
               {panSpeed.toFixed(1)}s
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-comet-text">Panel Spotlight Focus</span>
+            <button
+              type="button"
+              onClick={() => setGuidedSpotlight(!guidedSpotlight)}
+              className={`w-10 h-6 flex items-center rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${guidedSpotlight ? 'bg-comet-accent' : 'bg-comet-surface-2'}`}
+            >
+              <span
+                className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${guidedSpotlight ? 'translate-x-4' : 'translate-x-0'}`}
+              />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-xs text-comet-text min-w-[70px]">Viewport Fill</span>
+            <input
+              type="range"
+              min="0.75"
+              max="0.95"
+              step="0.01"
+              value={guidedPadding}
+              onChange={(e) => setGuidedPadding(parseFloat(e.target.value))}
+              className="flex-1 h-1 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer"
+            />
+            <span className="text-xs font-mono text-comet-muted w-8 text-right">
+              {Math.round(guidedPadding * 100)}%
             </span>
           </div>
 

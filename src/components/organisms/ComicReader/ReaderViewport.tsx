@@ -30,9 +30,10 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
   const toggleMenu = useReaderStore((state) => state.toggleMenu);
   const nextPage = useReaderStore((state) => state.nextPage);
   const prevPage = useReaderStore((state) => state.prevPage);
-
   const panSpeed = useReaderStore((state) => state.panSpeed);
   const panEase = useReaderStore((state) => state.panEase);
+  const guidedSpotlight = useReaderStore((state) => state.guidedSpotlight);
+  const guidedPadding = useReaderStore((state) => state.guidedPadding ?? 0.88);
 
   // Motion values
   const x = useMotionValue(0);
@@ -75,9 +76,10 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
         (mediaElement as HTMLImageElement).naturalHeight ||
         1200;
 
-      // Scale required to make the panel fill ~85% of the viewport
-      const scaleW = (viewW * 0.85) / (panel.width * (mediaRect.width / naturalWidth));
-      const scaleH = (viewH * 0.85) / (panel.height * (mediaRect.height / naturalHeight));
+      // Scale required to make the panel fill ~guidedPadding of the viewport
+      const padding = guidedPadding || 0.88;
+      const scaleW = (viewW * padding) / (panel.width * (mediaRect.width / naturalWidth));
+      const scaleH = (viewH * padding) / (panel.height * (mediaRect.height / naturalHeight));
       const targetScale = Math.min(scaleW, scaleH, 4); // Max 4x zoom
 
       // Calculate centering offset
@@ -119,6 +121,7 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
     resizeKey,
     panSpeed,
     panEase,
+    guidedPadding,
   ]);
 
   // Handle window resizing to keep panel centered
@@ -252,6 +255,17 @@ export function ReaderViewport({ children }: ReaderViewportProps) {
       onPointerUp={handlePointerUp}
       className="relative w-full h-full overflow-hidden bg-black touch-none cursor-grab active:cursor-grabbing"
     >
+      {/* Guided View Spotlight Backdrop Vignette */}
+      {isGuidedViewEnabled && guidedSpotlight && (
+        <div
+          className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-300"
+          style={{
+            background:
+              'radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.4) 75%, rgba(0,0,0,0.7) 100%)',
+          }}
+        />
+      )}
+
       <motion.div
         className="w-full h-full flex items-center justify-center origin-center relative"
         style={{ x, y, scale }}

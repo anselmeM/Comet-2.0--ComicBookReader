@@ -160,16 +160,49 @@ export async function detectPanels(
 
   splitRegion(0, 0, width, height, 0);
 
-  const finalPanels = panels
-    .filter((p) => p.width >= options.minPanelSize && p.height >= options.minPanelSize)
-    .map((p) => ({
-      x: Math.round(p.x / scale),
-      y: Math.round(p.y / scale),
-      width: Math.round(p.width / scale),
-      height: Math.round(p.height / scale),
-    }));
+  const rawPanels = panels
+    .filter((p) => {
+      if (p.width < options.minPanelSize || p.height < options.minPanelSize) return false;
+      // Filter extreme thin strips that are gutter/dialogue slice artifacts
+      const aspectRatio = p.width / p.height;
+      if ((aspectRatio > 8 || aspectRatio < 0.125) && (p.width < 100 || p.height < 100)) {
+        return false;
+      }
+      return true;
+    })
+    .map((p) => {
+      const px = Math.round(p.x / scale);
+      const py = Math.round(p.y / scale);
+      const pw = Math.round(p.width / scale);
+      const ph = Math.round(p.height / scale);
 
-  return sortPanels(finalPanels);
+      const clampedX = Math.max(0, Math.min(image.width - 10, px));
+      const clampedY = Math.max(0, Math.min(image.height - 10, py));
+      const clampedW = Math.max(options.minPanelSize, Math.min(image.width - clampedX, pw));
+      const clampedH = Math.max(options.minPanelSize, Math.min(image.height - clampedY, ph));
+
+      return {
+        x: clampedX,
+        y: clampedY,
+        width: clampedW,
+        height: clampedH,
+      };
+    });
+
+  // Splash page detection: if no panels found or single panel covers >90% area
+  const totalImageArea = image.width * image.height;
+  if (rawPanels.length === 0) {
+    return [{ x: 0, y: 0, width: image.width, height: image.height }];
+  }
+
+  if (rawPanels.length === 1) {
+    const singlePanelArea = rawPanels[0].width * rawPanels[0].height;
+    if (singlePanelArea / totalImageArea >= 0.88) {
+      return [{ x: 0, y: 0, width: image.width, height: image.height }];
+    }
+  }
+
+  return sortPanels(rawPanels);
 }
 
 /**
