@@ -418,8 +418,23 @@ export function ReaderControls({ type }: ReaderControlsProps) {
               {currentPage + 1}
             </span>
 
-            {/* Horizontal Filmstrip */}
+            {/* Mobile Touch Scrubber Slider */}
+            <div className="flex md:hidden flex-1 items-center gap-2 px-2">
+              <input
+                type="range"
+                min={1}
+                max={Math.max(1, totalPages)}
+                value={currentPage + 1}
+                onChange={(e) => {
+                  const newPage = parseInt(e.target.value, 10) - 1;
+                  setPage(newPage);
+                }}
+                className="w-full h-2 bg-comet-surface-2 rounded-full appearance-none accent-comet-accent cursor-pointer touch-none"
+                aria-label="Scrub pages"
+              />
+            </div>
 
+            {/* Horizontal Filmstrip */}
             <div
               ref={filmstripRef}
               className="hidden md:flex flex-1 items-center gap-2 overflow-x-auto py-2 px-1 scrollbar-none scroll-smooth select-none snap-x"
