@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getCacheTotalSizeBytes,
   clearAllParsedComics,
+  clearUnpinnedParsedComics,
+  pinCachedComic,
   getAllCachedComicsMetadata,
 } from '@/lib/idb';
 import type { CachedComic } from '@/types';
@@ -12,6 +14,7 @@ interface StorageInfo {
   quota: number;
   idbCustomUsage: number;
   cachedComics: Omit<CachedComic, 'pages'>[];
+  pinnedCount: number;
   loading: boolean;
 }
 
@@ -24,6 +27,7 @@ export function useStorage(userId?: string) {
     quota: 0,
     idbCustomUsage: 0,
     cachedComics: [],
+    pinnedCount: 0,
     loading: true,
   });
 
@@ -35,6 +39,7 @@ export function useStorage(userId?: string) {
         const { usage, quota } = await navigator.storage.estimate();
         const idbSize = await getCacheTotalSizeBytes(userId);
         const comics = await getAllCachedComicsMetadata(userId);
+        const pinnedCount = comics.filter((c) => c.isPinned).length;
 
         if (isMounted.current) {
           setInfo({
@@ -42,6 +47,7 @@ export function useStorage(userId?: string) {
             quota: quota || 0,
             idbCustomUsage: idbSize,
             cachedComics: comics,
+            pinnedCount,
             loading: false,
           });
         }
@@ -73,9 +79,22 @@ export function useStorage(userId?: string) {
     await refresh();
   };
 
+  const clearUnpinnedCache = async () => {
+    const count = await clearUnpinnedParsedComics(userId);
+    await refresh();
+    return count;
+  };
+
+  const pinComic = async (comicId: string, isPinned: boolean) => {
+    await pinCachedComic(comicId, isPinned, userId);
+    await refresh();
+  };
+
   return {
     info,
     clearCache,
+    clearUnpinnedCache,
+    pinComic,
     refresh,
   };
 }

@@ -118,6 +118,17 @@ export async function evictCachedComic(comicId: string, userId?: string): Promis
 }
 
 /**
+ * Pins or unpins a comic in the local cache to protect it from LRU eviction.
+ */
+export async function pinCachedComic(comicId: string, isPinned: boolean, userId?: string): Promise<void> {
+  const db = await getDB(userId);
+  const comic = await db.get('comics', comicId);
+  if (comic) {
+    await db.put('comics', { ...comic, isPinned });
+  }
+}
+
+/**
  * Returns a list of all currently cached comic metadata (no blobs).
  */
 export async function getAllCachedComicsMetadata(userId?: string) {
@@ -144,10 +155,28 @@ export async function getCacheTotalSizeBytes(userId?: string): Promise<number> {
 }
 
 /**
+ * Clears only unpinned cached comics from IDB, preserving pinned offline favorites.
+ * @returns Number of comics evicted.
+ */
+export async function clearUnpinnedParsedComics(userId?: string): Promise<number> {
+  const db = await getDB(userId);
+  const all = await db.getAll('comics');
+  let count = 0;
+  for (const comic of all) {
+    if (!comic.isPinned) {
+      await db.delete('comics', comic.comicId);
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
  * Clears all cached comics from IDB.
  */
 export async function clearAllParsedComics(userId?: string): Promise<void> {
   const db = await getDB(userId);
   await db.clear('comics');
 }
+
 
