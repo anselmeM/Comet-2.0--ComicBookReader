@@ -162,21 +162,44 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   }, [sepia, contrast, grayscale, sharpen]);
 
   // Clear canvas cache when comic changes or component unmounts
-
   const comicIdRef = useRef(comicId);
 
   useEffect(() => {
     canvasCacheRef.current = {};
-
     comicIdRef.current = comicId;
 
     return () => {
+      // Clear dimensions to release GPU backbuffers
+      Object.values(canvasCacheRef.current).forEach((canvas) => {
+        if (canvas) {
+          canvas.width = 0;
+          canvas.height = 0;
+        }
+      });
       canvasCacheRef.current = {};
     };
   }, [comicId]);
 
-  // Offscreen preloader callback
+  // Prune canvases outside active sliding window (currentPage - 3 to currentPage + 3)
+  const pruneCanvasCache = useCallback((centerPage: number) => {
+    const minPage = centerPage - 3;
+    const maxPage = centerPage + 3;
+    const cache = canvasCacheRef.current;
 
+    for (const keyStr of Object.keys(cache)) {
+      const idx = Number(keyStr);
+      if (idx < minPage || idx > maxPage) {
+        const canvas = cache[idx];
+        if (canvas) {
+          canvas.width = 0;
+          canvas.height = 0;
+        }
+        delete cache[idx];
+      }
+    }
+  }, []);
+
+  // Offscreen preloader callback
   const preRenderPage = useCallback(
     (index: number) => {
       if (index < 0 || !comic || index >= comic.pages.length) return;
@@ -184,53 +207,66 @@ export function ComicReader({ comicId }: ComicReaderProps) {
       if (canvasCacheRef.current[index]) return;
 
       const page = comic.pages[index];
-
       const canvas = document.createElement('canvas');
-
       canvas.width = page.width || 800;
-
       canvas.height = page.height || 1200;
 
       const ctx = canvas.getContext('2d');
-
       if (ctx) {
         createImageBitmap(page.blob)
           .then((imageBitmap) => {
             // Discard pre-renders for a different comic — the cache was
-
             // reset when the comic changed, and writing here would overwrite
-
             // canvases belonging to the newly opened comic.
-
             if (comicIdRef.current !== comic.comicId) {
               imageBitmap.close();
-
               return;
             }
 
             ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
-
             imageBitmap.close();
 
             canvasCacheRef.current[index] = canvas;
-
             logger.debug(`Pre-rendered page ${index} to cache`);
           })
-
           .catch((err) => {
             logger.error(
               `Pre-render failed for page ${index}:`,
-
               {},
-
               err instanceof Error ? err : undefined,
             );
           });
       }
     },
-
     [comic],
   );
+
+  // Pre-render upcoming and adjacent pages and prune stale canvases
+  useEffect(() => {
+    if (!comic || loading) return;
+
+    pruneCanvasCache(currentPage);
+
+    const pagesToPreRender: number[] = [];
+    if (mode === 'dual-spread' || mode === 'manga-rtl') {
+      pagesToPreRender.push(
+        currentPage + 1,
+        currentPage + 2,
+        currentPage + 3,
+        currentPage + 4,
+        currentPage - 1,
+        currentPage - 2,
+      );
+    } else {
+      pagesToPreRender.push(currentPage + 1, currentPage + 2, currentPage - 1);
+    }
+
+    pagesToPreRender.forEach((idx) => {
+      if (idx >= 0 && idx < comic.pages.length) {
+        preRenderPage(idx);
+      }
+    });
+  }, [comic, loading, currentPage, mode, pruneCanvasCache, preRenderPage]);
 
   // Detect panels for current and next pages
 
