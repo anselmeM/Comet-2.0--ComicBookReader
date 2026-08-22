@@ -37,6 +37,8 @@ interface ReaderState {
   panEase: string;
   autoplayDelay: number;
   isAutoplayActive: boolean;
+  guidedSpotlight: boolean;
+  guidedPadding: number;
 
   // Current Session
   currentComicId: string | null;
@@ -66,6 +68,8 @@ interface ReaderState {
   setAutoplayDelay: (val: number) => void;
   setAutoplayActive: (val: boolean) => void;
   toggleAutoplay: () => void;
+  setGuidedSpotlight: (val: boolean) => void;
+  setGuidedPadding: (val: number) => void;
 
   openComic: (
     comicId: string,
@@ -122,6 +126,8 @@ export const useReaderStore = create<ReaderState>()(
       panEase: 'easeOut',
       autoplayDelay: 3000,
       isAutoplayActive: false,
+      guidedSpotlight: true,
+      guidedPadding: 0.88,
 
       // Initial Session State
       currentComicId: null,
@@ -206,6 +212,8 @@ export const useReaderStore = create<ReaderState>()(
       setAutoplayDelay: (autoplayDelay) => set({ autoplayDelay }),
       setAutoplayActive: (isAutoplayActive) => set({ isAutoplayActive }),
       toggleAutoplay: () => set((state) => ({ isAutoplayActive: !state.isAutoplayActive })),
+      setGuidedSpotlight: (guidedSpotlight) => set({ guidedSpotlight }),
+      setGuidedPadding: (guidedPadding) => set({ guidedPadding: Math.max(0.7, Math.min(0.98, guidedPadding)) }),
 
       openComic: (comicId, totalPages, initialPage = 0, initialMode) => {
         const existing = get().comicSettings[comicId] || {
@@ -352,6 +360,8 @@ export const useReaderStore = create<ReaderState>()(
         panSpeed: state.panSpeed,
         panEase: state.panEase,
         autoplayDelay: state.autoplayDelay,
+        guidedSpotlight: state.guidedSpotlight,
+        guidedPadding: state.guidedPadding,
       }),
     },
   ),
