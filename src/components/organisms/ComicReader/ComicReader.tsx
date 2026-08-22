@@ -684,17 +684,37 @@ export function ComicReader({ comicId }: ComicReaderProps) {
     );
   }
 
-  // Dual spread / Paged logic
+  const verticalPointerDownPos = useRef<{ x: number; y: number } | null>(null);
 
+  const handleVerticalPointerDown = (e: React.PointerEvent) => {
+    verticalPointerDownPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleVerticalPointerUp = (e: React.PointerEvent) => {
+    if (!verticalPointerDownPos.current) return;
+    const dx = e.clientX - verticalPointerDownPos.current.x;
+    const dy = e.clientY - verticalPointerDownPos.current.y;
+    const dist = Math.hypot(dx, dy);
+    verticalPointerDownPos.current = null;
+    if (dist < 8) {
+      toggleMenu();
+    }
+  };
+
+  // Dual spread / Paged logic
   const getPagesToRender = () => {
+    if (!comic?.pages || comic.pages.length === 0) return [];
+
     if (mode === 'single-page' || isGuidedViewEnabled) {
-      return [{ page: comic.pages[currentPage], index: currentPage }];
+      const page = comic.pages[currentPage] || comic.pages[0];
+      return [{ page, index: currentPage }];
     }
 
     const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
 
     if (isSmallScreen) {
-      return [{ page: comic.pages[currentPage], index: currentPage }];
+      const page = comic.pages[currentPage] || comic.pages[0];
+      return [{ page, index: currentPage }];
     }
 
     if (currentPage === 0) {
@@ -702,22 +722,25 @@ export function ComicReader({ comicId }: ComicReaderProps) {
     }
 
     const pairIndex = currentPage % 2 === 1 ? currentPage : currentPage - 1;
-
     const pages = [];
 
     if (mode === 'manga-rtl') {
-      if (comic.pages[pairIndex + 1])
+      if (comic.pages[pairIndex + 1]) {
         pages.push({ page: comic.pages[pairIndex + 1], index: pairIndex + 1 });
-
-      if (comic.pages[pairIndex]) pages.push({ page: comic.pages[pairIndex], index: pairIndex });
+      }
+      if (comic.pages[pairIndex]) {
+        pages.push({ page: comic.pages[pairIndex], index: pairIndex });
+      }
     } else {
-      if (comic.pages[pairIndex]) pages.push({ page: comic.pages[pairIndex], index: pairIndex });
-
-      if (comic.pages[pairIndex + 1])
+      if (comic.pages[pairIndex]) {
+        pages.push({ page: comic.pages[pairIndex], index: pairIndex });
+      }
+      if (comic.pages[pairIndex + 1]) {
         pages.push({ page: comic.pages[pairIndex + 1], index: pairIndex + 1 });
+      }
     }
 
-    return pages;
+    return pages.length > 0 ? pages : [{ page: comic.pages[0], index: 0 }];
   };
 
   const pagesToRender = getPagesToRender();
@@ -747,7 +770,8 @@ export function ComicReader({ comicId }: ComicReaderProps) {
 
         <div
           ref={verticalContainerRef}
-          onClick={() => toggleMenu()}
+          onPointerDown={handleVerticalPointerDown}
+          onPointerUp={handleVerticalPointerUp}
           className="comic-reader-vertical-container h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-20 flex flex-col items-center gap-4 scroll-smooth transition-all duration-300"
         >
           {comic.pages.map((page, idx) => (

@@ -155,4 +155,48 @@ describe('ReaderViewport single-tap page turning', () => {
     expect(mockStore.prevPage).not.toHaveBeenCalled();
     expect(mockStore.toggleMenu).not.toHaveBeenCalled();
   });
+
+  it('suppresses tap action when pointer moved during drag (>8px displacement)', () => {
+    render(
+      <ReaderViewport>
+        <div>page</div>
+      </ReaderViewport>,
+    );
+    const viewport = getViewport();
+    mockRect(viewport);
+
+    // Pointer down at x=500, y=300
+    fireEvent.pointerDown(viewport, { clientX: 500, clientY: 300, isPrimary: true });
+
+    // Pointer up after drag to x=550, y=300 (displacement = 50px)
+    fireEvent.pointerUp(viewport, { clientX: 550, clientY: 300, isPrimary: true });
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+
+    expect(mockStore.toggleMenu).not.toHaveBeenCalled();
+    expect(mockStore.nextPage).not.toHaveBeenCalled();
+    expect(mockStore.prevPage).not.toHaveBeenCalled();
+  });
+
+  it('suppresses tap action when pointer was held for long press/pan (>800ms)', () => {
+    render(
+      <ReaderViewport>
+        <div>page</div>
+      </ReaderViewport>,
+    );
+    const viewport = getViewport();
+    mockRect(viewport);
+
+    fireEvent.pointerDown(viewport, { clientX: 900, clientY: 300, isPrimary: true });
+    act(() => {
+      vi.advanceTimersByTime(900); // Held down for 900ms
+    });
+    fireEvent.pointerUp(viewport, { clientX: 900, clientY: 300, isPrimary: true });
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+
+    expect(mockStore.nextPage).not.toHaveBeenCalled();
+  });
 });
