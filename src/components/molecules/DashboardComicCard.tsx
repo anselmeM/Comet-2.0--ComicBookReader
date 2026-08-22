@@ -19,6 +19,7 @@ import {
   BookOpen,
   Check,
   AlertCircle,
+  Pin,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -39,6 +40,7 @@ export interface DashboardComic {
   issue?: number | null;
   rating?: number | null;
   isFavorite?: boolean;
+  isPinned?: boolean;
   syncStatus?: 'LOCAL' | 'PENDING' | 'SYNCED' | 'ERROR';
   isLocallyAvailable?: boolean;
   comicVineId?: string | null;
@@ -183,6 +185,14 @@ export function DashboardComicCard({
     const badgeBase =
       'absolute top-2 left-2 z-20 flex items-center gap-1 backdrop-blur-md text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md shadow-md text-white';
 
+    if (comic.isPinned) {
+      return (
+        <div className={`${badgeBase} bg-blue-600/90 text-white shadow-blue-500/20`} title="Pinned for offline reading">
+          <Pin size={9} />
+          <span>Pinned</span>
+        </div>
+      );
+    }
     if (comic.syncStatus === 'SYNCED') {
       return (
         <div className={`${badgeBase} bg-green-500/80`}>

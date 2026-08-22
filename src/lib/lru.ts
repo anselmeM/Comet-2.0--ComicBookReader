@@ -52,6 +52,7 @@ export async function runLRUEviction(userId?: string): Promise<number> {
   let currentUsage = usage;
 
   for (const comic of cached) {
+    if (comic.isPinned) continue; // Pinned comics are protected from automatic eviction
     if (currentUsage <= limitBytes) break;
     await evictCachedComic(comic.comicId, userId);
     currentUsage -= comic.sizeBytes;

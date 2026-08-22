@@ -1,6 +1,6 @@
 'use client';
 
-import { HardDrive, Trash2, RefreshCw, BookOpen } from 'lucide-react';
+import { HardDrive, Trash2, RefreshCw, BookOpen, Pin, PinOff, ShieldCheck } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { formatBytes } from '@/lib/format';
 import { useStorage } from '@/hooks/useStorage';
@@ -10,18 +10,29 @@ import { evictCachedComic } from '@/lib/idb';
 /** Offline Storage section — cache usage, health, budget slider, eviction. */
 export const CacheSettings = () => {
   const { data: session } = useSession();
-  const { info, clearCache, refresh } = useStorage(session?.user?.id);
+  const { info, clearCache, clearUnpinnedCache, pinComic, refresh } = useStorage(session?.user?.id);
   const cacheLimitGB = useSettingsStore((state) => state.cacheLimitGB);
   const setCacheLimitGB = useSettingsStore((state) => state.setCacheLimitGB);
 
-  const handleClear = async () => {
+  const handleClearAll = async () => {
     if (
       confirm(
-        'Are you sure you want to clear your local comic cache? You will need to re-download or re-parse comics to read them offline.',
+        'Are you sure you want to clear your entire local comic cache (including pinned items)? You will need to re-download or re-parse comics to read them offline.',
       )
     ) {
       await clearCache();
-      alert('Cache cleared!');
+      alert('All cache cleared!');
+    }
+  };
+
+  const handleClearUnpinned = async () => {
+    if (
+      confirm(
+        'Clear all unpinned cached comics? Your pinned offline comics will be kept safe.',
+      )
+    ) {
+      const evicted = await clearUnpinnedCache();
+      alert(`Cleared ${evicted} unpinned comic(s).`);
     }
   };
 
@@ -36,25 +47,41 @@ export const CacheSettings = () => {
     <section className="space-y-6">
       <h2 className="text-xl font-semibold text-comet-text flex items-center gap-2 border-b border-comet-border pb-2">
         <HardDrive className="text-comet-muted" />
-        Offline Storage
+        Offline Storage & Quotas
       </h2>
 
       <div className="bg-comet-surface border border-comet-border rounded-2xl p-8 shadow-inner overflow-hidden relative">
-        <div className="flex flex-col md:flex-row justify-between md:items-center gap-8 mb-8">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-8">
           <div className="space-y-1">
             <h3 className="text-xl font-bold text-comet-text">Local Library Cache</h3>
             <p className="text-comet-muted text-sm max-w-lg">
-              Comics you open are parsed and stored locally for instant, offline access.
+              Comics you open are stored locally in IndexedDB for instant, offline access.
             </p>
           </div>
 
-          <button
-            onClick={handleClear}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 active:scale-95 transition-all shrink-0 font-semibold"
-          >
-            <Trash2 size={20} />
-            <span>Clear Cache</span>
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            {info.pinnedCount > 0 && (
+              <button
+                type="button"
+                onClick={handleClearUnpinned}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-xl hover:bg-amber-500/20 active:scale-95 transition-all text-xs font-semibold cursor-pointer"
+                title="Clear unpinned cache while protecting pinned comics"
+              >
+                <ShieldCheck size={16} />
+                <span>Clear Unpinned</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 active:scale-95 transition-all text-xs font-semibold cursor-pointer"
+              title="Clear all cached files from local storage"
+            >
+              <Trash2 size={16} />
+              <span>Clear All</span>
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -163,10 +190,18 @@ export const CacheSettings = () => {
 
           {info.cachedComics && info.cachedComics.length > 0 && (
             <div className="mt-8 pt-6 border-t border-comet-border">
-              <h4 className="text-sm font-semibold text-comet-muted uppercase tracking-wider mb-4">
-                Downloaded Comics
-              </h4>
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-semibold text-comet-muted uppercase tracking-wider">
+                  Downloaded Comics ({info.cachedComics.length})
+                </h4>
+                {info.pinnedCount > 0 && (
+                  <span className="flex items-center gap-1.5 text-xs text-comet-accent font-medium bg-comet-accent/10 px-2.5 py-1 rounded-full border border-comet-accent/20">
+                    <Pin size={12} />
+                    <span>{info.pinnedCount} Pinned for Offline</span>
+                  </span>
+                )}
+              </div>
+              <div className="space-y-3 max-h-[340px] overflow-y-auto pr-2 custom-scrollbar">
                 {info.cachedComics
                   .sort((a, b) => b.sizeBytes - a.sizeBytes)
                   .map((comic) => (
@@ -189,22 +224,52 @@ export const CacheSettings = () => {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-comet-text truncate w-full">
-                            {comic.title || 'Unknown Title'}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-comet-text truncate">
+                              {comic.title || 'Unknown Title'}
+                            </p>
+                            {comic.isPinned && (
+                              <span className="flex items-center gap-1 text-[10px] font-semibold text-comet-accent bg-comet-accent/10 px-1.5 py-0.5 rounded border border-comet-accent/20 shrink-0">
+                                <Pin size={10} />
+                                Pinned
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-comet-muted font-mono">
                             {formatBytes(comic.sizeBytes)}
                           </p>
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleEvictSingle(comic.comicId)}
-                        className="p-2 text-comet-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors shrink-0 ml-4"
-                        title="Remove from device"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0 ml-4">
+                        <button
+                          type="button"
+                          onClick={() => pinComic(comic.comicId, !comic.isPinned)}
+                          className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                            comic.isPinned
+                              ? 'text-comet-accent bg-comet-accent/15 hover:bg-comet-accent/25'
+                              : 'text-comet-muted hover:text-comet-text hover:bg-comet-surface'
+                          }`}
+                          title={
+                            comic.isPinned
+                              ? 'Pinned offline (click to unpin)'
+                              : 'Pin for offline (protect from auto-eviction)'
+                          }
+                          aria-label={comic.isPinned ? 'Unpin comic' : 'Pin comic'}
+                        >
+                          {comic.isPinned ? <Pin size={16} /> : <PinOff size={16} />}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleEvictSingle(comic.comicId)}
+                          className="p-2 text-comet-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors cursor-pointer"
+                          title="Remove from device"
+                          aria-label="Remove comic from cache"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>

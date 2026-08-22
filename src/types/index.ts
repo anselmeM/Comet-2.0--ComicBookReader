@@ -117,6 +117,7 @@ export interface CachedComic {
   cachedAt: number; // Unix timestamp
   lastAccessedAt: number;
   sizeBytes: number;
+  isPinned?: boolean; // If true, protected from LRU automatic cache eviction
 }
 
 // ────────────────────────────────────────────────────
