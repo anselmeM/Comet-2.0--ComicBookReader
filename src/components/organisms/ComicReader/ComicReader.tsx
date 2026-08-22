@@ -31,11 +31,9 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 import { logger } from '@/lib/logger';
 
 import { useRouter } from 'next/navigation';
-
 import { useQueryClient } from '@tanstack/react-query';
-
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useComicParser } from '@/hooks/useComicParser';
-
 import { UploadCloud, Loader2, ArrowLeft } from 'lucide-react';
 
 interface ComicReaderProps {
@@ -142,20 +140,31 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   const { addBookmark, removeBookmark, getBookmarkForPage } = useBookmarks({ comicId });
 
   const verticalContainerRef = useRef<HTMLDivElement>(null);
-
   const canvasCacheRef = useRef<Record<number, HTMLCanvasElement>>({});
 
-  // Construct GPU-accelerated CSS filter string
+  // TanStack Virtualizer for vertical (webtoon) mode
+  const rowVirtualizer = useVirtualizer({
+    count: comic?.pages?.length ?? 0,
+    getScrollElement: () => verticalContainerRef.current,
+    estimateSize: (index) => {
+      const page = comic?.pages[index];
+      if (page?.width && page?.height) {
+        const containerWidth =
+          typeof window !== 'undefined' ? Math.min(window.innerWidth * 0.95, 800) : 800;
+        return (page.height / page.width) * containerWidth + 48; // +48 for divider badge and padding
+      }
+      return 1200;
+    },
+    overscan: 2,
+  });
 
+  // Construct GPU-accelerated CSS filter string
   const filterString = useMemo(() => {
     const filters = [];
 
     if (sepia > 0) filters.push(`sepia(${sepia})`);
-
     if (contrast !== 1.0) filters.push(`contrast(${contrast})`);
-
     if (grayscale > 0) filters.push(`grayscale(${grayscale})`);
-
     if (sharpen) filters.push(`url(#sharpen-filter)`);
 
     return filters.length > 0 ? filters.join(' ') : 'none';
@@ -381,48 +390,47 @@ export function ComicReader({ comicId }: ComicReaderProps) {
   }, [comic, loading, openComic, metadata, session]);
 
   // Set up IntersectionObserver for vertical scroll mode
-
   useEffect(() => {
-    if (mode !== 'single-vertical' || !comic || loading) return;
+    if (mode !== 'single-vertical' || !comic || loading || !verticalContainerRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const pageIndex = parseInt(entry.target.getAttribute('data-page-index') || '0', 10);
-
-            setPage(pageIndex);
+            if (pageIndex !== useReaderStore.getState().currentPage) {
+              setPage(pageIndex);
+            }
           }
         });
       },
-
       {
         root: verticalContainerRef.current,
-
-        threshold: 0.5, // Trigger when 50% of the page is visible
+        threshold: 0.4, // Trigger when 40% of the page is visible
       },
     );
 
-    const pages = verticalContainerRef.current?.querySelectorAll('[data-page-index]');
-
-    pages?.forEach((page) => observer.observe(page));
+    const pages = verticalContainerRef.current.querySelectorAll('[data-page-index]');
+    pages.forEach((page) => observer.observe(page));
 
     return () => observer.disconnect();
-  }, [mode, comic, loading, setPage]);
+  });
 
   // Scroll to current page when it changes in vertical mode
-
   useEffect(() => {
-    if (mode !== 'single-vertical' || !verticalContainerRef.current) return;
+    if (mode !== 'single-vertical' || !verticalContainerRef.current || !comic) return;
 
-    const pageElement = verticalContainerRef.current.querySelector(
-      `[data-page-index="${currentPage}"]`,
-    );
-
-    if (pageElement) {
-      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    try {
+      rowVirtualizer.scrollToIndex(currentPage, { align: 'start', behavior: 'smooth' });
+    } catch {
+      const pageElement = verticalContainerRef.current.querySelector(
+        `[data-page-index="${currentPage}"]`,
+      );
+      if (pageElement) {
+        pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
-  }, [mode, currentPage]);
+  }, [mode, currentPage, comic, rowVirtualizer]);
 
   // Keyboard navigation
 
@@ -808,24 +816,50 @@ export function ComicReader({ comicId }: ComicReaderProps) {
           ref={verticalContainerRef}
           onPointerDown={handleVerticalPointerDown}
           onPointerUp={handleVerticalPointerUp}
-          className="comic-reader-vertical-container h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-20 flex flex-col items-center gap-4 scroll-smooth transition-all duration-300"
+          className="comic-reader-vertical-container h-full w-full overflow-y-auto overflow-x-hidden pt-4 pb-24 flex flex-col items-center scroll-smooth transition-all duration-300"
         >
-          {comic.pages.map((page, idx) => (
-            <div
-              key={`page-${idx}`}
-              data-page-index={idx}
-              className="comic-reader-page-wrapper w-full flex justify-center"
-            >
-              <BlobImage
-                blob={page.blob}
-                width={page.width}
-                height={page.height}
-                alt={`Page ${idx + 1}`}
-                style={{ filter: filterString }}
-                className="comic-reader-image max-h-full max-w-full object-contain shadow-2xl rounded-sm"
-              />
-            </div>
-          ))}
+          <div
+            className="w-full relative max-w-4xl flex flex-col items-center"
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const idx = virtualRow.index;
+              const page = comic.pages[idx];
+              if (!page) return null;
+
+              return (
+                <div
+                  key={`page-${idx}`}
+                  data-page-index={idx}
+                  ref={rowVirtualizer.measureElement}
+                  className="comic-reader-page-wrapper absolute top-0 left-0 w-full flex flex-col items-center pb-8"
+                  style={{
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  {/* Page Divider & Badge */}
+                  <div className="w-full flex items-center justify-center gap-3 py-2 text-xs font-mono text-neutral-400 select-none">
+                    <div className="h-px bg-neutral-800 flex-1 max-w-[120px]" />
+                    <span className="bg-neutral-900/90 border border-neutral-800 px-2.5 py-0.5 rounded-full text-[11px] text-neutral-300 shadow-sm">
+                      Page {idx + 1} of {comic.pages.length}
+                    </span>
+                    <div className="h-px bg-neutral-800 flex-1 max-w-[120px]" />
+                  </div>
+
+                  <BlobImage
+                    blob={page.blob}
+                    width={page.width}
+                    height={page.height}
+                    alt={`Page ${idx + 1}`}
+                    style={{ filter: filterString }}
+                    className="comic-reader-image max-h-full max-w-full object-contain shadow-2xl rounded-sm"
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
