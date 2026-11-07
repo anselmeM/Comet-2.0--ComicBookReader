@@ -42,11 +42,15 @@ if (!process.env.DATABASE_URL) {
 }
 
 const dbUrl = process.env.DATABASE_URL || '';
+const isPostgres = dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql');
+// Deployment builds must not mutate the shared database: only Vercel production
+// (or an explicit local opt-in) is allowed to run `prisma migrate deploy`. CI pull
+// requests and Vercel previews build against whatever DATABASE_URL they are given,
+// and previously applied PR migrations to the production database before review.
+const isVercelProduction = process.env.VERCEL_ENV === 'production';
+const explicitlyAllowed = process.env.ALLOW_DB_MIGRATE === 'true';
 
-// Only run database migrations for PostgreSQL. SQLite local dev uses `npm run db:push`
-// to keep the schema in sync, and running `prisma migrate deploy` against a SQLite
-// database whose migration history was created for PostgreSQL fails with P3019.
-if (dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql')) {
+if (isPostgres && (isVercelProduction || explicitlyAllowed)) {
   console.log('🛢️  DATABASE_URL is PostgreSQL — running prisma migrate deploy...');
   const result = spawnSync('npx', ['prisma', 'migrate', 'deploy'], {
     stdio: 'inherit',
@@ -59,6 +63,11 @@ if (dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql')) {
   if (result.status !== 0) {
     process.exit(result.status);
   }
+} else if (isPostgres) {
+  console.log(
+    'ℹ️  Skipping prisma migrate deploy: only Vercel production (VERCEL_ENV=production) ' +
+      'or ALLOW_DB_MIGRATE=true may mutate the database. Preview/CI builds never do.',
+  );
 } else {
   console.log(
     'ℹ️  SQLite detected — skipping prisma migrate deploy. Use `npm run db:push` to sync the local schema.',

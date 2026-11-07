@@ -17,7 +17,10 @@ function loadEnv() {
           if (index > 0) {
             const key = trimmed.substring(0, index).trim();
             let val = trimmed.substring(index + 1).trim();
-            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            if (
+              (val.startsWith('"') && val.endsWith('"')) ||
+              (val.startsWith("'") && val.endsWith("'"))
+            ) {
               val = val.substring(1, val.length - 1);
             }
             if (!process.env[key]) {
@@ -42,6 +45,15 @@ let schema = fs.readFileSync(schemaPath, 'utf-8');
 const dbUrl = process.env.DATABASE_URL || '';
 const directUrl = process.env.DIRECT_URL || '';
 
+// Fail closed on Vercel: a deploy without a PostgreSQL DATABASE_URL must not silently
+// rewrite the schema to SQLite and ship a "green" build backed by an ephemeral file DB.
+if (process.env.VERCEL_ENV && !/^postgres(ql)?:\/\//.test(dbUrl)) {
+  console.error(
+    '❌ Vercel build requires a PostgreSQL DATABASE_URL. Refusing to fall back to SQLite.',
+  );
+  process.exit(1);
+}
+
 // We match and replace the datasource db block dynamically.
 const datasourceRegex = /datasource\s+db\s*\{[^}]*\}/;
 
@@ -53,8 +65,10 @@ if (dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql')) {
   url       = env("DATABASE_URL")
   directUrl = ${useDirectUrl}
 }`;
-  console.log(`🔄 Configuring Prisma for PostgreSQL. directUrl set to: ${directUrl ? 'DIRECT_URL' : 'DATABASE_URL (fallback)'}`);
-  
+  console.log(
+    `🔄 Configuring Prisma for PostgreSQL. directUrl set to: ${directUrl ? 'DIRECT_URL' : 'DATABASE_URL (fallback)'}`,
+  );
+
   // Replace metadata type to Json for Postgres support
   schema = schema.replace(/metadata\s+String\?/g, 'metadata    Json?');
 } else {
@@ -65,7 +79,7 @@ if (dbUrl.startsWith('postgres') || dbUrl.startsWith('postgresql')) {
   url      = "${sqliteUrl}"
 }`;
   console.log(`🔄 Configuring Prisma for SQLite (default/local) with URL: ${sqliteUrl}`);
-  
+
   // Replace metadata type to String for SQLite compatibility
   schema = schema.replace(/metadata\s+Json\?/g, 'metadata    String?');
 }
