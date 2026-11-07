@@ -3,21 +3,26 @@
 import React, { useState, useMemo } from 'react';
 import { getErrorMessage } from '@/lib/errors';
 import { DashboardLayout } from '@/components/organisms/Dashboard/DashboardLayout';
-import { DashboardComic } from '@/components/molecules/DashboardComicCard';
-import { UploadCloud, Loader2, Library } from 'lucide-react';
+import { DashboardComic, DashboardComicCard } from '@/components/molecules/DashboardComicCard';
+import { UploadCloud, Loader2, BookOpen, WifiOff } from 'lucide-react';
 import { useComicParser } from '@/hooks/useComicParser';
 import { useLibrary, useDeleteComic } from '@/hooks/useLibrary';
 import { useCloudSync } from '@/hooks/useCloudSync';
 import { getAllCachedComicsMetadata } from '@/lib/idb';
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useRouter } from 'next/navigation';
-import { ComicDTO } from '@/types';
+import { CachedComic, ComicDTO } from '@/types';
 import { useNotification } from '@/components/atoms/Toast';
 import { logger } from '@/lib/logger';
 import { useDebounce } from '@/hooks/useDebounce';
 
+/** Metadata-only view of a locally cached comic (page blobs stripped). */
+type CachedComicMetadata = Omit<CachedComic, 'pages'>;
+
 export default function LibraryPage() {
   const router = useRouter();
+  const isOnline = useNetworkStatus();
   const { parseComic, isParsing, progress } = useComicParser();
   const {
     downloadFromCloud,
@@ -37,6 +42,7 @@ export default function LibraryPage() {
   const [readStatus, setReadStatus] = useState('all');
   const [isOfflineOnly, setIsOfflineOnly] = useState(false);
   const [localComicIds, setLocalComicIds] = useState<Set<string>>(new Set());
+  const [localComics, setLocalComics] = useState<CachedComicMetadata[]>([]);
 
   const {
     data: libraryData,
@@ -74,6 +80,7 @@ export default function LibraryPage() {
     const checkLocal = async () => {
       const cached = await getAllCachedComicsMetadata(session?.user?.id);
       setLocalComicIds(new Set(cached.map((c) => c.comicId)));
+      setLocalComics(cached);
     };
     checkLocal();
   }, [libraryData, session?.user?.id]);
@@ -103,6 +110,21 @@ export default function LibraryPage() {
         : undefined,
     }));
   }, [libraryData?.data, localComicIds]);
+
+  // Downloaded-only comics shown when the full library can't be fetched
+  // (offline, or the library request failed). Metadata comes from IndexedDB.
+  const offlineComics: DashboardComic[] = useMemo(
+    () =>
+      localComics.map((comic) => ({
+        id: comic.comicId,
+        title: comic.title || 'Untitled Comic',
+        coverUrl: comic.coverUrl || undefined,
+        pageCount: 0,
+        isPinned: comic.isPinned,
+        isLocallyAvailable: true,
+      })),
+    [localComics],
+  );
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
@@ -167,7 +189,11 @@ export default function LibraryPage() {
     }
   };
 
-  if (sessionStatus === 'loading' || (isLoading && !libraryData)) {
+  // The full library can't be shown when we're offline or the request failed;
+  // fall back to the downloaded-only grid instead of a dead-end error page.
+  const isDegraded = !isOnline || Boolean(error);
+
+  if (sessionStatus === 'loading' || (!isDegraded && isLoading && !libraryData)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200 flex items-center justify-center">
         <div className="bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center gap-4">
@@ -178,21 +204,55 @@ export default function LibraryPage() {
     );
   }
 
-  if (error) {
-    const errorMessage =
-      error instanceof Error ? getErrorMessage(error) : 'Could not connect to the server';
+  if (isDegraded) {
+    const offlineReason = error
+      ? getErrorMessage(error)
+      : 'You are offline. Downloaded comics remain available to read.';
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200 flex items-center justify-center text-comet-text">
-        <div className="bg-comet-surface p-8 rounded-3xl shadow-xl flex flex-col items-center gap-4 max-w-md text-center border border-comet-border">
-          <Library size={32} className="text-red-500 mx-auto" />
-          <h2 className="text-xl font-bold">Failed to load library</h2>
-          <p className="text-comet-muted">{errorMessage}</p>
-          <button
-            onClick={() => refetch()}
-            className="bg-comet-accent text-white px-6 py-2 rounded-full font-medium"
-          >
-            Try Again
-          </button>
+      <div className="min-h-screen bg-comet-bg text-comet-text">
+        <div className="mx-auto max-w-7xl px-4 py-8 md:px-12">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="flex items-center gap-2 text-2xl font-bold">
+                <WifiOff size={24} className="text-comet-accent" />
+                Downloaded comics
+              </h1>
+              <p className="mt-1 text-sm text-comet-muted">
+                Showing downloaded comics — reconnect to load your full library
+              </p>
+            </div>
+            <button
+              onClick={() => refetch()}
+              className="rounded-full border border-comet-border bg-comet-surface px-4 py-2 text-sm font-medium text-comet-text transition-colors hover:border-comet-accent"
+            >
+              Try Again
+            </button>
+          </div>
+
+          {offlineComics.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 rounded-3xl border border-comet-border bg-comet-surface p-12 text-center">
+              <BookOpen size={48} className="text-comet-muted opacity-50" />
+              <p className="text-comet-muted">
+                No downloaded comics are available on this device yet.
+              </p>
+              <p className="text-sm text-comet-muted">{offlineReason}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+              {offlineComics.map((comic) => (
+                <DashboardComicCard
+                  key={comic.id}
+                  comic={comic}
+                  variant="standard"
+                  showPageCount={false}
+                  showYear={false}
+                  showProgress={false}
+                  onNotification={triggerNotification}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
