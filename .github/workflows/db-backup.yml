@@ -1,44 +1,77 @@
 name: Database Backup
 
+# Real logical backup: `pg_dump --format=custom`, verified with `pg_restore --list`,
+# gzipped and uploaded as a 30-day workflow artifact. Restore steps are documented
+# in README → "Database backups".
+#
+# Uses DIRECT_URL (unpooled) when set, otherwise DATABASE_URL: pg_dump needs a
+# direct session, and neither value is ever echoed (they contain credentials).
+
 on:
   schedule:
     - cron: '0 4 * * *' # Daily at 04:00 UTC
   workflow_dispatch:
 
+# Never overlap two dumps (a running dump holds a long read session).
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   backup:
-    name: Backup Database
+    name: pg_dump Backup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - run: npm ci
-
-      - name: Prepare Prisma config
-        # Same prep as npm run build: DIRECT_URL secret is absent, so
-        # prisma-provider-switch.js rewrites directUrl to fall back to
-        # DATABASE_URL — without it, prisma fails schema validation (P1012).
-        run: node scripts/prisma-provider-switch.js
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
-
-      - name: Run Prisma backup
+      - name: Install PostgreSQL client
+        # ubuntu-latest ships a distro pg_dump that can be older than the managed
+        # server (Neon/Supabase run 16/17/18). A newer server than client fails with
+        # "server version mismatch", so install the current PGDG client. Bump the
+        # package major when the database is upgraded.
         run: |
-          npx prisma db pull --schema=prisma/schema.prisma
-          echo "Database schema snapshot created at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          . /etc/os-release
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          pg_dump --version
+
+      - name: Dump database
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: |
+          set -euo pipefail
 
-      - name: Upload schema snapshot
+          DB_URL="${DIRECT_URL:-${DATABASE_URL:-}}"
+          if [ -z "$DB_URL" ]; then
+            echo "::error::Neither DIRECT_URL nor DATABASE_URL repository secret is configured."
+            exit 1
+          fi
+
+          mkdir -p backups
+          STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+          DUMP="backups/comet-${STAMP}.dump"
+
+          # Custom format supports pg_restore --clean/--jobs and selective restore.
+          pg_dump "$DB_URL" --format=custom --no-owner --file="$DUMP"
+
+          # Prove the archive is readable before spending artifact storage on it.
+          pg_restore --list "$DUMP" > /dev/null
+
+          gzip -9 "$DUMP"
+          ls -lh "${DUMP}.gz"
+          echo "BACKUP_FILE=${DUMP}.gz" >> "$GITHUB_ENV"
+
+      - name: Upload backup artifact
         uses: actions/upload-artifact@v4
         with:
-          name: db-schema-${{ github.run_id }}
-          path: prisma/schema.prisma
+          name: db-dump-${{ github.run_id }}
+          path: ${{ env.BACKUP_FILE }}
           retention-days: 30
+          if-no-files-found: error

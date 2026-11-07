@@ -16,7 +16,7 @@ A modern, offline-first comic book reader built with Next.js, featuring a beauti
 - 🔍 **Metadata Enrichment** - Automatic comic information fetching from ComicVine
 - 👥 **Social** - Friends, feed reactions, direct messages, reading clubs
 - 🏆 **Gamification** - Badges, reading streaks, and statistics
-- 🔐 **Authentication** - Secure accounts with NextAuth.js (credentials + OAuth)
+- 🔐 **Authentication** - Secure accounts with Clerk (hosted sign-in/sign-up, OAuth providers configured in the Clerk dashboard)
 
 ## Tech Stack
 
@@ -24,7 +24,7 @@ A modern, offline-first comic book reader built with Next.js, featuring a beauti
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
 - **Database**: PostgreSQL with Prisma ORM (SQLite supported for local development)
-- **Auth**: NextAuth.js v5
+- **Auth**: Clerk
 - **State**: Zustand
 - **Billing**: Stripe
 - **Monitoring**: Sentry
@@ -73,14 +73,16 @@ Create a `.env.local` file with the following (see `.env.example` for the full l
 DATABASE_URL="postgresql://user:password@host:5432/comet"
 DIRECT_URL="postgresql://user:password@host:5432/comet"
 
-# NextAuth
-AUTH_SECRET="your-secret-key"
-NEXTAUTH_URL="http://localhost:3100"
+# Authentication (Clerk)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+CLERK_SECRET_KEY="sk_test_..."
+# Svix signing secret for /api/webhooks/clerk (user lifecycle sync)
+CLERK_WEBHOOK_SECRET="whsec_..."
 
 # External APIs
 COMICVINE_API_KEY="your-comicvine-api-key"
 
-# Email (password resets)
+# Email (friend invitations)
 SMTP_HOST="smtp.example.com"
 SMTP_PORT="587"
 SMTP_USER="user@example.com"
@@ -95,9 +97,12 @@ AWS_REGION="auto"
 AWS_BUCKET_NAME="comet-comics"
 ```
 
-The build automatically configures Prisma for PostgreSQL when `DATABASE_URL` is a
-PostgreSQL connection string, otherwise it falls back to SQLite (running migrations
-only for PostgreSQL — use `npm run db:push` to sync a local SQLite schema).
+The build runs `scripts/prisma-provider-switch.js`, then `prisma generate`, then
+`scripts/prisma-migrate.js`. On Vercel a non-PostgreSQL `DATABASE_URL` fails the
+build (fail-closed); local/CI builds without a PostgreSQL URL use the SQLite
+provider and never run `prisma migrate deploy` — use `npm run db:push` to sync a
+local SQLite schema. Migrations are applied only on Vercel production (or with
+`ALLOW_DB_MIGRATE=true`).
 
 ### Full production environment
 
@@ -105,10 +110,8 @@ Beyond the essentials above, production needs (all must be set in Vercel/your ho
 none are committed):
 
 ```env
-# OAuth providers (optional — provider is only shown when both ID and secret are set)
-AUTH_GOOGLE_ID="..."          AUTH_GOOGLE_SECRET="..."
-AUTH_DISCORD_ID="..."         AUTH_DISCORD_SECRET="..."
-AUTH_GITHUB_ID="..."          AUTH_GITHUB_SECRET="..."
+# OAuth providers are configured in the Clerk dashboard — the old
+# AUTH_GOOGLE_*/AUTH_DISCORD_*/AUTH_GITHUB_* variables are no longer read.
 
 # Stripe billing (required for Premium checkout to work)
 STRIPE_SECRET_KEY="sk_live_..."
@@ -132,11 +135,11 @@ STORAGE_BUCKET="comet-comics"
 NEXT_PUBLIC_AWS_ENDPOINT="https://your-account-id.r2.cloudflarestorage.com"
 ```
 
-- `npm run build` runs `scripts/prisma-provider-switch.js` + `prisma migrate deploy`
-  first; a local build without a PostgreSQL `DATABASE_URL` rewrites the schema to
-  SQLite — re-check `git status` after local builds.
+- `npm run build` rewrites `prisma/schema.prisma` for local SQLite builds — run
+  `node scripts/guard-prisma-schema.js` (or check `git status`) before committing.
 - Health check: `GET /api/health` (public, pings the database).
-- Local dev mock-S3 server runs on port `3101` when `MOCK_S3=1`.
+- Local dev mock-S3 server starts automatically in development (port `3101`, see
+  `next.config.ts`).
 - e2e tests run against a local server with `E2E_TEST_MODE=true` (auth bypass,
   see `src/lib/test-auth.ts`); this is never set in deployed environments.
 
@@ -204,13 +207,31 @@ npm run db:push    # Sync the Prisma schema to the database (SQLite local dev)
 npx prisma studio  # Browse the database
 ```
 
+### Database backups
+
+`db-backup.yml` dumps the database daily with `pg_dump --format=custom` against
+`DIRECT_URL` (falling back to `DATABASE_URL`), verifies the archive with
+`pg_restore --list`, gzips it, and uploads it as a 30-day workflow artifact.
+
+Restore with the matching `pg_restore` client version:
+
+```bash
+gunzip comet-YYYYMMDDTHHMMSSZ.dump.gz
+pg_restore --clean --if-exists --no-owner --dbname "$DIRECT_URL" \
+  comet-YYYYMMDDTHHMMSSZ.dump
+```
+
+Artifacts are repository-scoped (not public), but they are not a durable
+disaster-recovery store — copy dumps to encrypted offsite storage for retention
+beyond the 30-day window.
+
 ## CI/CD
 
 The repository ships with GitHub Actions workflows:
 
-- `ci.yml` — lint, typecheck, unit tests, and production build on every push/PR
-- `deploy.yml` — deploy to Vercel on pushes to `master`
-- `db-backup.yml` — scheduled PostgreSQL backups
+- `ci.yml` — lint, typecheck, unit tests, Prisma schema guard, and production build on every push/PR
+- `prisma-baseline.yml` — one-off ops tool to mark an existing database's baseline migration as applied (manual `workflow_dispatch`)
+- `db-backup.yml` — daily PostgreSQL `pg_dump` backup artifact (restore steps above)
 - `lighthouse.yml` — performance budgets
 - `security-audit.yml` — weekly dependency/security audit
 
