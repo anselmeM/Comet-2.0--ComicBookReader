@@ -8,17 +8,15 @@ import { logger } from '@/lib/logger';
 
 // Initialize Redis client
 let redis: Redis | null = null;
-let ratelimit: Ratelimit | null = null;
+
+// One limiter per (limit, windowMs) pair, so each caller's budget is actually
+// enforced with its own sliding window instead of a single hard-coded default.
+const slidingLimiters = new Map<string, Ratelimit>();
+const MAX_CACHED_LIMITERS = 50;
 
 try {
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     redis = Redis.fromEnv();
-    ratelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(10, '60 s'), // Default, can be overridden per call
-      analytics: true,
-      prefix: 'comet:ratelimit',
-    });
   }
 } catch (err) {
   logger.warn(
@@ -26,6 +24,41 @@ try {
     {},
     err instanceof Error ? err : undefined,
   );
+}
+
+/**
+ * Lazily creates (and caches) the limiter for a given budget.
+ * Returns null when Redis is unavailable, so callers use the memory fallback.
+ */
+function getLimiter(limit: number, windowMs: number): Ratelimit | null {
+  if (!redis) return null;
+
+  const cacheKey = `${limit}:${windowMs}`;
+  const cached = slidingLimiters.get(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const limiter = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+      analytics: true,
+      prefix: 'comet:ratelimit',
+    });
+
+    // Bounded cache: cap how many distinct budgets can be retained.
+    if (slidingLimiters.size >= MAX_CACHED_LIMITERS) {
+      slidingLimiters.clear();
+    }
+    slidingLimiters.set(cacheKey, limiter);
+    return limiter;
+  } catch (err) {
+    logger.error(
+      `[RateLimit] Failed to create Upstash limiter for ${cacheKey}:`,
+      {},
+      err instanceof Error ? err : undefined,
+    );
+    return null;
+  }
 }
 
 // In-memory fallback
@@ -40,15 +73,16 @@ const memoryStore = new Map<string, RateLimitRecord>();
  *
  * @param key Unique key to limit (e.g. IP address or email)
  * @param limit Maximum number of requests allowed
- * @param windowMs Time window in milliseconds (used for fallback only)
+ * @param windowMs Time window in milliseconds
  * @returns Object with limit status and headers
  */
 export async function rateLimit(key: string, limit: number, windowMs: number) {
   const identifier = `${key}:${limit}:${windowMs}`;
+  const limiter = getLimiter(limit, windowMs);
 
-  if (ratelimit) {
+  if (limiter) {
     try {
-      const { success, remaining, reset, limit: actualLimit } = await ratelimit.limit(identifier);
+      const { success, remaining, reset, limit: actualLimit } = await limiter.limit(identifier);
 
       return {
         isLimited: !success,
@@ -73,7 +107,7 @@ export async function rateLimit(key: string, limit: number, windowMs: number) {
   // limiter) is not configured: per-instance in-memory limiting is bypassable
   // on serverless, so refuse rather than serve unlimited traffic. In dev,
   // keep the per-instance fallback so local workflows aren't blocked.
-  if (!ratelimit && process.env.NODE_ENV === 'production') {
+  if (!redis && process.env.NODE_ENV === 'production') {
     logger.error(
       `[RateLimit] UPSTASH_REDIS is not configured in production — failing closed for key ${key}`,
     );

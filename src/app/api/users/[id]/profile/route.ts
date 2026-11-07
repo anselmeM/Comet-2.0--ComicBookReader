@@ -5,7 +5,8 @@ import { logger } from '@/lib/logger';
 
 /**
  * GET /api/users/[id]/profile — Fetch public profile data for a specific user
- * This will return their badges, reading statistics, and recent activity
+ * Strangers get basic identity; badges, stats and recent activity are only
+ * returned to the profile owner and their friends.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,8 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // 2. Fetch friendship status to ensure privacy if we add privacy controls later
-    // Currently, profiles are public to anyone logged in, but we can verify friendship.
+    // 2. Fetch friendship status — friend/self is required for private profile data.
     const friendship = await db.friendship.findFirst({
       where: {
         OR: [
@@ -43,13 +43,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const isFriend = !!friendship;
     const isSelf = session.user.id === targetUserId;
 
-    // 3. Fetch Badges
+    // 3. Only friends and the profile owner get private activity data. Strangers
+    // receive basic identity only, and we skip the queries entirely.
+    if (!isFriend && !isSelf) {
+      return NextResponse.json({
+        profile: {
+          ...targetUser,
+          isFriend,
+          isSelf,
+        },
+      });
+    }
+
+    // 4. Fetch Badges
     const badges = await db.userBadge.findMany({
       where: { userId: targetUserId },
       orderBy: { earnedAt: 'desc' },
     });
 
-    // 4. Fetch Reading Statistics
+    // 5. Fetch Reading Statistics
     // Total comics in library
     const libraryCount = await db.comic.count({
       where: { userId: targetUserId },
@@ -67,7 +79,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     });
     const totalTimeSpent = readingProgresses.reduce((acc, curr) => acc + curr.totalTimeSpent, 0);
 
-    // 5. Fetch Recent Activity (last 5 comics read or added)
+    // 6. Fetch Recent Activity (last 5 comics read or added)
     const recentActivity = await db.readingProgress.findMany({
       where: { userId: targetUserId },
       orderBy: { updatedAt: 'desc' },
