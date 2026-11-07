@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 import { evictCachedComic } from '@/lib/idb';
 import { PaginatedLibraryResponseDTO } from '@/types';
 import { useAuthCallback } from './useAuthCallback';

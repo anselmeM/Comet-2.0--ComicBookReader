@@ -16,9 +16,9 @@ vi.mock('../useAuthCallback', () => ({
   useAuthCallback: vi.fn(() => ({ handleAuthError: vi.fn() })),
 }));
 
-// Mock useSession
-vi.mock('next-auth/react', () => ({
-  useSession: vi.fn(() => ({ data: { user: { id: 'user-1' } } })),
+// Mock useAppSession (Clerk-backed session shim)
+vi.mock('@/hooks/useAppSession', () => ({
+  useAppSession: vi.fn(() => ({ data: { user: { id: 'user-1' } } })),
 }));
 
 // Mock IndexedDB

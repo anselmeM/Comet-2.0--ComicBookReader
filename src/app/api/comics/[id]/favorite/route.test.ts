@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST, DELETE } from './route';
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
-import { Session } from 'next-auth';
+import { validateSession } from '@/lib/auth-utils';
+import { NextResponse } from 'next/server';
 import { ComicDTOSchema } from '@/types/schemas';
 
-vi.mock('@/auth', () => ({
-  auth: vi.fn(),
+vi.mock('@/lib/auth-utils', () => ({
+  validateSession: vi.fn(),
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -45,14 +45,17 @@ describe('Comic Favorite API Route ([id])', () => {
 
   describe('POST (favorite)', () => {
     it('should return 401 if unauthorized', async () => {
-      (auth as any).mockResolvedValue(null);
+      (validateSession as any).mockResolvedValue({
+        session: null,
+        errorResponse: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      });
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await POST(new Request('http://localhost:3100'), { params });
       expect(response.status).toBe(401);
     });
 
     it('should return 404 if comic not found or not owned', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       (db.comic.findFirst as any).mockResolvedValue(null);
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await POST(new Request('http://localhost:3100'), { params });
@@ -60,7 +63,7 @@ describe('Comic Favorite API Route ([id])', () => {
     });
 
     it('should favorite the comic and return 200 on success', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       const comicId = 'cl0123456000008l987654321';
       const mockComicBefore = {
         id: comicId,
@@ -104,14 +107,17 @@ describe('Comic Favorite API Route ([id])', () => {
 
   describe('DELETE (unfavorite)', () => {
     it('should return 401 if unauthorized', async () => {
-      (auth as any).mockResolvedValue(null);
+      (validateSession as any).mockResolvedValue({
+        session: null,
+        errorResponse: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      });
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await DELETE(new Request('http://localhost:3100'), { params });
       expect(response.status).toBe(401);
     });
 
     it('should return 404 if comic not found or not owned', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       (db.comic.findFirst as any).mockResolvedValue(null);
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await DELETE(new Request('http://localhost:3100'), { params });
@@ -119,7 +125,7 @@ describe('Comic Favorite API Route ([id])', () => {
     });
 
     it('should unfavorite the comic and return 200 on success', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       const comicId = 'cl0123456000008l987654321';
       const mockComicBefore = {
         id: comicId,

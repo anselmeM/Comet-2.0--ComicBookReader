@@ -1,7 +1,7 @@
 'use client';
 
 import { HardDrive, Trash2, RefreshCw, BookOpen, Pin, PinOff, ShieldCheck } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 import { formatBytes } from '@/lib/format';
 import { useStorage } from '@/hooks/useStorage';
 import { useSettingsStore } from '@/stores/settingsStore';

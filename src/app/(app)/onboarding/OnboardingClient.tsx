@@ -17,7 +17,7 @@ import {
   Eye,
   AlignLeft,
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 import { useRouter } from 'next/navigation';
 import { completeOnboarding } from './actions';
 import { useComicParser } from '@/hooks/useComicParser';

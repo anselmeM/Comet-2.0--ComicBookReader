@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
+import { resolveAppUser } from '@/lib/auth-utils';
 import { redirect } from 'next/navigation';
 import { Trophy, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SettingsAchievementsPage() {
-  const session = await auth();
+  const session = await resolveAppUser();
   if (!session?.user?.id) redirect('/login');
 
   const earnedBadges = await db.userBadge.findMany({

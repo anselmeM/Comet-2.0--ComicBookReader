@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useNotification } from '@/components/atoms/Toast';
-import { signOut } from 'next-auth/react';
+import { useClerk } from '@clerk/nextjs';
 import { logger } from '@/lib/logger';
 
 /**
@@ -10,8 +9,8 @@ import { logger } from '@/lib/logger';
  * and redirect the user to the login page with a helpful message.
  */
 export function useAuthCallback() {
-  const router = useRouter();
   const { triggerNotification } = useNotification();
+  const { signOut } = useClerk();
 
   /**
    * Handles authentication errors by showing a notification and redirecting to login.
@@ -27,35 +26,6 @@ export function useAuthCallback() {
       const isForbidden = status === 403;
 
       if (isUnauthorized || isForbidden || force) {
-        // Clear client-side session state safely
-        try {
-          if (typeof window !== 'undefined' && window.indexedDB && window.indexedDB.databases) {
-            const dbs = await window.indexedDB.databases();
-            for (const dbInfo of dbs) {
-              if (
-                dbInfo.name &&
-                (dbInfo.name.startsWith('comet-cache-') || dbInfo.name === 'comet-cache')
-              ) {
-                window.indexedDB.deleteDatabase(dbInfo.name);
-              }
-            }
-          }
-          await signOut({ redirect: false });
-        } catch (e) {
-          logger.error(
-            '[useAuthCallback] Failed to clear session/cache:',
-            {},
-            e instanceof Error ? e : undefined,
-          );
-        }
-
-        triggerNotification(
-          isForbidden
-            ? 'You do not have permission to perform this action.'
-            : 'Your session has expired. Please log in again.',
-          'error',
-        );
-
         // Capture current path to return after re-login
         const currentPath =
           typeof window !== 'undefined' ? window.location.pathname + window.location.search : '';
@@ -72,13 +42,42 @@ export function useAuthCallback() {
           loginUrl.searchParams.set('callbackUrl', currentPath);
         }
 
-        router.push(loginUrl.pathname + loginUrl.search);
+        // Clear client-side session state safely, then hand off to Clerk's
+        // sign-out redirect (lands on /login with the callback preserved).
+        try {
+          if (typeof window !== 'undefined' && window.indexedDB && window.indexedDB.databases) {
+            const dbs = await window.indexedDB.databases();
+            for (const dbInfo of dbs) {
+              if (
+                dbInfo.name &&
+                (dbInfo.name.startsWith('comet-cache-') || dbInfo.name === 'comet-cache')
+              ) {
+                window.indexedDB.deleteDatabase(dbInfo.name);
+              }
+            }
+          }
+        } catch (e) {
+          logger.error(
+            '[useAuthCallback] Failed to clear session/cache:',
+            {},
+            e instanceof Error ? e : undefined,
+          );
+        }
+
+        triggerNotification(
+          isForbidden
+            ? 'You do not have permission to perform this action.'
+            : 'Your session has expired. Please log in again.',
+          'error',
+        );
+
+        await signOut({ redirectUrl: loginUrl.pathname + loginUrl.search });
         return true;
       }
 
       return false;
     },
-    [router, triggerNotification],
+    [triggerNotification, signOut],
   );
 
   return { handleAuthError };

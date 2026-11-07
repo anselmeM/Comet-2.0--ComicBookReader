@@ -22,7 +22,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import { detectPanels } from '@/lib/guidedView';
 
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 
 import { Panel } from '@/types';
 

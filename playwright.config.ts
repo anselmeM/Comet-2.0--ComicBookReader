@@ -42,6 +42,9 @@ export default defineConfig({
       // Opt-in for the __COMET_TEST_BYPASS auth bypass (see src/lib/test-auth.ts).
       // Set ONLY here — never in deployed environments.
       E2E_TEST_MODE: 'true',
+      // Lets client components (useAppSession) return a canned session so
+      // specs run keyless, without Clerk network access.
+      NEXT_PUBLIC_E2E_TEST_MODE: 'true',
     },
   },
 });

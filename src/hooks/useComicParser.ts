@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { runComicPipeline, ParseProgress } from '@/lib/comic-pipeline';
 import { useAuthCallback } from './useAuthCallback';
 import { useCloudSync } from './useCloudSync';
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 import { useNotification } from '@/components/atoms/Toast';
 
 export type { ParseProgress } from '@/lib/comic-pipeline';

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { Search, Filter, UploadCloud, Bell, X } from 'lucide-react';
 
-import type { Session } from 'next-auth';
+import type { AppSession as Session } from '@/lib/auth-utils';
 
 import Link from 'next/link';
 

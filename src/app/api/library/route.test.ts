@@ -3,12 +3,10 @@ import { GET, POST } from './route';
 import { validateSession } from '@/lib/auth-utils';
 import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { Session } from 'next-auth';
-import { auth } from '@/auth';
 import { PaginatedLibraryResponseSchema, ComicDTOSchema } from '@/types/schemas';
 
-vi.mock('@/auth', () => ({
-  auth: vi.fn() as any,
+vi.mock('@/lib/auth-utils', () => ({
+  validateSession: vi.fn(),
 }));
 
 vi.mock('@/lib/notifications', () => ({
@@ -65,7 +63,7 @@ describe('Library API Route', () => {
 
   describe('GET', () => {
     it('should return paginated comics', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.comic.count).mockResolvedValue(1);
 
       const mockComics = [
@@ -108,7 +106,10 @@ describe('Library API Route', () => {
     });
 
     it('should return unauthorized if session is invalid', async () => {
-      (auth as any).mockResolvedValue(null);
+      (validateSession as any).mockResolvedValue({
+        session: null,
+        errorResponse: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      });
 
       const req = new Request('http://localhost:3100/api/library');
       const response = await GET(req);
@@ -119,7 +120,7 @@ describe('Library API Route', () => {
 
   describe('POST', () => {
     it('should add a new comic', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.user.findUnique).mockResolvedValue({ id: 'user-123' } as any);
 
       const mockComic = {
@@ -164,7 +165,7 @@ describe('Library API Route', () => {
     });
 
     it('should return 415 if content-type is not application/json', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
 
       const req = new Request('http://localhost:3100/api/library', {
         method: 'POST',
@@ -177,7 +178,7 @@ describe('Library API Route', () => {
     });
 
     it('should return 400 for invalid payload', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
 
       const req = new Request('http://localhost:3100/api/library', {
         method: 'POST',

@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-import { useSession, signOut } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
+import { useClerk } from '@clerk/nextjs';
 
 import { useReaderStore } from '@/stores/readerStore';
 
@@ -58,6 +59,8 @@ export function SettingsPanel({ earnedBadgeIds = [] }: SettingsPanelProps) {
   // User profile state
 
   const { data: session, update: updateSession } = useSession();
+
+  const { signOut } = useClerk();
 
   const mode = useReaderStore((state) => state.mode);
 

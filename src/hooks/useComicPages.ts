@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getCachedComic, setCachedComic } from '@/lib/idb';
 import { CachedComic, ComicDTO } from '@/types';
 import { useAuthCallback } from './useAuthCallback';
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 import { executeParserWorker } from '@/lib/comic-worker-client';
 import { logger } from '@/lib/logger';
 
