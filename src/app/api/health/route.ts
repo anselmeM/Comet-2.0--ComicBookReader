@@ -12,23 +12,34 @@ export async function GET() {
     // 1. Check database connection
     await db.$queryRaw`SELECT 1`;
 
-    return NextResponse.json({
-      status: 'UP',
-      timestamp: new Date().toISOString(),
-      services: {
-        database: 'UP',
+    return NextResponse.json(
+      {
+        status: 'UP',
+        timestamp: new Date().toISOString(),
+        services: {
+          database: 'UP',
+        },
+        uptime: process.uptime(),
       },
-      uptime: process.uptime(),
-    }, { status: 200 });
+      { status: 200 },
+    );
   } catch (error) {
-    logger.error('Healthcheck failed', {}, error instanceof Error ? error : new Error(String(error)));
-    return NextResponse.json({
-      status: 'DOWN',
-      timestamp: new Date().toISOString(),
-      services: {
-        database: 'DOWN',
+    // Log the real cause server-side; never expose DB/driver details (which can
+    // include host/port/credentials) to an unauthenticated caller.
+    logger.error(
+      'Healthcheck failed',
+      {},
+      error instanceof Error ? error : new Error(String(error)),
+    );
+    return NextResponse.json(
+      {
+        status: 'DOWN',
+        timestamp: new Date().toISOString(),
+        services: {
+          database: 'DOWN',
+        },
       },
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }, { status: 500 });
+      { status: 500 },
+    );
   }
 }

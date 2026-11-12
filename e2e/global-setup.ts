@@ -25,7 +25,6 @@ export default async function globalSetup(config: FullConfig) {
     '/',
     '/login',
     '/register',
-    '/forgot-password',
     '/library',
     '/onboarding',
     '/reader/comic-e2e-001',

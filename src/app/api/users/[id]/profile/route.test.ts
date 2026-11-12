@@ -58,7 +58,7 @@ describe('GET /api/users/[id]/profile', () => {
     expect(res.status).toBe(404);
   });
 
-  it('returns the profile with stats and friend status', async () => {
+  it('returns the profile with stats and friend status to a friend', async () => {
     const res = await GET(getRequest('http://localhost/api/users/u2/profile'), {
       params: Promise.resolve({ id: 'u2' }),
     });
@@ -67,5 +67,82 @@ describe('GET /api/users/[id]/profile', () => {
     expect(body.profile.name).toBe('Friend');
     expect(body.profile.stats.libraryCount).toBe(5);
     expect(body.profile.isFriend).toBe(true);
+    expect(db.userBadge.findMany).toHaveBeenCalled();
+  });
+
+  it('returns only basic identity fields to a stranger', async () => {
+    db.friendship.findFirst.mockResolvedValue(null);
+    const res = await GET(getRequest('http://localhost/api/users/u2/profile'), {
+      params: Promise.resolve({ id: 'u2' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.profile).toEqual({
+      id: 'u2',
+      name: 'Friend',
+      image: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      isFriend: false,
+      isSelf: false,
+    });
+    // Private data must not even be queried for strangers.
+    expect(db.userBadge.findMany).not.toHaveBeenCalled();
+    expect(db.comic.count).not.toHaveBeenCalled();
+    expect(db.readingProgress.count).not.toHaveBeenCalled();
+    expect(db.readingProgress.findMany).not.toHaveBeenCalled();
+  });
+
+  it('lets the profile owner see their own private data', async () => {
+    db.friendship.findFirst.mockResolvedValue(null);
+    db.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      name: 'Test User',
+      image: null,
+      createdAt: new Date('2026-01-01'),
+    });
+    db.userBadge.findMany.mockResolvedValue([{ id: 'b1', badgeId: 'badge-1' }]);
+    db.readingProgress.findMany
+      .mockResolvedValueOnce([{ totalTimeSpent: 3600 }])
+      .mockResolvedValueOnce([]);
+
+    const res = await GET(getRequest('http://localhost/api/users/user-1/profile'), {
+      params: Promise.resolve({ id: 'user-1' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.profile.isSelf).toBe(true);
+    expect(body.profile.isFriend).toBe(false);
+    expect(body.profile.stats).toEqual({
+      libraryCount: 5,
+      completedCount: 2,
+      totalTimeSpent: 3600,
+    });
+    expect(body.profile.badges).toHaveLength(1);
+  });
+
+  it('maps recent activity with a computed read percentage', async () => {
+    db.readingProgress.findMany
+      .mockResolvedValueOnce([{ totalTimeSpent: 120 }])
+      .mockResolvedValueOnce([
+        {
+          comicId: 'c1',
+          lastPage: 5,
+          totalPages: 10,
+          readStatus: 'READING',
+          lastReadAt: new Date('2026-02-01'),
+          comic: { title: 'Saga', coverUrl: null, series: 'Saga', issue: 1 },
+        },
+      ]);
+
+    const res = await GET(getRequest('http://localhost/api/users/u2/profile'), {
+      params: Promise.resolve({ id: 'u2' }),
+    });
+    const body = await res.json();
+    expect(body.profile.recentActivity).toHaveLength(1);
+    expect(body.profile.recentActivity[0]).toMatchObject({
+      comicId: 'c1',
+      title: 'Saga',
+      percent: 50,
+    });
   });
 });

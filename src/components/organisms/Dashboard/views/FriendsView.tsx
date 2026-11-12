@@ -29,7 +29,7 @@ import { formatTimeAgo } from '@/lib/format';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 
 import {
   useFriends,

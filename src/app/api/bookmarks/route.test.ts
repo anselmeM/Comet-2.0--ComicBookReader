@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET, POST } from './route';
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
-import { Session } from 'next-auth';
+import { validateSession } from '@/lib/auth-utils';
+import { NextResponse } from 'next/server';
 
-vi.mock('@/auth', () => ({
-  auth: vi.fn() as any,
-}));
+vi.mock('@/lib/auth-utils', () => ({
+  validateSession: vi.fn(),
+}));
 
 type CometSession = Session & {
   user: { id: string; plan: string; hasCompletedOnboarding: boolean };
@@ -44,14 +44,17 @@ describe('Bookmarks API Route', () => {
 
   describe('GET', () => {
     it('should return 401 if unauthorized', async () => {
-      vi.mocked(auth).mockResolvedValue(null);
+      vi.mocked(validateSession).mockResolvedValue({
+        session: null,
+        errorResponse: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      });
       const req = new Request('http://localhost:3100/api/bookmarks?comicId=comic-123');
       const response = await GET(req);
       expect(response.status).toBe(401);
     });
 
     it('should return 404 if comic does not belong to user', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.comic.findUnique).mockResolvedValue(null); // Not found or different user
 
       const req = new Request('http://localhost:3100/api/bookmarks?comicId=comic-123');
@@ -62,7 +65,7 @@ describe('Bookmarks API Route', () => {
     });
 
     it('should return bookmarks if comic belongs to user', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.comic.findUnique).mockResolvedValue({
         id: 'comic-123',
         userId: 'user-123',
@@ -79,7 +82,7 @@ describe('Bookmarks API Route', () => {
 
   describe('POST', () => {
     it('should return 404 if comic does not belong to user', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.comic.findUnique).mockResolvedValue(null); // Not found or different user
 
       const req = new Request('http://localhost:3100/api/bookmarks', {
@@ -92,7 +95,7 @@ describe('Bookmarks API Route', () => {
     });
 
     it('should upsert bookmark if comic belongs to user', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.comic.findUnique).mockResolvedValue({
         id: 'comic-123',
         userId: 'user-123',
@@ -112,7 +115,7 @@ describe('Bookmarks API Route', () => {
     });
 
     it('should auto-create the reading progress record when missing', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.comic.findUnique).mockResolvedValue({
         id: 'comic-123',
         userId: 'user-123',

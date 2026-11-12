@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 import { motion } from 'framer-motion';
 
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 
 import { formatTimeAgo } from '@/lib/format';
 

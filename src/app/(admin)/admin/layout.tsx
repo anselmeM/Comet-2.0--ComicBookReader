@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { resolveAppUser } from '@/lib/auth-utils';
 import { redirect } from 'next/navigation';
 import React from 'react';
 
@@ -7,7 +7,7 @@ interface AdminLayoutProps {
 }
 
 export default async function AdminLayout({ children }: AdminLayoutProps) {
-  const session = await auth();
+  const session = await resolveAppUser();
 
   if (!session || session.user.role !== 'ADMIN') {
     redirect('/library');

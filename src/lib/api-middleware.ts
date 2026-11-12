@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { validateSession } from '@/lib/auth-utils';
 
+import { logger } from '@/lib/logger';
+
 import { ratelimit } from '@/lib/redis';
 
 type SessionType = NonNullable<Awaited<ReturnType<typeof validateSession>>['session']>;
@@ -35,23 +37,32 @@ export function withAuth<T = unknown, R extends NextRequest | Request = NextRequ
     // Apply global rate limiting if Redis is configured
 
     if (ratelimit) {
-      const { success, limit, reset, remaining } = await ratelimit.limit(session.user.id);
+      try {
+        const { success, limit, reset, remaining } = await ratelimit.limit(session.user.id);
 
-      if (!success) {
-        return NextResponse.json(
-          { error: 'Too Many Requests' },
+        if (!success) {
+          return NextResponse.json(
+            { error: 'Too Many Requests' },
 
-          {
-            status: 429,
+            {
+              status: 429,
 
-            headers: {
-              'X-RateLimit-Limit': limit.toString(),
+              headers: {
+                'X-RateLimit-Limit': limit.toString(),
 
-              'X-RateLimit-Remaining': remaining.toString(),
+                'X-RateLimit-Remaining': remaining.toString(),
 
-              'X-RateLimit-Reset': reset.toString(),
+                'X-RateLimit-Reset': reset.toString(),
+              },
             },
-          },
+          );
+        }
+      } catch (error) {
+        // Fail open: an Upstash outage must not 500 every authenticated route.
+        logger.error(
+          '[api-middleware] Rate limit check failed; allowing request through',
+          { userId: session.user.id },
+          error instanceof Error ? error : new Error(String(error)),
         );
       }
     }

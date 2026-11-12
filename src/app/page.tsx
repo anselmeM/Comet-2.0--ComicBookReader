@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import dynamic from 'next/dynamic';
 
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 
 import { logger } from '@/lib/logger';
 

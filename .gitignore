@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# committed template: placeholders only, never real values
+!.env.example
 
 # vercel
 .vercel
@@ -43,6 +45,9 @@ yarn-error.log*
 !CONTRIBUTING.md
 !IMPROVEMENTS.md
 !.github/PULL_REQUEST_TEMPLATE.md
+
+# local scan/audit artifacts (reports + verification logs, never committed)
+/audit/
 
 # typescript
 *.tsbuildinfo

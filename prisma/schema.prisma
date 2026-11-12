@@ -10,6 +10,9 @@ datasource db {
 
 model User {
   id                     String            @id @default(cuid())
+  // Clerk user ID (user_xxx). Null only for legacy pre-Clerk rows until
+  // they sign in via Clerk and are linked by email in the user webhook.
+  clerkId                String?           @unique
   name                   String?
   email                  String            @unique
   emailVerified          DateTime?

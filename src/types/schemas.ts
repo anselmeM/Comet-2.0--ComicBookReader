@@ -204,6 +204,8 @@ export const ProfileUpdateSchema = z.object({
     .optional(),
 
   theme: z.enum(['dark', 'light', 'sepia']).optional(),
+
+  hasCompletedOnboarding: z.boolean().optional(),
 });
 
 // --- Response DTOs ---

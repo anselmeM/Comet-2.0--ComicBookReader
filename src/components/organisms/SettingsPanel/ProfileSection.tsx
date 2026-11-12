@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 import Image from 'next/image';
 import { User, Camera, Save, Loader2 } from 'lucide-react';
 import { logger } from '@/lib/logger';

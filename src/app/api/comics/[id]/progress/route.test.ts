@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET, PUT, DELETE } from './route';
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
+import { validateSession } from '@/lib/auth-utils';
 import * as cache from '@/lib/cache';
 import * as badges from '@/lib/badges';
 import * as notifications from '@/lib/notifications';
-import { Session } from 'next-auth';
+import { NextResponse } from 'next/server';
 import { ReadingProgressSchema } from '@/types/schemas';
 
-vi.mock('@/auth', () => ({
-  auth: vi.fn(),
+vi.mock('@/lib/auth-utils', () => ({
+  validateSession: vi.fn(),
 }));
 
 vi.mock('@/lib/notifications', () => ({
@@ -87,14 +87,17 @@ describe('Reading Progress API Route ([id])', () => {
 
   describe('GET', () => {
     it('should return 401 if unauthorized', async () => {
-      (auth as any).mockResolvedValue(null);
+      (validateSession as any).mockResolvedValue({
+        session: null,
+        errorResponse: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      });
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await GET(new Request('http://localhost:3100'), { params });
       expect(response.status).toBe(401);
     });
 
     it('should return 404 if comic not found', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.comic.findUnique).mockResolvedValue(null);
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await GET(new Request('http://localhost:3100'), { params });
@@ -102,7 +105,7 @@ describe('Reading Progress API Route ([id])', () => {
     });
 
     it('should return 403 if comic belongs to another user', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.comic.findUnique).mockResolvedValue({ userId: 'other-user' } as any);
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await GET(new Request('http://localhost:3100'), { params });
@@ -110,7 +113,7 @@ describe('Reading Progress API Route ([id])', () => {
     });
 
     it('should return progress for owned comic', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       const mockComicWithProgress = {
         id: 'comic-1',
         userId: 'user-123',
@@ -131,7 +134,10 @@ describe('Reading Progress API Route ([id])', () => {
 
   describe('PUT', () => {
     it('should return 401 if unauthorized', async () => {
-      (auth as any).mockResolvedValue(null);
+      (validateSession as any).mockResolvedValue({
+        session: null,
+        errorResponse: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      });
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await PUT(
         new Request('http://localhost:3100', { method: 'PUT', body: '{}' }),
@@ -141,7 +147,7 @@ describe('Reading Progress API Route ([id])', () => {
     });
 
     it('should return 400 on validation failure', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await PUT(
         new Request('http://localhost:3100', {
@@ -154,7 +160,7 @@ describe('Reading Progress API Route ([id])', () => {
     });
 
     it('should update progress and handle user streak', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.comic.findUnique).mockResolvedValue({
         id: 'comic-1',
         userId: 'user-123',
@@ -224,7 +230,7 @@ describe('Reading Progress API Route ([id])', () => {
       vi.mocked(cache.setCache).mockResolvedValue(undefined);
       vi.mocked(cache.invalidateCache).mockResolvedValue(undefined);
       vi.mocked(badges.evaluateBadges).mockResolvedValue([]);
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
     }
 
     function putProgress(lastPage: number, totalPages = 10) {
@@ -300,14 +306,17 @@ describe('Reading Progress API Route ([id])', () => {
 
   describe('DELETE', () => {
     it('should return 401 if unauthorized', async () => {
-      (auth as any).mockResolvedValue(null);
+      (validateSession as any).mockResolvedValue({
+        session: null,
+        errorResponse: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      });
       const params = Promise.resolve({ id: 'comic-1' });
       const response = await DELETE(new Request('http://localhost:3100'), { params });
       expect(response.status).toBe(401);
     });
 
     it('should delete progress', async () => {
-      (auth as any).mockResolvedValue(mockSession);
+      (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
       vi.mocked(db.comic.findUnique).mockResolvedValue({
         id: 'comic-1',
         userId: 'user-123',

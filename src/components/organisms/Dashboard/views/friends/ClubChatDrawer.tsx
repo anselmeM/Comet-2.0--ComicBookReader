@@ -6,7 +6,7 @@ import Image from 'next/image';
 
 import { useEffect, useRef, useState } from 'react';
 
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 
 import { formatTimeAgo } from '@/lib/format';
 

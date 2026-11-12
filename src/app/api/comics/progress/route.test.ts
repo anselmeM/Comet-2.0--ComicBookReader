@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DELETE } from './route';
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
-import { Session } from 'next-auth';
+import { validateSession } from '@/lib/auth-utils';
+import { NextResponse } from 'next/server';
 import { invalidateCache } from '@/lib/cache';
 
-vi.mock('@/auth', () => ({
-  auth: vi.fn(),
+vi.mock('@/lib/auth-utils', () => ({
+  validateSession: vi.fn(),
 }));
 
 vi.mock('@/lib/cache', () => ({
@@ -42,13 +42,16 @@ describe('Reading Progress Bulk API Route', () => {
   });
 
   it('should return 401 if unauthorized', async () => {
-    (auth as any).mockResolvedValue(null);
+    (validateSession as any).mockResolvedValue({
+        session: null,
+        errorResponse: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      });
     const response = await DELETE(new Request('http://localhost:3100'), {});
     expect(response.status).toBe(401);
   });
 
   it('should delete all reading progress and reset lastReadAt for current user', async () => {
-    (auth as any).mockResolvedValue(mockSession);
+    (validateSession as any).mockResolvedValue({ session: mockSession, errorResponse: null });
     vi.mocked(db.readingProgress.deleteMany).mockResolvedValue({ count: 5 } as any);
     vi.mocked(db.comic.updateMany).mockResolvedValue({ count: 5 } as any);
     vi.mocked(invalidateCache).mockResolvedValue(undefined as any);

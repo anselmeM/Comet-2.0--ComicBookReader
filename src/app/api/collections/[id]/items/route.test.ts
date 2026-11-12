@@ -4,12 +4,12 @@ import { POST, DELETE } from './route';
 
 import { db } from '@/lib/db';
 
-import { auth } from '@/auth';
+import { validateSession } from '@/lib/auth-utils';
 
-import { Session } from 'next-auth';
+import { NextResponse } from 'next/server';
 
-vi.mock('@/auth', () => ({
-  auth: vi.fn() as any,
+vi.mock('@/lib/auth-utils', () => ({
+  validateSession: vi.fn(),
 }));
 
 type CometSession = Session & {
@@ -53,7 +53,10 @@ describe('Collection Items API Route', () => {
 
   describe('POST', () => {
     it('should return 401 if unauthorized', async () => {
-      vi.mocked(auth).mockResolvedValue(null);
+      vi.mocked(validateSession).mockResolvedValue({
+        session: null,
+        errorResponse: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+      });
 
       const req = new Request('http://localhost:3100/api/collections/col-123/items', {
         method: 'POST',
@@ -69,7 +72,7 @@ describe('Collection Items API Route', () => {
     });
 
     it('should return 404 if collection does not belong to user', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
 
       vi.mocked(db.collection.findUnique).mockResolvedValue(null);
 
@@ -91,7 +94,7 @@ describe('Collection Items API Route', () => {
     });
 
     it('should return 404 if comic does not belong to user', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
 
       vi.mocked(db.collection.findUnique).mockResolvedValue({
         id: 'col-123',
@@ -119,7 +122,7 @@ describe('Collection Items API Route', () => {
     });
 
     it('should add item to collection if both belong to user', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
 
       vi.mocked(db.collection.findUnique).mockResolvedValue({
         id: 'col-123',
@@ -151,7 +154,7 @@ describe('Collection Items API Route', () => {
     });
 
     it('should return 400 when comicId is missing', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
 
       const req = new Request('http://localhost:3100/api/collections/col-123/items', {
         method: 'POST',
@@ -167,7 +170,7 @@ describe('Collection Items API Route', () => {
     });
 
     it('should remove a comic from the collection', async () => {
-      vi.mocked(auth).mockResolvedValue(mockSession);
+      vi.mocked(validateSession).mockResolvedValue({ session: mockSession, errorResponse: null });
 
       vi.mocked(db.collectionItem.delete).mockResolvedValue({ id: 'ci-1' } as any);
 

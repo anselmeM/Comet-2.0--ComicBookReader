@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 
 import { useRouter } from 'next/navigation';
 

@@ -14,7 +14,7 @@ import { useLibrary } from '@/hooks/useLibrary';
 
 import { useBookmarks } from '@/hooks/useBookmarks';
 
-import { useSession } from 'next-auth/react';
+import { useAppSession as useSession } from '@/hooks/useAppSession';
 
 import { useComicPages } from '@/hooks/useComicPages';
 

@@ -8,6 +8,37 @@ import { logger } from '@/lib/logger';
 import { ProfileUpdateSchema } from '@/types/schemas';
 
 /**
+ * GET /api/user/profile — Returns the current app user (client session source).
+ */
+export const GET = withAuth(async (_req: Request, _context, session) => {
+  try {
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        plan: true,
+        role: true,
+        hasCompletedOnboarding: true,
+        defaultReadingMode: true,
+        theme: true,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(user);
+  } catch (error) {
+    logger.error('Profile Fetch Error', {}, error as Error);
+    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
+  }
+});
+
+/**
  * PUT /api/user/profile — Updates user profile and preferences.
  */
 export const PUT = withAuth(async (req: Request, context, session) => {

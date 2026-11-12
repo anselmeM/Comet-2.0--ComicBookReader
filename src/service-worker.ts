@@ -128,24 +128,16 @@ registerRoute(
   }),
 );
 
-// API Routes
-
-registerRoute(
-  /\/api\/auth\/.*$/i,
-
-  new NetworkOnly(),
-);
+// API routes are intentionally NOT runtime-cached: their responses are
+// authenticated and user-scoped, so a URL-keyed cache could serve one user's
+// JSON to another on a shared browser (and there is no sign-out purge).
+// NetworkOnly also keeps the catch-all NetworkFirst below from caching them.
+// Offline data is served from the IndexedDB cache instead.
 
 registerRoute(
   /\/api\/.*$/i,
 
-  new NetworkFirst({
-    cacheName: 'api-cache',
-
-    plugins: [new ExpirationPlugin({ maxEntries: 16, maxAgeSeconds: 24 * 60 * 60 })],
-
-    networkTimeoutSeconds: 10,
-  }),
+  new NetworkOnly(),
 );
 
 // Offline navigation fallback: serve offline.html when a page navigation

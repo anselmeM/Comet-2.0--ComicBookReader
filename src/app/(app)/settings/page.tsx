@@ -1,7 +1,7 @@
 import { SettingsPanel } from '@/components/organisms/SettingsPanel';
 import { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { auth } from '@/auth';
+import { resolveAppUser } from '@/lib/auth-utils';
 
 export const metadata: Metadata = {
   title: 'Settings - Comet',
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SettingsPage() {
-  const session = await auth();
+  const session = await resolveAppUser();
   let earnedBadgeIds: string[] = [];
 
   if (session?.user?.id) {
