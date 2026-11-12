@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { validateSession, requireAuth } from './auth-utils';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
@@ -36,6 +36,13 @@ const linkedUser = {
 describe('auth-utils (Clerk)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Keep Clerk auth enabled for these tests; a keyless environment short-circuits
+    // resolveAppUser before it reaches the mocked `auth()`.
+    vi.stubEnv('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY', 'pk_test_unit');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   describe('validateSession', () => {
@@ -120,6 +127,18 @@ describe('auth-utils (Clerk)', () => {
       });
       expect(result.session?.user.id).toBe('new-1');
       expect(result.errorResponse).toBeNull();
+    });
+
+    it('should return the placeholder session in a keyless environment', async () => {
+      vi.stubEnv('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY', '');
+      vi.stubEnv('NODE_ENV', 'development');
+      vi.stubEnv('ALLOW_KEYLESS_AUTH', '');
+
+      const result = await validateSession();
+
+      expect(result.errorResponse).toBeNull();
+      expect(result.session?.user.id).toBe('user-1');
+      expect(auth).not.toHaveBeenCalled();
     });
   });
 

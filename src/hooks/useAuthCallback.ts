@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useNotification } from '@/components/atoms/Toast';
-import { useClerk } from '@clerk/nextjs';
+import { useClerkSafe } from '@/hooks/useClerkSafe';
 import { logger } from '@/lib/logger';
 
 /**
@@ -10,7 +10,7 @@ import { logger } from '@/lib/logger';
  */
 export function useAuthCallback() {
   const { triggerNotification } = useNotification();
-  const { signOut } = useClerk();
+  const clerk = useClerkSafe();
 
   /**
    * Handles authentication errors by showing a notification and redirecting to login.
@@ -71,13 +71,13 @@ export function useAuthCallback() {
           'error',
         );
 
-        await signOut({ redirectUrl: loginUrl.pathname + loginUrl.search });
+        await clerk?.signOut({ redirectUrl: loginUrl.pathname + loginUrl.search });
         return true;
       }
 
       return false;
     },
-    [triggerNotification, signOut],
+    [triggerNotification, clerk],
   );
 
   return { handleAuthError };

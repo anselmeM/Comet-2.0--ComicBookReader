@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 import { useAppSession as useSession } from '@/hooks/useAppSession';
-import { useClerk } from '@clerk/nextjs';
+import { useClerkSafe } from '@/hooks/useClerkSafe';
 
 import { useReaderStore } from '@/stores/readerStore';
 
@@ -60,7 +60,7 @@ export function SettingsPanel({ earnedBadgeIds = [] }: SettingsPanelProps) {
 
   const { data: session, update: updateSession } = useSession();
 
-  const { signOut } = useClerk();
+  const clerk = useClerkSafe();
 
   const mode = useReaderStore((state) => state.mode);
 
@@ -318,7 +318,7 @@ export function SettingsPanel({ earnedBadgeIds = [] }: SettingsPanelProps) {
 
       <section className="md:hidden pt-4 pb-12 border-t border-comet-border">
         <button
-          onClick={() => signOut()}
+          onClick={() => clerk?.signOut()}
           className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-red-500/10 text-red-500 rounded-2xl border border-red-500/20 active:scale-[0.98] transition-transform font-semibold min-h-[56px]"
         >
           <LogOut size={20} />

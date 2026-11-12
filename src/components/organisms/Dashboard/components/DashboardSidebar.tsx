@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import { LogOut, Settings } from 'lucide-react';
 
 import { useAppSession as useSession } from '@/hooks/useAppSession';
-import { useClerk } from '@clerk/nextjs';
+import { useClerkSafe } from '@/hooks/useClerkSafe';
 
 import { navItems } from '@/lib/dashboard';
 
@@ -44,7 +44,7 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const { data: session } = useSession();
 
-  const { signOut } = useClerk();
+  const clerk = useClerkSafe();
 
   const handleLogout = async () => {
     try {
@@ -69,7 +69,7 @@ export function DashboardSidebar({
       );
     }
 
-    signOut({ redirectUrl: '/login' });
+    clerk?.signOut({ redirectUrl: '/login' });
   };
 
   return (

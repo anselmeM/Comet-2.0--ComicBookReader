@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { isUniqueConstraintError } from '@/lib/prisma-errors';
+import { isKeylessAuthMode } from '@/lib/auth-mode';
 import { isTestAuthBypassEnabled } from '@/lib/test-auth';
 
 export interface AppSessionUser {
@@ -52,6 +53,28 @@ function mapUser(user: {
 }
 
 /**
+ * Session used when there is no real Clerk session to resolve: the Playwright
+ * bypass cookie, or a keyless environment (local dev, Lighthouse CI). Shaped like
+ * a real session so routes and hooks can render instead of throwing.
+ */
+const PLACEHOLDER_SESSION: AppSession = {
+  user: {
+    id: 'user-1',
+    plan: 'FREE',
+    role: 'USER',
+    hasCompletedOnboarding: true,
+    defaultReadingMode: 'single-page',
+    theme: 'dark',
+    name: 'Test User',
+    email: 'test@example.com',
+  },
+};
+
+function placeholderSession(): AppSession {
+  return { user: { ...PLACEHOLDER_SESSION.user } };
+}
+
+/**
  * Resolves the Prisma app user for the current Clerk session.
  *
  * Links pre-Clerk accounts by email (preserving libraries) and provisions a
@@ -63,19 +86,15 @@ export async function resolveAppUser(): Promise<AppSession | null> {
   if (isTestAuthBypassEnabled()) {
     const cookieStore = await cookies();
     if (cookieStore.get('__COMET_TEST_BYPASS')) {
-      return {
-        user: {
-          id: 'user-1',
-          plan: 'FREE',
-          role: 'USER',
-          hasCompletedOnboarding: true,
-          defaultReadingMode: 'single-page',
-          theme: 'dark',
-          name: 'Test User',
-          email: 'test@example.com',
-        },
-      };
+      return placeholderSession();
     }
+  }
+
+  // Keyless environments have no Clerk session at all (the middleware lets
+  // requests through in this mode). Return the placeholder instead of calling
+  // `auth()`, which throws without a publishable key and would 500 every API call.
+  if (isKeylessAuthMode()) {
+    return placeholderSession();
   }
 
   const { userId: clerkId } = await auth();

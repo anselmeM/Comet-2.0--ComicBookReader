@@ -25,15 +25,21 @@ jobs:
         run: npm run build
         # Throwaway PostgreSQL DSN so the build compiles against the production provider;
         # `prisma generate` never connects and migrations are gated to Vercel production.
+        # ALLOW_KEYLESS_AUTH lets the production-mode server boot without Clerk keys
+        # (this job has no secrets for them); see src/lib/auth-mode.ts. Never set it
+        # on a real deployment.
         env:
           DATABASE_URL: postgresql://build:build@localhost:5432/build
           DIRECT_URL: postgresql://build:build@localhost:5432/build
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          ALLOW_KEYLESS_AUTH: 'true'
 
       - name: Run Lighthouse CI
         run: npx lhci autorun
+        env:
+          ALLOW_KEYLESS_AUTH: 'true'
 
       - name: Upload Lighthouse reports
         if: always()

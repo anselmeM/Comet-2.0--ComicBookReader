@@ -1,8 +1,15 @@
 /**
  * @file Next.js Middleware — Clerk Route Protection + CSP Nonce
+ *
+ * Clerk keys are optional outside production (local dev, Playwright, Lighthouse
+ * CI). When they are absent the middleware must not invoke `clerkMiddleware`,
+ * which throws while loading and turns every request into a 500. Instead it runs
+ * in an explicit keyless mode: CSP and routing still apply, but there is no auth
+ * to enforce. See `src/lib/auth-mode.ts` for the fail-closed production rule.
  */
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
+import { isKeylessAuthMode } from '@/lib/auth-mode';
 import { isTestAuthBypassEnabled } from '@/lib/test-auth';
 
 const isPublicRoute = createRouteMatcher([
@@ -14,19 +21,10 @@ const isPublicRoute = createRouteMatcher([
   '/api/health',
   '/api/stripe/locale',
   '/api/webhooks(.*)',
-  '/api/auth(.*)',
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
-  const { nextUrl } = req;
-
-  // Auth bypass for testing — e2e runs only (E2E_TEST_MODE), never deployed
-  const hasBypass = isTestAuthBypassEnabled() && req.cookies.get('__COMET_TEST_BYPASS');
-  if (!hasBypass && !isPublicRoute(req)) {
-    await auth.protect();
-  }
-
-  // Generate CSP Nonce for requests that proceed
+/** Builds the pass-through response with a fresh CSP nonce. */
+function nextWithCsp(req: NextRequest): NextResponse {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const isDev = process.env.NODE_ENV === 'development';
   const storageOrigins = [
@@ -53,7 +51,39 @@ export default clerkMiddleware(async (auth, req) => {
   });
   response.headers.set('Content-Security-Policy', cspHeader);
   return response;
+}
+
+const clerkHandler = clerkMiddleware(async (auth, req) => {
+  // Auth bypass for testing — e2e runs only (E2E_TEST_MODE), never deployed
+  const hasBypass = isTestAuthBypassEnabled() && req.cookies.get('__COMET_TEST_BYPASS');
+  if (!hasBypass && !isPublicRoute(req)) {
+    await auth.protect();
+  }
+  return nextWithCsp(req);
 });
+
+let warnedKeyless = false;
+
+/**
+ * Only reached when Clerk keys are absent (see `isKeylessAuthMode`). Production
+ * without `ALLOW_KEYLESS_AUTH=true` never gets here — `clerkHandler` runs instead
+ * and fails closed.
+ */
+export default async function middleware(req: NextRequest, event: NextFetchEvent) {
+  if (isKeylessAuthMode()) {
+    if (!warnedKeyless) {
+      warnedKeyless = true;
+      console.warn(
+        '[middleware] Clerk keys are not configured — running without authentication. ' +
+          'Allowed outside production, or in production only with ALLOW_KEYLESS_AUTH=true ' +
+          '(Lighthouse CI). Never enable that on a real deployment.',
+      );
+    }
+    return nextWithCsp(req);
+  }
+
+  return clerkHandler(req, event);
+}
 
 export const config = {
   // Match all routes EXCEPT static files, _next internals, and favicon
