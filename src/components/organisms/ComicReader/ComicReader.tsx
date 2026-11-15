@@ -141,6 +141,10 @@ export function ComicReader({ comicId }: ComicReaderProps) {
 
   const verticalContainerRef = useRef<HTMLDivElement>(null);
   const canvasCacheRef = useRef<Record<number, HTMLCanvasElement>>({});
+  // NOTE: must stay above all early returns — calling a hook after a
+  // conditional return changes the hook count between renders and crashes
+  // with React error #310 on the loading → loaded transition.
+  const verticalPointerDownPos = useRef<{ x: number; y: number } | null>(null);
 
   // TanStack Virtualizer for vertical (webtoon) mode
   const rowVirtualizer = useVirtualizer({
@@ -747,8 +751,6 @@ export function ComicReader({ comicId }: ComicReaderProps) {
     );
   }
 
-  const verticalPointerDownPos = useRef<{ x: number; y: number } | null>(null);
-
   const handleVerticalPointerDown = (e: React.PointerEvent) => {
     verticalPointerDownPos.current = { x: e.clientX, y: e.clientY };
   };
@@ -892,6 +894,7 @@ export function ComicReader({ comicId }: ComicReaderProps) {
               return (
                 <div
                   key={`page-${idx}`}
+                  data-index={idx}
                   data-page-index={idx}
                   ref={rowVirtualizer.measureElement}
                   className="comic-reader-page-wrapper absolute top-0 left-0 w-full flex flex-col items-center pb-8"
