@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // Guards against committing the SQLite-flavored schema.prisma that
 // scripts/prisma-provider-switch.js writes for local development.
@@ -19,10 +19,14 @@ function readFileSafe(p) {
 
 function gitShow(rev, relPath) {
   try {
-    return execSync(`git show ${rev}:${relPath}`, {
+    // execFileSync runs git directly with an argv array and no shell, so the
+    // revision/path are passed as literal arguments and never parsed as shell
+    // syntax (no command substitution, globbing or word splitting).
+    return execFileSync('git', ['show', `${rev}:${relPath}`], {
       cwd: path.join(__dirname, '..'),
       encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      shell: false,
     });
   } catch {
     return null;
